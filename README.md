@@ -19,6 +19,8 @@ auto-file-renaming=false
 # 修改为服务器时间
 remote-time=true
 ```
+![文件示例](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1kyvk0t12j20jh0bxdi6.jpg)
+
 然后运行bat即可开启Aria2的PRC模式。
 
 Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
@@ -40,11 +42,11 @@ Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法
 
 ![画师文件夹](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1kym1a6ytj20ha07nt9o.jpg)
 
-![多图文件夹](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1kym1a6ytj20ha07nt9o.jpg)
+![多图文件夹](http://ww3.sinaimg.cn/large/6c84b2d6gw1f1kymkw0iwj20id06x0u1.jpg)
 
 需要修改请参考下方设置
 ## 设置
-![设置界面](http://ww3.sinaimg.cn/large/6c84b2d6gw1f1kymkw0iwj20id06x0u1.jpg)
+![设置界面](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1kxnqiz44j20aj0as0tu.jpg)
 
 因为已经在“aria2.conf”里设定了下载父文件夹的位置，因此这里只需要写子文件夹路径就可以了。
 
