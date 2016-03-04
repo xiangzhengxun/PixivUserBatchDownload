@@ -6,8 +6,8 @@
 需要配和[Aria2](https://aria2.github.io/)使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载。
 
 ## 配置Aria2
-在aria2c路径下建立Bat文件，内容为，前面两个参数是启动RPC模式用，第三个是从参数文件读取参数（方便修改和用到其他模式）
-`aria2c --enable-rpc --rpc-listen-all --conf-path="aria2.conf"`
+在aria2c路径下建立Bat文件，内容为，前面三个参数是启动RPC模式用，第四个是从参数文件读取参数。也可以把前几个参数也写入参数文件。
+`aria2c --enable-rpc --rpc-listen-all --rpc-allow-origin-all --conf-path="aria2.conf"`
 然后继续建立“aria2.conf”，内容为
 ```ini
 # 保存路径请自行修改
