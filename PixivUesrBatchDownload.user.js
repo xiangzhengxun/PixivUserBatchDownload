@@ -4,7 +4,8 @@
 // @namespace   http://www.mapaler.com/
 // @description P站画师个人作品批量下载工具
 // @include     http://www.pixiv.net/member_illust.php?id=*
-// @version     1.1.2
+// @include     http://www.pixiv.net/member.php?id=*
+// @version     1.1.3
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -16,6 +17,8 @@
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
 var getPicNum = 0; //Ajax获取了文件的数量
 var downOver; //检测下载是否完成的循环函数
+if (getConfig("PUBD_reset") != "1") ResetConfig(); //新用户重置设置
+
 var dataset =
 {
     user_id: pixiv.context.userId, //作者ID
@@ -25,9 +28,6 @@ var dataset =
     illust:[
     ]
 }
-var user_link = document.getElementsByClassName("user-link")[0];
-var user_dom = user_link.getElementsByClassName("user")[0];
-dataset.user_name = user_dom.textContent;
 function illust()
 {
     var obj =
@@ -140,7 +140,7 @@ function illust()
             if (url == undefined)
                 url = this.url;
             else
-                this.url = url;
+            	this.url = url;
             if (this.illust_id < 1)
             {
                 var regSrc = /illust_id=(\d+)/ig;
@@ -152,47 +152,65 @@ function illust()
     }
     return obj;
 }
+var user_link = document.getElementsByClassName("user-link")[0];
+var user_dom = user_link.getElementsByClassName("user")[0];
+dataset.user_name = user_dom.textContent;
+
 var btnStart = document.createElement("button");
 btnStart.className = "_button following";
 btnStart.innerHTML = "获取全部作品";
 btnStart.onclick = function () { startProgram(0) };
 
-var menu_ul = document.createElement("ul");
-menu_ul.className = "items";
-//menu_ul.style.display = "none";
-menu_ul.style.display = "block";
-var li = document.createElement("li");
-var a = document.createElement("a");
-a.className = "item";
-a.innerHTML = "Aria2 RPC";
-a.onclick = function () { startProgram(0); li1.removeChild(menu_ul); };
-li.appendChild(a);
-menu_ul.appendChild(li);
-var li = document.createElement("li");
-var a = document.createElement("a");
-a.className = "item";
-a.innerHTML = "导出下载文件";
-a.onclick = function () { buildExport(); li1.removeChild(menu_ul); startProgram(1); };
-li.appendChild(a);
-menu_ul.appendChild(li);
-var li = document.createElement("li");
-li.className = "separated";
-var a = document.createElement("a");
-a.className = "item";
-a.innerHTML = "设置";
-a.onclick = function () { buildSetting(); li1.removeChild(menu_ul); }
-li.appendChild(a);
-menu_ul.appendChild(li);
+var menu_ul = buildMenu();
+	//生成导出下载窗口
+function buildMenu()
+{
+	var menu_ul = document.createElement("ul");
+	menu_ul.className = "items";
+	//menu_ul.style.display = "none";
+	menu_ul.style.display = "block";
+	var li = document.createElement("li");
+	var a = document.createElement("a");
+	a.className = "item";
+	a.innerHTML = "Aria2 RPC";
+	a.onclick = function () { startProgram(0); li1.removeChild(menu_ul); };
+	li.appendChild(a);
+	menu_ul.appendChild(li);
+	var li = document.createElement("li");
+	var a = document.createElement("a");
+	a.className = "item";
+	a.innerHTML = "导出下载文件";
+	a.onclick = function () { buildExport(); li1.removeChild(menu_ul); startProgram(1); };
+	li.appendChild(a);
+	menu_ul.appendChild(li);
+	var li = document.createElement("li");
+	li.className = "separated";
+	var a = document.createElement("a");
+	a.className = "item";
+	a.innerHTML = "设置";
+	a.onclick = function () { buildSetting(); li1.removeChild(menu_ul); }
+	li.appendChild(a);
+	menu_ul.appendChild(li);
+	return menu_ul;
+}
 
-if (getConfig("PUBD_reset") != "1") ResetConfig();
-
-//var add_place = document.getElementsByClassName("column-menu")[0].getElementsByClassName("menu-items")[0];
-var add_place = document.getElementsByClassName("user-relation")[0];
+var insertPlace = document.getElementsByClassName("user-relation")[0];
 var li1 = document.createElement("li");
-add_place.appendChild(li1);
+var li2 = document.createElement("li");
+insertPlace.appendChild(li1);
+insertPlace.appendChild(li2);
 li1.className = "ui-selectbox-container";
 li1.appendChild(btnStart);
+li2.className = "infoProgress";
 //li1.appendChild(menu_ul);
+
+btnStart.onclick = function (e) //需要判断是不是内部小框架
+{
+	if (menu_ul.parentNode == li1)
+		li1.removeChild(menu_ul);
+	else
+		li1.appendChild(menu_ul);
+}
 
 /*
 menu_ul.onmouseout = function (e) //需要判断是不是内部小框架
@@ -206,30 +224,19 @@ menu_ul.onmouseout = function (e) //需要判断是不是内部小框架
 		li1.removeChild(menu_ul);
 	}
 }
-
+	
 btnStart.onmouseover = function (e) //需要判断是不是内部小框架
 {
-    if (!e) e = window.event;
-    var reltg = e.relatedTarget ? e.relatedTarget : e.fromElement;
-    while (reltg && reltg != this) reltg = reltg.parentNode;
-    if (reltg != this) {
-    	//menu_ul.style.display = "block";
-    	li1.appendChild(menu_ul);
-    }
+	if (!e) e = window.event;
+	var reltg = e.relatedTarget ? e.relatedTarget : e.fromElement;
+	while (reltg && reltg != this) reltg = reltg.parentNode;
+	if (reltg != this) {
+		//menu_ul.style.display = "block";
+		li1.appendChild(menu_ul);
+	}
 }
 */
-btnStart.onclick = function (e) //需要判断是不是内部小框架
-{
-	if (menu_ul.parentNode == li1)
-		li1.removeChild(menu_ul);
-	else
-		li1.appendChild(menu_ul);
-}
 
-
-var li2 = document.createElement("li");
-add_place.appendChild(li2);
-li2.className = "infoProgress";
 
 //开始分析本作者
 function startProgram(mode)
@@ -306,8 +313,8 @@ function dealPage(response, pageIndex)
 {
     /*
     老式构建网页dom方法
-    var fullSizePage = document.createElement("div"); //创建一个容器
-    fullSizePage.innerHTML = response; //插入代码
+    var PageDOM = document.createElement("div"); //创建一个容器
+    PageDOM.innerHTML = response; //插入代码
     */
 
     var parser = new DOMParser();
@@ -323,11 +330,20 @@ function dealPage(response, pageIndex)
         {
             var _thumbnail = image_items[ii].getElementsByClassName("_thumbnail")[0];
             var title = image_items[ii].getElementsByClassName("title")[0];
-            var link = image_items[ii].getElementsByTagName("a")[0];
+            var link = image_items[ii].getElementsByTagName("a");
+
             var multiple = image_items[ii].getElementsByClassName("multiple");
             var ugoku = image_items[ii].getElementsByClassName("ugoku-illust");
             var ill = new illust;
-            ill.url = link.href;
+            if (link[0].href.length < 1)
+            {
+            	console.log("你的浏览器无法获取DOMParser内a标签的href。目前只有Chrome这么做。")
+            	ill.url = document.location.origin + link[0].getAttribute("href");
+            }
+            else
+            {
+            	ill.url = link[0].href;
+            }
             ill.title = title.textContent;
             ill.addIndexFromPage(ii + 1, pageIndex, dataset.illust_count);
             //ill.illust_index_in_page = ii + 1;
@@ -557,7 +573,7 @@ var ARIA2 = (function () {
 function buildSetting()
 {
     if (document.getElementById("PixivUserBatchDownloadSetting")) return;
-    var insertPlace = document.getElementsByClassName("column-menu")[0];
+    var insertPlace = document.getElementsByClassName("column-header")[0];
     var set = document.createElement("div");
     set.id = "PixivUserBatchDownloadSetting";
     set.className = "notification-popup";
@@ -944,6 +960,7 @@ function startDownload(mode) {
                     });
                 }
             }
+            alert("全部发送完毕");
             break;
         case 1: //生成BAT下载命令模式
             var txt = "";
