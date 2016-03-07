@@ -4,12 +4,12 @@
 // @namespace   http://www.mapaler.com/
 // @description P站画师个人作品批量下载工具
 // @include     http://www.pixiv.net/member_illust.php?id=*
-// @version     1.0.0
+// @version     1.1.0
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
-// @updateURL https://github.com/Mapaler/PixivUserBatchDownload/blob/master/PixivUesrBatchDownload.meta.js
-// @downloadURL https://github.com/Mapaler/PixivUserBatchDownload/blob/master/PixivUesrBatchDownload.user.js
+// @updateURL https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.meta.js
+// @downloadURL https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.user.js
 // ==/UserScript==
 
 (function() {
@@ -351,16 +351,21 @@ function dealIllust(response, ill)
     if (tools)
     {
         var toolsli = tools.getElementsByTagName("li");
-        for (ti = 0; ti < toolsli.length; ti++) {
+        for (ti = 0; ti < toolsli.length; ti++)
+        {
             ill.tools[ti] = toolsli[ti].textContent;
 
         }
     }
     //TAG
-    var tags = PageDOM.getElementsByClassName("work-tags")[0].getElementsByClassName("tags-container")[0].getElementsByClassName("tags")[0].getElementsByClassName("tag");
-    for (ti = 0; ti < tags.length; ti++)
+    var tagsDom = PageDOM.getElementsByClassName("work-tags")[0].getElementsByClassName("tags-container")[0].getElementsByClassName("tags");
+    if (tagsDom.length > 0)
     {
-        ill.tags[ti] = tags[ti].getElementsByClassName("text")[0].textContent;
+    	var tags = tagsDom[0].getElementsByClassName("tag");
+        for (ti = 0; ti < tags.length; ti++)
+        {
+            ill.tags[ti] = tags[ti].getElementsByClassName("text")[0].textContent;
+        }
     }
 
 
@@ -448,7 +453,7 @@ function dealIllust(response, ill)
         if (rs.length >= 2)
         {
             ill.page_count = parseInt(rs[1]);
-			dataset.illust_file_count += ill.page_count - 1;
+            dataset.illust_file_count += ill.page_count - 1; //图片总数里增加多图的张数
 			
             var manga_big = ill.url.replace(/mode=[^&]+/, "mode=manga_big");
             for (var pi = 0; pi < ill.page_count; pi++) {
@@ -476,8 +481,14 @@ function dealManga(response, ill, index)
     var regSrc = /\/(\d+(?:_[\w\d]+)?)\.(\w+)/ig;
     var rs = regSrc.exec(picture.src);
     ill.original_src[index] = picture.src;
-    ill.filename[index] = rs[1];
-    ill.extention[index] = rs[2];
+
+    try {
+        ill.filename[index] = rs[1];
+        ill.extention[index] = rs[2];
+    }
+    catch (e) {
+        console.log(ill);
+    }
 	getPicNum+=1;
 }
 
@@ -932,15 +943,19 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++)
                 {
-                    txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true --out=\"" + showMask(getConfig("PUBD_save_path"), ill, pi) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"\r\n";
+                	txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true --out=\"" + showMask(getConfig("PUBD_save_path"), ill, pi) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
                     downtxt += ill.original_src[pi]
-                         + "\r\n out=\"" + showMask(getConfig("PUBD_save_path"), ill, pi) + "\""
-                         + "\r\n referer=\"" + ill.url + "\""
-                         + "\r\n allow-overwrite=false"
-                         + "\r\n auto-file-renaming=false"
-                         + "\r\n remote-time=true"
-                         + "\r\n\r\n"
-                        ;
+						+ "\r\n out=\"" + showMask(getConfig("PUBD_save_path"), ill, pi) + "\""
+						+ "\r\n referer=\"" + ill.url + "\""
+						+ "\r\n allow-overwrite=false"
+						+ "\r\n auto-file-renaming=false"
+						+ "\r\n remote-time=true"
+						;
+                	if (pi < ill.original_src.length - 1)
+                	{
+                		txt += "\r\n";
+                		downtxt += "\r\n\r\n";
+                	}
                 }
             }
             var txta = document.getElementsByName("PUBD_batch")[0];
