@@ -1,7 +1,7 @@
 ﻿# PixivUserBatchDownload
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。目前还有一些BUG有待解决（比如某E的图片数量获取有问题所以不开始下载）。
 
-请使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展安装本脚本程序，我不用Chrome。
+请使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.user.js)，我不用Chrome，仅提供有限支持。
 
 需要配和[Aria2](https://aria2.github.io/)使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载。
 
@@ -42,11 +42,13 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 更多Aria2选项请访问 https://aria2.github.io/manual/en/html/aria2c.html#options
 
 ## 开始下载
-[安装本脚本](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.user.js)
+应用脚本后，在P站画师的页面会生成一个按钮。
 
-在P站画师的作品目录页面会生成一个按钮
+![页面位置](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohqawkotj20ew0dngni.jpg)
 
-![页面位置](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1o8j9y7o7j20e90gataw.jpg)
+需要只下载单图/多图/动图，请先点到作者作品目录里对应筛选中去。
+
+![支持筛选](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohp4vafoj20n10boq50.jpg)
 
 点击进行分析后即可自动发送到设置的Aria2下载。
 

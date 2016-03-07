@@ -5,7 +5,9 @@
 // @description P站画师个人作品批量下载工具
 // @include     http://www.pixiv.net/member_illust.php?id=*
 // @include     http://www.pixiv.net/member.php?id=*
-// @version     1.1.3
+// @include     http://www.pixiv.net/bookmark.php?id=*
+// @include     http://www.pixiv.net/stacc/*
+// @version     1.1.5
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -21,7 +23,7 @@ if (getConfig("PUBD_reset") != "1") ResetConfig(); //新用户重置设置
 
 var dataset =
 {
-    user_id: pixiv.context.userId, //作者ID
+    user_id: 0, //作者ID
     user_name: "", //作者昵称
     illust_count: 0, //作品总数
     illust_file_count: 0, //作品文件总数（含多图）
@@ -152,65 +154,36 @@ function illust()
     }
     return obj;
 }
-var user_link = document.getElementsByClassName("user-link")[0];
-var user_dom = user_link.getElementsByClassName("user")[0];
-dataset.user_name = user_dom.textContent;
+
+var menuInsertPlace = document.getElementsByClassName("user-relation")[0];
+var li1 = document.createElement("li");
+var li2 = document.createElement("li");
+menuInsertPlace.appendChild(li1);
+menuInsertPlace.appendChild(li2);
+li1.className = "ui-selectbox-container";
+li2.className = "infoProgress";
+
+var menu_ul = buildMenu();
 
 var btnStart = document.createElement("button");
 btnStart.className = "_button following";
 btnStart.innerHTML = "获取全部作品";
-btnStart.onclick = function () { startProgram(0) };
-
-var menu_ul = buildMenu();
-	//生成导出下载窗口
-function buildMenu()
-{
-	var menu_ul = document.createElement("ul");
-	menu_ul.className = "items";
-	//menu_ul.style.display = "none";
-	menu_ul.style.display = "block";
-	var li = document.createElement("li");
-	var a = document.createElement("a");
-	a.className = "item";
-	a.innerHTML = "Aria2 RPC";
-	a.onclick = function () { startProgram(0); li1.removeChild(menu_ul); };
-	li.appendChild(a);
-	menu_ul.appendChild(li);
-	var li = document.createElement("li");
-	var a = document.createElement("a");
-	a.className = "item";
-	a.innerHTML = "导出下载文件";
-	a.onclick = function () { buildExport(); li1.removeChild(menu_ul); startProgram(1); };
-	li.appendChild(a);
-	menu_ul.appendChild(li);
-	var li = document.createElement("li");
-	li.className = "separated";
-	var a = document.createElement("a");
-	a.className = "item";
-	a.innerHTML = "设置";
-	a.onclick = function () { buildSetting(); li1.removeChild(menu_ul); }
-	li.appendChild(a);
-	menu_ul.appendChild(li);
-	return menu_ul;
-}
-
-var insertPlace = document.getElementsByClassName("user-relation")[0];
-var li1 = document.createElement("li");
-var li2 = document.createElement("li");
-insertPlace.appendChild(li1);
-insertPlace.appendChild(li2);
-li1.className = "ui-selectbox-container";
-li1.appendChild(btnStart);
-li2.className = "infoProgress";
-//li1.appendChild(menu_ul);
-
-btnStart.onclick = function (e) //需要判断是不是内部小框架
+//btnStart.onclick = function () { startProgram(0) };
+btnStart.onclick = function (e)
 {
 	if (menu_ul.parentNode == li1)
 		li1.removeChild(menu_ul);
 	else
 		li1.appendChild(menu_ul);
 }
+li1.appendChild(btnStart);
+
+//生成设置窗口DOM
+var setInsertPlace = document.getElementsByClassName("column-header")[0] || document.body;
+var setWindow = buildSetting();
+//生成导出窗口DOM
+var exportInsertPlace = setInsertPlace;
+var exportWindow = buildExport();
 
 /*
 menu_ul.onmouseout = function (e) //需要判断是不是内部小框架
@@ -243,16 +216,33 @@ function startProgram(mode)
 {
     if(getPicNum<1)
     {
-        dealUser();
+    	dealUserPage1();
     }
     clearInterval(downOver);
     downOver = setInterval(function () { startProgramCheck(mode) }, 500);
 }
 
-//开始分析本作者
-function dealUser()
+function dealUserPage1(userId)
 {
-    var count_badge = document.getElementsByClassName("count-badge");
+	if (userId == undefined)
+		userId = pixiv.context.userId;
+	dataset.user_id = userId;
+
+	var linkPre = document.location.origin + "/member_illust.php" + (document.location.search.length > 0 ? document.location.search.replace(/id=\d+/ig, "") : "?") + "&id=" + userId;
+	var link = getPageSrc(linkPre, 1);
+
+	getSource(link, dealUser, linkPre, userId)
+}
+//开始分析本作者
+function dealUser(response, linkPre, userId)
+{
+	var parser = new DOMParser();
+	PageDOM = parser.parseFromString(response, "text/html");
+
+	var user_link = PageDOM.getElementsByClassName("user-link")[0];
+	var user_dom = user_link.getElementsByClassName("user")[0];
+	dataset.user_name = user_dom.textContent;
+	var count_badge = PageDOM.getElementsByClassName("count-badge");
     if (count_badge.length < 1)
     {
         alert("未发现作品数DOM");
@@ -275,12 +265,12 @@ function dealUser()
         return;
     }
 
-    var column_title = document.getElementsByClassName("column-title");
+    var column_title = PageDOM.getElementsByClassName("column-title");
     var self = column_title[0].getElementsByClassName("self");
-    var linkPre = self[0].href;
 
+    dealPage(response, 1);
     //列表页循环
-    for (pi = 1; pi <= pageCount; pi++)
+    for (pi = 2; pi <= pageCount; pi++)
     //for (pi = 0; pi < 1; pi++)
     {
         var link = getPageSrc(linkPre, pi);
@@ -292,7 +282,7 @@ function dealUser()
 //获取页面网址
 function getPageSrc(linkPre, page)
 {
-    return linkPre + "&type=all&p=" + page;
+    return linkPre + "&p=" + page;
 }
 
 //直接通过XMLHttpRequest对象获取远程网页源代码
@@ -569,11 +559,50 @@ var ARIA2 = (function () {
         return this;
     }
 })();
-
+//生成菜单
+function buildMenu()
+{
+	var menu_ul = document.createElement("ul");
+	menu_ul.className = "items";
+	//menu_ul.style.display = "none";
+	menu_ul.style.display = "block";
+	var li = document.createElement("li");
+	var a = document.createElement("a");
+	a.className = "item";
+	a.innerHTML = "Aria2 RPC";
+	a.onclick = function () { startProgram(0); li1.removeChild(menu_ul); };
+	li.appendChild(a);
+	menu_ul.appendChild(li);
+	var li = document.createElement("li");
+	var a = document.createElement("a");
+	a.className = "item";
+	a.innerHTML = "导出下载文件";
+	a.onclick = function ()
+	{
+		if (setWindow.parentNode != setInsertPlace)
+			exportInsertPlace.appendChild(exportWindow);
+		li1.removeChild(menu_ul);
+		startProgram(1);
+	};
+	li.appendChild(a);
+	menu_ul.appendChild(li);
+	var li = document.createElement("li");
+	li.className = "separated";
+	var a = document.createElement("a");
+	a.className = "item";
+	a.innerHTML = "设置";
+	a.onclick = function ()
+	{
+		if (setWindow.parentNode != setInsertPlace)
+			setInsertPlace.appendChild(setWindow);
+		li1.removeChild(menu_ul);
+	}
+	li.appendChild(a);
+	menu_ul.appendChild(li);
+	return menu_ul;
+}
 function buildSetting()
 {
-    if (document.getElementById("PixivUserBatchDownloadSetting")) return;
-    var insertPlace = document.getElementsByClassName("column-header")[0];
     var set = document.createElement("div");
     set.id = "PixivUserBatchDownloadSetting";
     set.className = "notification-popup";
@@ -776,7 +805,7 @@ function buildSetting()
     var btnCancel = document.createElement("button");
     btnCancel.className = "_button";
     btnCancel.innerHTML = "取消";
-    btnCancel.onclick = function () { insertPlace.removeChild(set); }
+    btnCancel.onclick = function () { set.parentNode.removeChild(set); }
     var btnReset = document.createElement("button");
     btnReset.className = "_button";
     btnReset.innerHTML = "重置设置";
@@ -788,7 +817,6 @@ function buildSetting()
     set.appendChild(h2);
     set.appendChild(ul);
     set.appendChild(confirmbar);
-    insertPlace.appendChild(set);
 
     btnConfirm.onclick = function ()
     {
@@ -801,42 +829,12 @@ function buildSetting()
 
         btnCancel.onclick();
     }
+
+    return set;
 }
 
-function getConfig(key) {
-    if (window.localStorage) {
-        return window.localStorage.getItem(key) || "";
-    } else {
-        return getCookie(key);
-    }
-};
-function setConfig(key, value) {
-    if (window.localStorage) {
-        window.localStorage.setItem(key, value);
-    } else {
-        setGdCookie(key, value, 86400 * 365);
-    }
-};
-function ResetConfig() {
-    setConfig("PUBD_reset", "1");
-    setConfig("PUBD_PRC_path", "http://localhost:6800/jsonrpc");
-    setConfig("PUBD_save_path", "%{user_id}_%{user_name}\\%{multiple}%{filename}.%{extention}");
-    setConfig("PUBD_type_name0", "");
-    setConfig("PUBD_type_name1", "multiple");
-    setConfig("PUBD_type_name2", "ugoku");
-    setConfig("PUBD_multiple_mask", "%{illust_id}_%{title}\\");
-
-    if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
-    if (document.getElementsByName("PUBD_save_path")[0]) document.getElementsByName("PUBD_save_path")[0].value = getConfig("PUBD_save_path");
-    if (document.getElementsByName("PUBD_type_name0")[0]) document.getElementsByName("PUBD_type_name0")[0].value = getConfig("PUBD_type_name0");
-    if (document.getElementsByName("PUBD_type_name1")[0]) document.getElementsByName("PUBD_type_name1")[0].value = getConfig("PUBD_type_name1");
-    if (document.getElementsByName("PUBD_type_name2")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name2");
-    if (document.getElementsByName("PUBD_multiple_mask")[0]) document.getElementsByName("PUBD_multiple_mask")[0].value = getConfig("PUBD_multiple_mask");
-};
 //生成导出下载窗口
 function buildExport() {
-    if (document.getElementById("PixivUserBatchDownloadExport")) return;
-    var insertPlace = document.getElementsByClassName("_image-items")[0];
     var set = document.createElement("div");
     set.id = "PixivUserBatchDownloadExport";
     set.className = "notification-popup";
@@ -905,7 +903,7 @@ function buildExport() {
     btnExport.className = "_button";
     btnExport.name = "PUBD_down";
     btnExport.target = "_blank"
-    btnExport.download = dataset.user_id + "_" + dataset.user_name + ".down"
+    btnExport.download = "aria2" + ".down"
     btnExport.innerHTML = "导出Aria2 *.down文件";
     //btnExport.onclick = function () { startProgram(2); }
     divText.appendChild(btnExport);
@@ -917,14 +915,14 @@ function buildExport() {
     var btnClose = document.createElement("button");
     btnClose.className = "_button";
     btnClose.innerHTML = "关闭";
-    btnClose.onclick = function () { insertPlace.removeChild(set); }
+    btnClose.onclick = function () { set.parentNode.removeChild(set); }
 
     confirmbar.appendChild(btnClose);
 
     set.appendChild(h2);
     set.appendChild(ul);
     set.appendChild(confirmbar);
-    insertPlace.appendChild(set);
+    return set;
 }
 //检测下载完成情况
 function startProgramCheck(mode) {
@@ -978,18 +976,19 @@ function startDownload(mode) {
 						+ "\r\n auto-file-renaming=false"
 						+ "\r\n remote-time=true"
 						;
-                	if (pi < ill.original_src.length - 1)
-                	{
-                		txt += "\r\n";
-                		downtxt += "\r\n\r\n";
-                	}
+                    txt += "\r\n";
+                    downtxt += "\r\n\r\n";
                 }
             }
             var txta = document.getElementsByName("PUBD_batch")[0];
             var btn = document.getElementsByName("PUBD_down")[0];
             if (txta) txta.value = txt;
             var downurl = "data:text/html;charset=utf-8," + encodeURIComponent(downtxt);
-            if (btn) btn.href = downurl;
+            if (btn)
+            {
+            	btn.href = downurl;
+            	btn.download = dataset.user_id + "_" + dataset.user_name + ".down"
+            }
             //console.log(txt);
             break;
         default:
@@ -997,6 +996,37 @@ function startDownload(mode) {
             break;
     }
     //console.log(dataset);
+};
+	
+function getConfig(key) {
+    if (window.localStorage) {
+        return window.localStorage.getItem(key) || "";
+    } else {
+        return getCookie(key);
+    }
+};
+function setConfig(key, value) {
+    if (window.localStorage) {
+        window.localStorage.setItem(key, value);
+    } else {
+        setGdCookie(key, value, 86400 * 365);
+    }
+};
+function ResetConfig() {
+    setConfig("PUBD_reset", "1");
+    setConfig("PUBD_PRC_path", "http://localhost:6800/jsonrpc");
+    setConfig("PUBD_save_path", "%{user_id}_%{user_name}\\%{multiple}%{filename}.%{extention}");
+    setConfig("PUBD_type_name0", "");
+    setConfig("PUBD_type_name1", "multiple");
+    setConfig("PUBD_type_name2", "ugoku");
+    setConfig("PUBD_multiple_mask", "%{illust_id}_%{title}\\");
+
+    if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
+    if (document.getElementsByName("PUBD_save_path")[0]) document.getElementsByName("PUBD_save_path")[0].value = getConfig("PUBD_save_path");
+    if (document.getElementsByName("PUBD_type_name0")[0]) document.getElementsByName("PUBD_type_name0")[0].value = getConfig("PUBD_type_name0");
+    if (document.getElementsByName("PUBD_type_name1")[0]) document.getElementsByName("PUBD_type_name1")[0].value = getConfig("PUBD_type_name1");
+    if (document.getElementsByName("PUBD_type_name2")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name2");
+    if (document.getElementsByName("PUBD_multiple_mask")[0]) document.getElementsByName("PUBD_multiple_mask")[0].value = getConfig("PUBD_multiple_mask");
 };
 
 function showMask(str,ill,index)
