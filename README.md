@@ -6,39 +6,59 @@
 需要配和[Aria2](https://aria2.github.io/)使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载。
 
 ## 配置Aria2
-在aria2c路径下建立Bat文件，内容为，前面三个参数是启动RPC模式用，第四个是从参数文件读取参数。也可以把前几个参数也写入参数文件。
-`aria2c --enable-rpc --rpc-listen-all --rpc-allow-origin-all --conf-path="aria2.conf"`
-然后继续建立“aria2.conf”，内容为
+[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.20.0-win-64bit-build1.zip”，然后解压到文件夹。
+
+在aria2c路径下新建文本文件，内容为，并将扩展名更改为bat。
+`aria2c --conf-path="aria2.conf"`
+然后继续建立“aria2.conf”，内容为。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
 ```ini
 # 保存路径请自行修改
 dir=D:\Pictures\PixivUserBatchDownload
-# 禁用覆盖
+# 禁用覆盖（跳过已下载的）
 allow-overwrite=false
-# 禁用重命名
+# 禁用重命名（跳过已下载的）
 auto-file-renaming=false
 # 修改为服务器时间
 remote-time=true
+
+# 开启RPC选项
+enable-rpc=true
+pause=false
+rpc-allow-origin-all=true
+rpc-listen-all=true
+rpc-save-upload-metadata=true
+rpc-secure=false
 ```
-![文件示例](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1kyvk0t12j20jh0bxdi6.jpg)
+![文件示例](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o5iqlyu5j20io0f60vv.jpg)
 
-然后运行bat即可开启Aria2的PRC模式。
+然后运行bat文件即可开启Aria2的RPC模式。
 
-Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
+[下载最新的webui-aria2（有中文）](https://github.com/ziahamza/webui-aria2/archive/master.zip)，然后解压到文件夹，打开“index.html”，默认设置下会自动连接上刚才配置的本地的Aria2 RPC模式。然后你便可以像普通下载软件一样对Aria2进行管理了。（还可将webui-aria2下到手机，更改设置里的RPC路径访问电脑上的Aria2）
+
+![webui-aria2界面](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o5q4ljyqj20vv0nvgq4.jpg)
+
+Aria2是跨平台下载软件，你可以在其他系统下配置本程序，MacOS、Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
+
+更多Aria2选项请访问 https://aria2.github.io/manual/en/html/aria2c.html#options
 
 ## 开始下载
 在P站画师的作品目录页面会生成一个按钮
 
 ![页面位置](http://ww3.sinaimg.cn/large/6c84b2d6gw1f1kxlcg6gcj20nq0ghgpj.jpg)
 
-点击进行分析后即可自动发送到设定里设置的Aria2 PRC地址下载。
+点击进行分析后即可自动发送到设置的Aria2下载。
 
 ![下载状态](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1ky66pylwj21gs0utasp.jpg)
 
 也可导出成bat命令或者down文件。
 
-使用down文件的命令行为`aria2c -i "filename.down"`
+![导出窗口](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1o5wn8jlsj20ah067js9.jpg)
+
+使用down文件的命令行为`aria2c --input-file="filename.down"`
 
 默认设置，下载会将不同画师作品分文件夹存放，每个画师里多图则再建一个文件夹。
+
+![默认结构](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o64ilrutj20fe09caax.jpg)
 
 ![画师文件夹](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1kym1a6ytj20ha07nt9o.jpg)
 
