@@ -1,5 +1,5 @@
 ﻿# PixivUserBatchDownload
-[P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。目前还有一些BUG有待解决（比如某E的图片数量获取有问题所以不开始下载）。
+[P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。
 
 建议使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.user.js)，因为Chrome技术原因仅提供有限功能支持，Chrome虽然原生支持但还是建议装Tampermonkey扩展。
 
