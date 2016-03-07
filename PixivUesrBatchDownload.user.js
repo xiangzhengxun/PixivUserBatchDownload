@@ -7,7 +7,8 @@
 // @include     http://www.pixiv.net/member.php?id=*
 // @include     http://www.pixiv.net/bookmark.php?id=*
 // @include     http://www.pixiv.net/stacc/*
-// @version     1.1.5
+// @include     http://www.pixiv.net/member_illust.php?mode=medium&illust_id=*
+// @version     1.1.6
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -228,7 +229,8 @@ function dealUserPage1(userId)
 		userId = pixiv.context.userId;
 	dataset.user_id = userId;
 
-	var linkPre = document.location.origin + "/member_illust.php" + (document.location.search.length > 0 ? document.location.search.replace(/id=\d+/ig, "") : "?") + "&id=" + userId;
+	var locationSearch = (document.location.search.length > 0 ? document.location.search.replace(/mode=\w+/ig, "").replace(/illust_id=\d+/ig, "").replace(/id=\d+/ig, "") : "?");
+	var linkPre = document.location.origin + "/member_illust.php" + locationSearch + "&id=" + userId;
 	var link = getPageSrc(linkPre, 1);
 
 	getSource(link, dealUser, linkPre, userId)

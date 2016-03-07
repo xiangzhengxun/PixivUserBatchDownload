@@ -1,15 +1,17 @@
 ﻿# PixivUserBatchDownload
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。目前还有一些BUG有待解决（比如某E的图片数量获取有问题所以不开始下载）。
 
-请使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.user.js)，我不用Chrome，仅提供有限支持。
+建议使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.user.js)，因为Chrome技术原因仅提供有限功能支持，Chrome虽然原生支持但还是建议装Tampermonkey扩展。
 
-需要配和[Aria2](https://aria2.github.io/)使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载。
+需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载。
 
 ## 配置Aria2
 [下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.20.0-win-64bit-build1.zip”，然后解压到文件夹。
 
 在aria2c路径下新建文本文件，内容为，并将扩展名更改为bat。
+
 `aria2c --conf-path="aria2.conf"`
+
 然后继续建立“aria2.conf”，内容为。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
 ```ini
 # 保存路径请自行修改
@@ -42,7 +44,7 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 更多Aria2选项请访问 https://aria2.github.io/manual/en/html/aria2c.html#options
 
 ## 开始下载
-应用脚本后，在P站画师的页面会生成一个按钮。
+安装或手动执行脚本后，在P站画师的页面会生成一个按钮。
 
 ![页面位置](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohqawkotj20ew0dngni.jpg)
 
@@ -54,7 +56,7 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 
 ![下载状态](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1ky66pylwj21gs0utasp.jpg)
 
-也可导出成bat命令或者down文件。
+流量不够也可导出成bat命令或者down文件拿回家下载。
 
 ![导出窗口](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1o5wn8jlsj20ah067js9.jpg)
 

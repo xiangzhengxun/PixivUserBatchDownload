@@ -4,7 +4,11 @@
 // @namespace   http://www.mapaler.com/
 // @description P站画师个人作品批量下载工具
 // @include     http://www.pixiv.net/member_illust.php?id=*
-// @version     1.1.5
+// @include     http://www.pixiv.net/member.php?id=*
+// @include     http://www.pixiv.net/bookmark.php?id=*
+// @include     http://www.pixiv.net/stacc/*
+// @include     http://www.pixiv.net/member_illust.php?mode=medium&illust_id=*
+// @version     1.1.6
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
