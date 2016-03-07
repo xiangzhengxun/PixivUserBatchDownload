@@ -44,7 +44,7 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 ## 开始下载
 在P站画师的作品目录页面会生成一个按钮
 
-![页面位置](http://ww3.sinaimg.cn/large/6c84b2d6gw1f1kxlcg6gcj20nq0ghgpj.jpg)
+![页面位置](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1o8j9y7o7j20e90gataw.jpg)
 
 点击进行分析后即可自动发送到设置的Aria2下载。
 

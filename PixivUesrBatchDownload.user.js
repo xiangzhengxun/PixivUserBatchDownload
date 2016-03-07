@@ -4,7 +4,7 @@
 // @namespace   http://www.mapaler.com/
 // @description P站画师个人作品批量下载工具
 // @include     http://www.pixiv.net/member_illust.php?id=*
-// @version     1.1.0
+// @version     1.1.2
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -153,13 +153,14 @@ function illust()
     return obj;
 }
 var btnStart = document.createElement("button");
-btnStart.className = "_button";
-btnStart.innerHTML = "获取全部作品 ▾";
+btnStart.className = "_button following";
+btnStart.innerHTML = "获取全部作品";
 btnStart.onclick = function () { startProgram(0) };
 
 var menu_ul = document.createElement("ul");
 menu_ul.className = "items";
-menu_ul.style.display = "none";
+//menu_ul.style.display = "none";
+menu_ul.style.display = "block";
 var li = document.createElement("li");
 var a = document.createElement("a");
 a.className = "item";
@@ -185,21 +186,23 @@ menu_ul.appendChild(li);
 
 if (getConfig("PUBD_reset") != "1") ResetConfig();
 
-var menu_items = document.getElementsByClassName("column-menu")[0].getElementsByClassName("menu-items")[0];
+//var add_place = document.getElementsByClassName("column-menu")[0].getElementsByClassName("menu-items")[0];
+var add_place = document.getElementsByClassName("user-relation")[0];
 var li1 = document.createElement("li");
-menu_items.appendChild(li1);
+add_place.appendChild(li1);
 li1.className = "ui-selectbox-container";
 li1.appendChild(btnStart);
-li1.appendChild(menu_ul);
+//li1.appendChild(menu_ul);
 menu_ul.onmouseout = function (e) //需要判断是不是内部小框架
 {
-    if(!e) e = window.event;  
-    var reltg = e.relatedTarget ? e.relatedTarget : e.toElement;  
-    while( reltg && reltg != this ) reltg = reltg.parentNode;  
-    if (reltg != this)
-    {
-        menu_ul.style.display = "none";
-    }  
+	if (!e) e = window.event;
+	var reltg = e.relatedTarget ? e.relatedTarget : e.toElement;
+	while (reltg && reltg != this) reltg = reltg.parentNode;
+	if (reltg != this)
+	{
+		//menu_ul.style.display = "none";
+		li1.removeChild(menu_ul);
+	}
 }
 btnStart.onmouseover = function (e) //需要判断是不是内部小框架
 {
@@ -207,7 +210,8 @@ btnStart.onmouseover = function (e) //需要判断是不是内部小框架
     var reltg = e.relatedTarget ? e.relatedTarget : e.fromElement;
     while (reltg && reltg != this) reltg = reltg.parentNode;
     if (reltg != this) {
-        menu_ul.style.display = "block";
+    	//menu_ul.style.display = "block";
+    	li1.appendChild(menu_ul);
     }
 }
 
@@ -481,14 +485,8 @@ function dealManga(response, ill, index)
     var regSrc = /\/(\d+(?:_[\w\d]+)?)\.(\w+)/ig;
     var rs = regSrc.exec(picture.src);
     ill.original_src[index] = picture.src;
-
-    try {
-        ill.filename[index] = rs[1];
-        ill.extention[index] = rs[2];
-    }
-    catch (e) {
-        console.log(ill);
-    }
+    ill.filename[index] = rs[1];
+    ill.extention[index] = rs[2];
 	getPicNum+=1;
 }
 
