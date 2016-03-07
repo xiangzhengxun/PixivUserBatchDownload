@@ -1,5 +1,5 @@
 ﻿# PixivUserBatchDownload
-[P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版网页。目前还有一些BUG有待解决（比如某E的图片数量获取有问题所以不开始下载）。
+[P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。目前还有一些BUG有待解决（比如某E的图片数量获取有问题所以不开始下载）。
 
 请使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展安装本脚本程序，我不用Chrome。
 

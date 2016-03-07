@@ -165,14 +165,14 @@ var li = document.createElement("li");
 var a = document.createElement("a");
 a.className = "item";
 a.innerHTML = "Aria2 RPC";
-a.onclick = function () { startProgram(0) };
+a.onclick = function () { startProgram(0); li1.removeChild(menu_ul); };
 li.appendChild(a);
 menu_ul.appendChild(li);
 var li = document.createElement("li");
 var a = document.createElement("a");
 a.className = "item";
 a.innerHTML = "导出下载文件";
-a.onclick = function () { buildExport();startProgram(1) };
+a.onclick = function () { buildExport(); li1.removeChild(menu_ul); startProgram(1); };
 li.appendChild(a);
 menu_ul.appendChild(li);
 var li = document.createElement("li");
@@ -180,7 +180,7 @@ li.className = "separated";
 var a = document.createElement("a");
 a.className = "item";
 a.innerHTML = "设置";
-a.onclick = function () { buildSetting(); }
+a.onclick = function () { buildSetting(); li1.removeChild(menu_ul); }
 li.appendChild(a);
 menu_ul.appendChild(li);
 
@@ -193,6 +193,8 @@ add_place.appendChild(li1);
 li1.className = "ui-selectbox-container";
 li1.appendChild(btnStart);
 //li1.appendChild(menu_ul);
+
+/*
 menu_ul.onmouseout = function (e) //需要判断是不是内部小框架
 {
 	if (!e) e = window.event;
@@ -204,6 +206,7 @@ menu_ul.onmouseout = function (e) //需要判断是不是内部小框架
 		li1.removeChild(menu_ul);
 	}
 }
+
 btnStart.onmouseover = function (e) //需要判断是不是内部小框架
 {
     if (!e) e = window.event;
@@ -214,10 +217,18 @@ btnStart.onmouseover = function (e) //需要判断是不是内部小框架
     	li1.appendChild(menu_ul);
     }
 }
+*/
+btnStart.onclick = function (e) //需要判断是不是内部小框架
+{
+	if (menu_ul.parentNode == li1)
+		li1.removeChild(menu_ul);
+	else
+		li1.appendChild(menu_ul);
+}
 
 
 var li2 = document.createElement("li");
-menu_items.appendChild(li2);
+add_place.appendChild(li2);
 li2.className = "infoProgress";
 
 //开始分析本作者
@@ -456,7 +467,8 @@ function dealIllust(response, ill)
         var rs = regPageCont.exec(ill.size);
         if (rs.length >= 2)
         {
-            ill.page_count = parseInt(rs[1]);
+        	ill.page_count = parseInt(rs[1]);
+        	console.log(ill.illust_id + "为多图，存在" + ill.page_count + "张")
             dataset.illust_file_count += ill.page_count - 1; //图片总数里增加多图的张数
 			
             var manga_big = ill.url.replace(/mode=[^&]+/, "mode=manga_big");
@@ -962,8 +974,6 @@ function startDownload(mode) {
             var downurl = "data:text/html;charset=utf-8," + encodeURIComponent(downtxt);
             if (btn) btn.href = downurl;
             //console.log(txt);
-            break;
-        case 2: //导出DOWN文件模式
             break;
         default:
             alert("未知的下载模式");
