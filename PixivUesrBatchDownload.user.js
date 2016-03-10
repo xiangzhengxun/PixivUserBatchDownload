@@ -8,7 +8,7 @@
 // @include     http://www.pixiv.net/bookmark.php?id=*
 // @include     http://www.pixiv.net/stacc/*
 // @include     http://www.pixiv.net/member_illust.php?mode=medium&illust_id=*
-// @version     1.1.6
+// @version     1.1.7
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -402,7 +402,7 @@ function dealIllust(response, ill)
     ill.height = pixiv.context.illustSize[1];
     ill.title = pixiv.context.illustTitle;
     //dataset.user_name = pixiv.context.userName;
-    var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.(\w+)/ig;
+    var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig;
     //添加静图
     if (PageDOM.getElementsByClassName("original-image")[0]) {//静图
         var originalImage = PageDOM.getElementsByClassName("original-image")[0].getAttribute("data-src");
@@ -469,6 +469,8 @@ function dealIllust(response, ill)
             ill.hour = aImg[5];
             ill.minute = aImg[6];
             ill.second = aImg[7];
+            ill.filename[0] = aImg[8];
+            ill.extention[0] = aImg[10];
         }
 
         var regPageCont = /.+\s+(\d+)[pP]/ig;
@@ -480,10 +482,15 @@ function dealIllust(response, ill)
             dataset.illust_file_count += ill.page_count - 1; //图片总数里增加多图的张数
 			
             var manga_big = ill.url.replace(/mode=[^&]+/, "mode=manga_big");
+			var manga_big_url = manga_big + "&page=" + 0;
+			getSource(manga_big_url, dealManga, ill);
+			
+			/*以前以为能够多图扩展名不一样
             for (var pi = 0; pi < ill.page_count; pi++) {
                 var manga_big_url = manga_big + "&page=" + pi;
                 getSource(manga_big_url, dealManga, ill, pi);
             }
+			*/
         }
         else
         {
@@ -499,15 +506,28 @@ function dealIllust(response, ill)
 //处理多图的回调函数
 function dealManga(response, ill, index)
 {
-    var parser = new DOMParser();
-    PageDOM = parser.parseFromString(response, "text/html");
-    var picture = PageDOM.getElementsByTagName("img")[0];
-    var regSrc = /\/(\d+(?:_[\w\d]+)?)\.(\w+)/ig;
-    var rs = regSrc.exec(picture.src);
+	var parser = new DOMParser();
+	PageDOM = parser.parseFromString(response, "text/html");
+	var picture = PageDOM.getElementsByTagName("img")[0];
+	ill.original_src[0] = picture.src;
+	var regSrc = /\/(\d+(?:_[\w\d]+)?)\.(\w+)/ig;
+	var rs = regSrc.exec(picture.src);
+	
+	for (var pi = 0; pi < ill.page_count; pi++) {
+		ill.extention[pi] = rs[2];
+		if (pi>0)
+		{
+			ill.filename[pi] = ill.filename[0].replace("_p0", "_p" + pi);
+			ill.original_src[pi] = ill.original_src[0].replace(ill.filename[0], ill.filename[pi]);
+		}
+		getPicNum += 1;
+	}
+	/*以前以为能够多图扩展名不一样
     ill.original_src[index] = picture.src;
     ill.filename[index] = rs[1];
     ill.extention[index] = rs[2];
 	getPicNum+=1;
+	*/
 }
 
 var ARIA2 = (function () {
