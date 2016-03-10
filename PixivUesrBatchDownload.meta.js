@@ -2,7 +2,8 @@
 // @name        PixivUesrBatchDownload
 // @name:zh-CN    P站画师个人作品批量下载工具
 // @namespace   http://www.mapaler.com/
-// @description P站画师个人作品批量下载工具
+// @description Batch download pixiv uesr's images.
+// @description:zh-CN P站画师个人作品批量下载工具
 // @include     http://www.pixiv.net/member_illust.php?id=*
 // @include     http://www.pixiv.net/member.php?id=*
 // @include     http://www.pixiv.net/bookmark.php?id=*
