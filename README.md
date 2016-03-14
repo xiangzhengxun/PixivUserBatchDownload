@@ -10,7 +10,7 @@
 
 在aria2c路径下新建文本文件，内容为，并将扩展名更改为bat。
 
-`aria2c --conf-path="aria2.conf"`
+`aria2c.exe --conf-path="aria2.conf"`
 
 然后继续建立“aria2.conf”，内容为。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
 ```ini
@@ -48,7 +48,7 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 
 ![页面位置](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohqawkotj20ew0dngni.jpg)
 
-需要只下载单图/多图/动图，请先点到作者作品目录里对应筛选中去。
+需要只下载单图/多图/动图，请先点到作者作品目录里对应筛选中去。筛选TAG同理。
 
 ![支持筛选](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohp4vafoj20n10boq50.jpg)
 
@@ -60,7 +60,7 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 
 ![导出窗口](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1o5wn8jlsj20ah067js9.jpg)
 
-使用down文件的命令行为`aria2c --input-file="filename.down"`
+使用down文件的命令行为`aria2c.exe --input-file="filename.down"`
 
 默认设置，下载会将不同画师作品分文件夹存放，每个画师里多图则再建一个文件夹。
 

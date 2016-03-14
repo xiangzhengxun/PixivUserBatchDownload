@@ -4,12 +4,8 @@
 // @namespace   http://www.mapaler.com/
 // @description Batch download pixiv uesr's images in one key.
 // @description:zh-CN 一键批量下载P站画师的全部作品
-// @include     http://www.pixiv.net/member_illust.php?id=*
-// @include     http://www.pixiv.net/member.php?id=*
-// @include     http://www.pixiv.net/bookmark.php?id=*
-// @include     http://www.pixiv.net/stacc/*
-// @include     http://www.pixiv.net/member_illust.php?mode=medium&illust_id=*
-// @version     1.1.7
+// @include     http://www.pixiv.net/*
+// @version     1.1.9
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -21,6 +17,7 @@
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
 var getPicNum = 0; //Ajax获取了文件的数量
 var downOver; //检测下载是否完成的循环函数
+
 if (getConfig("PUBD_reset") != "1") ResetConfig(); //新用户重置设置
 
 var dataset =
@@ -67,57 +64,6 @@ function illust()
         tools: [""], //使用工具
         caption: "", //说明
         tags: [""], //标签
-        //添加URL
-        /*
-        addFromUrl: function (url)
-        {
-            if (url == undefined)
-                url = this.url;
-            else
-                this.url = url;
-            var regSrc = /illust_id=(\d+)/ig;
-            var iid = regSrc.exec(url);
-            if (iid.length >= 2) this.illust_id = iid[1];
-        },
-        */
-        //添加ID
-        /*
-        addFromId: function (id)
-        {
-            if (id == undefined)
-                id = this.illust_id;
-            else
-                this.illust_id = id;
-            this.url = "http://www.pixiv.net/member_illust.php?mode=medium&illust_id=" + id;
-        },
-        */
-        //从缩略图添加数据
-        /*
-        addFromThumbnail: function (thumbnail)
-        {
-            if (thumbnail == undefined)
-                thumbnail = this.thumbnail_src;
-            else
-                this.thumbnail_src = thumbnail;
-            //http://i3.pixiv.net/c/150x150/img-master/img/2015/08/11/16/30/36/51911938_p0_master1200.jpg
-            var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:_p\d+)?)_[\d\w]+\.(\w+)/ig;
-            var ith = regSrc.exec(thumbnail);
-            //["http://i3.pixiv.net/c/15...11938_p0_master1200.jpg", "i3.pixiv.net", "2015", "08", "11", "16", "30", "36", "51911938_p0", "51911938", "jpg"]
-            if (ith.length >= 1)
-            {
-                this.domain = ith[1];
-                this.year = ith[2];
-                this.month = ith[3];
-                this.day = ith[4];
-                this.hour = ith[5];
-                this.minute = ith[6];
-                this.second = ith[7];
-                this.filename[0] = ith[8];
-                this.illust_id = ith[9];
-                this.extention[0] = ith[10];
-            }
-        },
-        */
         //添加作品的顺序
         addIndexFromPage: function (index, page, illcount)
         {
@@ -158,6 +104,7 @@ function illust()
 }
 
 var menuInsertPlace = document.getElementsByClassName("user-relation")[0];
+if (menuInsertPlace == undefined) return;
 var li1 = document.createElement("li");
 var li2 = document.createElement("li");
 menuInsertPlace.appendChild(li1);
@@ -170,7 +117,7 @@ var menu_ul = buildMenu();
 var btnStart = document.createElement("button");
 btnStart.className = "_button following";
 btnStart.innerHTML = "获取全部作品";
-//btnStart.onclick = function () { startProgram(0) };
+
 btnStart.onclick = function (e)
 {
 	if (menu_ul.parentNode == li1)
@@ -213,7 +160,7 @@ btnStart.onmouseover = function (e) //需要判断是不是内部小框架
 */
 
 
-//开始分析本作者
+//开始程序
 function startProgram(mode)
 {
     if(getPicNum<1)
@@ -257,7 +204,13 @@ function dealUser(response, linkPre, userId)
     var photoCount = regPC.exec(count_badge[0].textContent);
 
     if (photoCount.length >= 2) {
-        dataset.illust_count = parseInt(photoCount[1]);
+    	dataset.illust_count = parseInt(photoCount[1]);
+    	if (illust_count < 1)
+    	{
+    		alert("作品数为0");
+    		clearInterval(downOver);
+    		return;
+    	}
 		dataset.illust_file_count = dataset.illust_count;
         var pageCount = Math.ceil(dataset.illust_count / 20);
     }
@@ -325,8 +278,6 @@ function dealPage(response, pageIndex)
             var title = image_items[ii].getElementsByClassName("title")[0];
             var link = image_items[ii].getElementsByTagName("a");
 
-            var multiple = image_items[ii].getElementsByClassName("multiple");
-            var ugoku = image_items[ii].getElementsByClassName("ugoku-illust");
             var ill = new illust;
             if (link[0].href.length < 1)
             {
@@ -344,10 +295,12 @@ function dealPage(response, pageIndex)
             ill.thumbnail_src = _thumbnail.src;
             ill.ajaxLoad();
             //ill.addFromUrl(link.href);
-            if (ugoku.length > 0)
+            if (image_items[ii].getElementsByClassName("ugoku-illust").length > 0)
                 ill.type = 2;
-            else if (multiple.length > 0)
-                ill.type = 1;
+            else if (image_items[ii].getElementsByClassName("multiple").length > 0)
+            	ill.type = 1;
+            else if (image_items[ii].getElementsByClassName("manga").length > 0)
+            	ill.type = 3;
             else
                 ill.type = 0;
             dataset.illust.push(ill);
@@ -358,10 +311,12 @@ function dealPage(response, pageIndex)
 //处理作品的回调函数
 function dealIllust(response, ill)
 {
+	var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig; //P站图片命名规则
     var parser = new DOMParser();
     PageDOM = parser.parseFromString(response, "text/html");
     //work_info
     var work_info = PageDOM.getElementsByClassName("work-info")[0];
+    var works_display = PageDOM.getElementsByClassName("works_display")[0];
     //var title = work_info.getElementsByClassName("title")[0];
     //ill.title = title.textContent;
     var caption = work_info.getElementsByClassName("caption")[0];
@@ -403,7 +358,6 @@ function dealIllust(response, ill)
     ill.height = pixiv.context.illustSize[1];
     ill.title = pixiv.context.illustTitle;
     //dataset.user_name = pixiv.context.userName;
-    var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig;
     //添加静图
     if (PageDOM.getElementsByClassName("original-image")[0]) {//静图
         var originalImage = PageDOM.getElementsByClassName("original-image")[0].getAttribute("data-src");
@@ -461,6 +415,7 @@ function dealIllust(response, ill)
     //添加多图
     else if (PageDOM.getElementsByClassName("multiple").length > 0)
     {
+    	ill.type = 1;
         var aImg = regSrc.exec(ill.thumbnail_src);
         if (aImg.length >= 1) {
             ill.domain = aImg[1];
@@ -498,9 +453,51 @@ function dealIllust(response, ill)
             alert("获取多图总张数失败");
         }
     }
+    //添加漫画
+    else if (works_display.getElementsByClassName("manga").length > 0)
+    {
+    	//因为Ajax无法设置Referer，而Mode=big无Referer会跳转回作品信息页面，因此这里只能用现有信息来猜
+    	var thumbnailImage = works_display.getElementsByClassName("_layout-thumbnail")[0].getElementsByTagName("img")[0];
+    	ill.page_count = 1;
+    	ill.type = 3;
+    	//thumbnailImage = "http://i3.pixiv.net/c/600x600/img-master/img/2015/05/13/21/36/35/50358638_p0_master1200.jpg";
+    	var aImg = regSrc.exec(thumbnailImage.src);
+    	//console.log(aImg);
+    	//["http://i2.pixiv.net/img-...0/01/01/54911277_p0.jpg", "i2.pixiv.net", "2016", "01", "26", "00", "01", "01", "54911277_p0", "54911277", "jpg"]
+    	if (aImg.length >= 1)
+    	{
+    		ill.domain = aImg[1];
+    		ill.year = aImg[2];
+    		ill.month = aImg[3];
+    		ill.day = aImg[4];
+    		ill.hour = aImg[5];
+    		ill.minute = aImg[6];
+    		ill.second = aImg[7];
+			//因为不知道扩展名是什么，因此3种可能的扩展名都加入（反正不正确的无法下载）
+    		ill.filename[0] = aImg[9] + "_p0";
+    		ill.extention[0] = aImg[10];
+    		ill.filename[1] = ill.filename[0];
+    		ill.extention[1] = aImg[10] == "jpg" ? "png" : "jpg";
+    		ill.filename[2] = ill.filename[0];
+    		ill.extention[2] = aImg[10] != "gif" ? "gif" : "png";
+    		for (ti = 0; ti < 3; ti++)
+    		{
+    			ill.original_src[ti] = "http://" + ill.domain + "/img-original/img/" +
+					ill.year + "/" + ill.month + "/" + ill.day + "/" +
+					ill.hour + "/" + ill.minute + "/" + ill.second + "/" +
+					ill.filename[ti] + "." + ill.extention[ti] + "";
+    		}
+    		getPicNum += 1;
+    	} else
+    	{
+    		alert("获取漫画原始图片路径信息失败，可能需要更新正则匹配模式。");
+
+    	}
+    }
     else
     {
-        alert("未知的作品类型。");
+    	console.log(ill);
+    	alert("未知的作品类型。作品ID：" + ill.illust_id);
     }
 }
 
@@ -511,24 +508,32 @@ function dealManga(response, ill, index)
 	PageDOM = parser.parseFromString(response, "text/html");
 	var picture = PageDOM.getElementsByTagName("img")[0];
 	ill.original_src[0] = picture.src;
-	var regSrc = /\/(\d+(?:_[\w\d]+)?)\.(\w+)/ig;
-	var rs = regSrc.exec(picture.src);
+	var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig; //P站图片命名规则
+	var aImg = regSrc.exec(picture.src);
+	if (aImg.length >= 1)
+	{
+		ill.domain = aImg[1];
+		ill.year = aImg[2];
+		ill.month = aImg[3];
+		ill.day = aImg[4];
+		ill.hour = aImg[5];
+		ill.minute = aImg[6];
+		ill.second = aImg[7];
+		ill.filename[0] = aImg[8];
+		ill.extention[0] = aImg[10];
+		getPicNum += 1;
+	} else
+	{
+		alert("获取多图原始图片信息失败，可能需要更新正则匹配模式。");
+	}
 	
-	for (var pi = 0; pi < ill.page_count; pi++) {
-		ill.extention[pi] = rs[2];
-		if (pi>0)
-		{
-			ill.filename[pi] = ill.filename[0].replace("_p0", "_p" + pi);
-			ill.original_src[pi] = ill.original_src[0].replace(ill.filename[0], ill.filename[pi]);
-		}
+	for (var pi = 1; pi < ill.page_count; pi++)
+	{
+		ill.extention[pi] = ill.extention[0];
+		ill.filename[pi] = ill.filename[0].replace("_p0", "_p" + pi);
+		ill.original_src[pi] = ill.original_src[0].replace(ill.filename[0], ill.filename[pi]);
 		getPicNum += 1;
 	}
-	/*以前以为能够多图扩展名不一样
-    ill.original_src[index] = picture.src;
-    ill.filename[index] = rs[1];
-    ill.extention[index] = rs[2];
-	getPicNum+=1;
-	*/
 }
 
 var ARIA2 = (function () {
@@ -637,14 +642,22 @@ function buildSetting()
     style.innerHTML +=
         [
             ".PUBD_type_name" + "{\r\n" + [
-                'width:60px',
-                'margin-right:10px',
+                'width:120px',
             ].join(';\r\n') + "\r\n}",
             ".PUBD_PRC_path" + "{\r\n" + [
                 'width:180px' ,
             ].join(';') + "\r\n}",
             ".PUBD_save_path,.PUBD_multiple_mask" + "{\r\n" + [
                 'width:340px' ,
+            ].join(';') + "\r\n}",
+            "#PixivUserBatchDownloadSetting .thread" + "{\r\n" + [
+                'height:40px',
+            ].join(';') + "\r\n}",
+            "#PixivUserBatchDownloadSetting .type_name" + "{\r\n" + [
+                'height:60px',
+            ].join(';') + "\r\n}",
+            "#PixivUserBatchDownloadSetting .text" + "{\r\n" + [
+                'height:4em',
             ].join(';') + "\r\n}",
         ].join('\r\n');
 
@@ -753,7 +766,7 @@ function buildSetting()
     divText.appendChild(ipt);
     //设置-类型命名
     var li = document.createElement("li");
-    li.className = "thread";
+    li.className = "thread type_name";
     var divTime = document.createElement("div");
     divTime.className = "time date";
     var divName = document.createElement("div");
@@ -769,7 +782,7 @@ function buildSetting()
     divTime.innerHTML = "%{type_name}的内容"
 
     var lbl = document.createElement("label");
-    lbl.innerHTML = "单：";
+    lbl.innerHTML = "单图：";
     var ipt = document.createElement("input");
     ipt.type = "text";
     ipt.className = "PUBD_type_name";
@@ -777,8 +790,9 @@ function buildSetting()
     ipt.value = getConfig("PUBD_type_name0");
     lbl.appendChild(ipt);
     divText.appendChild(lbl);
+
     var lbl = document.createElement("label");
-    lbl.innerHTML = "多：";
+    lbl.innerHTML = "多图：";
     var ipt = document.createElement("input");
     ipt.type = "text";
     ipt.className = "PUBD_type_name";
@@ -786,13 +800,24 @@ function buildSetting()
     ipt.value = getConfig("PUBD_type_name1");
     lbl.appendChild(ipt);
     divText.appendChild(lbl);
+
     var lbl = document.createElement("label");
-    lbl.innerHTML = "动：";
+    lbl.innerHTML = "动图：";
     var ipt = document.createElement("input");
     ipt.type = "text";
     ipt.className = "PUBD_type_name";
     ipt.name = "PUBD_type_name2";
     ipt.value = getConfig("PUBD_type_name2");
+    lbl.appendChild(ipt);
+    divText.appendChild(lbl);
+
+    var lbl = document.createElement("label");
+    lbl.innerHTML = "漫画：";
+    var ipt = document.createElement("input");
+    ipt.type = "text";
+    ipt.className = "PUBD_type_name";
+    ipt.name = "PUBD_type_name3";
+    ipt.value = getConfig("PUBD_type_name3");
     lbl.appendChild(ipt);
     divText.appendChild(lbl);
     //设置-多图掩码
@@ -848,6 +873,7 @@ function buildSetting()
         setConfig("PUBD_type_name0", document.getElementsByName("PUBD_type_name0")[0].value);
         setConfig("PUBD_type_name1", document.getElementsByName("PUBD_type_name1")[0].value);
         setConfig("PUBD_type_name2", document.getElementsByName("PUBD_type_name2")[0].value);
+        setConfig("PUBD_type_name3", document.getElementsByName("PUBD_type_name3")[0].value);
         setConfig("PUBD_multiple_mask", document.getElementsByName("PUBD_multiple_mask")[0].value);
 
         btnCancel.onclick();
@@ -1042,6 +1068,7 @@ function ResetConfig() {
     setConfig("PUBD_type_name0", "");
     setConfig("PUBD_type_name1", "multiple");
     setConfig("PUBD_type_name2", "ugoku");
+    setConfig("PUBD_type_name3", "manga");
     setConfig("PUBD_multiple_mask", "%{illust_id}_%{title}\\");
 
     if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
@@ -1049,6 +1076,7 @@ function ResetConfig() {
     if (document.getElementsByName("PUBD_type_name0")[0]) document.getElementsByName("PUBD_type_name0")[0].value = getConfig("PUBD_type_name0");
     if (document.getElementsByName("PUBD_type_name1")[0]) document.getElementsByName("PUBD_type_name1")[0].value = getConfig("PUBD_type_name1");
     if (document.getElementsByName("PUBD_type_name2")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name2");
+    if (document.getElementsByName("PUBD_type_name3")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name3");
     if (document.getElementsByName("PUBD_multiple_mask")[0]) document.getElementsByName("PUBD_multiple_mask")[0].value = getConfig("PUBD_multiple_mask");
 };
 
