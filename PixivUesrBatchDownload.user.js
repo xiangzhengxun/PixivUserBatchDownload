@@ -5,7 +5,7 @@
 // @description Batch download pixiv uesr's images in one key.
 // @description:zh-CN 一键批量下载P站画师的全部作品
 // @include     http://www.pixiv.net/*
-// @version     1.1.9
+// @version     1.1.9.1
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -205,7 +205,7 @@ function dealUser(response, linkPre, userId)
 
     if (photoCount.length >= 2) {
     	dataset.illust_count = parseInt(photoCount[1]);
-    	if (illust_count < 1)
+    	if (dataset.illust_count < 1)
     	{
     		alert("作品数为0");
     		clearInterval(downOver);
