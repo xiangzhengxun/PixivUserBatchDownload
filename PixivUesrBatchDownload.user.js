@@ -5,7 +5,7 @@
 // @description Batch download pixiv uesr's images in one key.
 // @description:zh-CN 一键批量下载P站画师的全部作品
 // @include     http://www.pixiv.net/*
-// @version     1.1.9.1
+// @version     1.1.9.2
 // @grant       none
 // @copyright  2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -1076,7 +1076,7 @@ function ResetConfig() {
     if (document.getElementsByName("PUBD_type_name0")[0]) document.getElementsByName("PUBD_type_name0")[0].value = getConfig("PUBD_type_name0");
     if (document.getElementsByName("PUBD_type_name1")[0]) document.getElementsByName("PUBD_type_name1")[0].value = getConfig("PUBD_type_name1");
     if (document.getElementsByName("PUBD_type_name2")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name2");
-    if (document.getElementsByName("PUBD_type_name3")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name3");
+    if (document.getElementsByName("PUBD_type_name3")[0]) document.getElementsByName("PUBD_type_name3")[0].value = getConfig("PUBD_type_name3");
     if (document.getElementsByName("PUBD_multiple_mask")[0]) document.getElementsByName("PUBD_multiple_mask")[0].value = getConfig("PUBD_multiple_mask");
 };
 
