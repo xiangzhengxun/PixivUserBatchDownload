@@ -1,7 +1,7 @@
 ﻿# PixivUserBatchDownload
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。
 
-建议使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUesrBatchDownload.user.js)，因为Chrome技术原因仅提供有限功能支持，Chrome虽然原生支持但还是建议装Tampermonkey扩展。
+建议使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://greasyfork.org/zh-CN/scripts/17879-pixivuesrbatchdownload)，因为Chrome技术原因仅提供有限功能支持，Chrome虽然原生支持但还是建议装Tampermonkey扩展。
 
 需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载。
 
