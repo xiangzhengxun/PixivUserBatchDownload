@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name        PixivUserBatchDownload
-// @name:zh-CN    P站画师个人作品批量下载工具
+// @name:zh-CN  P站画师个人作品批量下载工具
 // @namespace   http://www.mapaler.com/
 // @description Batch download pixiv user's images in one key.
-// @description:zh-CN 一键批量下载P站画师的全部作品
+// @description:zh-CN   一键批量下载P站画师的全部作品
 // @include     http://www.pixiv.net/*
-// @version     1.1.9.2
+// @version     1.2.0
 // @grant       none
-// @copyright  2016+, Mapaler <mapaler@163.com>
+// @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
 // ==/UserScript==
 
@@ -673,6 +673,8 @@ function buildSetting()
     //设置内容
     var ul = document.createElement("ul");
     ul.className = "notification-list message-thread-list";
+
+    /*
     //设置-模式
     var li = document.createElement("li");
     li.className = "thread";
@@ -707,6 +709,9 @@ function buildSetting()
     lbl.appendChild(ipt);
     lbl.innerHTML += "专家模式";
     divText.appendChild(lbl);
+    */
+
+
     //设置-RPC Path
     var li = document.createElement("li");
     li.className = "thread";
@@ -997,7 +1002,7 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++) {
                     aria2.addUri(ill.original_src[pi], {
-                        "out": showMask(getConfig("PUBD_save_path"), ill, pi),
+                        "out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)),
                         "referer": ill.url,
                         "remote-time": "true",
                         "allow-overwrite": "false",
@@ -1015,9 +1020,9 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++)
                 {
-                	txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true --out=\"" + showMask(getConfig("PUBD_save_path"), ill, pi) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
+                    txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true --out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
                     downtxt += ill.original_src[pi]
-						+ "\r\n out=\"" + showMask(getConfig("PUBD_save_path"), ill, pi) + "\""
+						+ "\r\n out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)) + "\""
 						+ "\r\n referer=\"" + ill.url + "\""
 						+ "\r\n allow-overwrite=false"
 						+ "\r\n auto-file-renaming=false"
@@ -1116,5 +1121,10 @@ function showMask(str,ill,index)
         var rs = regMask.exec(str);
     }
     return newTxt;
+}
+
+function replacePathSafe(str) //去除Windows下无法作为文件名的字符
+{
+    return str.replace(/\\\/:\*\?"<>|/ig, "_");
 }
 })();
