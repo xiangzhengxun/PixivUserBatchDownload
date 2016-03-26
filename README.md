@@ -1,9 +1,9 @@
 ﻿# PixivUserBatchDownload
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。
 
-建议使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://greasyfork.org/scripts/17879)，因为Chrome技术原因仅提供有限功能支持，Chrome虽然原生支持但还是建议装Tampermonkey扩展。
+建议使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://greasyfork.org/scripts/17879)（←到Greasy Fork安装可以自动更新的哦），因为Chrome技术原因仅提供有限功能支持，Chrome虽然原生支持但还是建议装Tampermonkey扩展。
 
-需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载。
+需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
 
 ## 配置Aria2
 [下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.20.0-win-64bit-build1.zip”，然后解压到文件夹。
@@ -52,7 +52,7 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 
 ![支持筛选](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohp4vafoj20n10boq50.jpg)
 
-点击进行分析后即可自动发送到设置的Aria2下载。
+点击进行分析后即可自动发送到设置的Aria2下载（下图来自老版本）。
 
 ![下载状态](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1ky66pylwj21gs0utasp.jpg)
 
