@@ -89,7 +89,7 @@ illust_index : 全部作品中序号（会因为发布新作品而增加）
 illust_index_inverted : 全部作品中序号_倒序
 illust_index_in_page : 该页上序号
 illust_index_in_page_inverted : 该页上序号_倒序
-type : 类型，单页0、漫画1、动画2
+type : 类型，单页0、多图1、动画2、漫画3
 type_name : 类型用文字表示
 multiple : 只在type=1时启用，其他情况替换为空。
 filename : 文件名
