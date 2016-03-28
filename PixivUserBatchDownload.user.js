@@ -5,10 +5,13 @@
 // @description Batch download pixiv user's images in one key.
 // @description:zh-CN   一键批量下载P站画师的全部作品
 // @include     http://www.pixiv.net/*
-// @version     1.2.2
+// @exclude		http://www.pixiv.net/*mode=manga&illust_id*
+// @exclude		http://www.pixiv.net/*mode=big&illust_id*
+// @exclude		http://www.pixiv.net/*mode=manga_big*
+// @version     1.3.0
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
-// @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
+// @icon        http://www.pixiv.net/favicon.ico
 // ==/UserScript==
 
 (function() {
@@ -131,6 +134,9 @@ var setWindow = buildSetting();
 //生成导出窗口DOM
 var exportInsertPlace = setInsertPlace;
 var exportWindow = buildExport();
+//生成直接链接窗口DOM
+var directLinkInsertPlace = setInsertPlace;
+var directLinkWindow = buildDirectLink();
 
 //开始程序
 function startProgram(mode)
@@ -579,10 +585,23 @@ function buildMenu()
 	a.innerHTML = "导出下载文件";
 	a.onclick = function ()
 	{
-		if (setWindow.parentNode != setInsertPlace)
+		if (exportWindow.parentNode != exportInsertPlace)
 			exportInsertPlace.appendChild(exportWindow);
 		li1.removeChild(menu_ul);
 		startProgram(1);
+	};
+	li.appendChild(a);
+	menu_ul.appendChild(li);
+	var li = document.createElement("li");
+	var a = document.createElement("a");
+	a.className = "item";
+	a.innerHTML = "生成直接链接";
+	a.onclick = function ()
+	{
+		if (directLinkWindow.parentNode != directLinkInsertPlace)
+			exportInsertPlace.appendChild(directLinkWindow);
+		li1.removeChild(menu_ul);
+		startProgram(2);
 	};
 	li.appendChild(a);
 	menu_ul.appendChild(li);
@@ -950,6 +969,81 @@ function buildExport() {
     set.appendChild(confirmbar);
     return set;
 }
+
+//生成直接下载链接窗口
+function buildDirectLink()
+{
+	var set = document.createElement("div");
+	set.id = "PixivUserBatchDownloadDirectLink";
+	set.className = "notification-popup";
+	set.style.display = "block";
+	//自定义CSS
+	var style = document.createElement("style");
+	set.appendChild(style);
+	style.type = "text/css";
+	style.innerHTML +=
+        [
+            ".PUBD_dLink" + "{\r\n" + [
+                'width:100%',
+                'height:300px',
+                'overflow:scroll',
+                'border:1px solid #becad8',
+            ].join(';\r\n') + "\r\n}",
+            "#PixivUserBatchDownloadDirectLink a" + "{\r\n" + [
+                'display:inline',
+                'padding:0',
+                'background:none',
+                'color:	#258fb8',
+                'white-space:nowrap',
+            ].join(';\r\n') + "\r\n}",
+        ].join('\r\n');
+
+	//标题行
+	var h2 = document.createElement("h2");
+	h2.innerHTML = "直接下载链接";
+
+	//设置内容
+	var ul = document.createElement("ul");
+	ul.className = "notification-list message-thread-list";
+
+	//导出-Batch
+	var li = document.createElement("li");
+	//li.className = "thread";
+	//var divTime = document.createElement("div");
+	//divTime.className = "time date";
+	var divName = document.createElement("div");
+	divName.className = "name";
+	var divText = document.createElement("div");
+	divText.className = "text";
+	//li.appendChild(divTime);
+	li.appendChild(divName);
+	li.appendChild(divText);
+	ul.appendChild(li);
+
+	divName.innerHTML = "用<a href=\"https://addons.mozilla.org/firefox/addon/downthemall/\" target=\"_blank\">DownThemAll!</a>的批量下载，重命名掩码设置为“*title*”<br />" +
+		"如果发生403错误，使用<a href=\"https://addons.mozilla.org/firefox/addon/referrer-control/\" target=\"_blank\">RefControl</a>添加站点“pixiv.net”，设置“伪装-发送站点根目录”";
+	//divTime.innerHTML = "保存为bat文件运行"
+	var ipt = document.createElement("div");
+	ipt.className = "PUBD_dLink";
+	divText.appendChild(ipt);
+
+	//确定按钮行
+	var confirmbar = document.createElement("div");
+	confirmbar.className = "_notification-request-permission";
+	confirmbar.style.display = "block";
+	var btnClose = document.createElement("button");
+	btnClose.className = "_button";
+	btnClose.innerHTML = "关闭";
+	btnClose.onclick = function () { set.parentNode.removeChild(set); }
+
+	confirmbar.appendChild(btnClose);
+
+	set.appendChild(h2);
+	set.appendChild(ul);
+	set.appendChild(confirmbar);
+	return set;
+}
+
 //检测下载完成情况
 function startProgramCheck(mode) {
     if (getPicNum > 0 && getPicNum >= dataset.illust_file_count) {
@@ -962,6 +1056,8 @@ function startProgramCheck(mode) {
         li2.innerHTML = "已获取图像地址：" + getPicNum + "/" + dataset.illust_file_count;
         var PUBD_batch = document.getElementsByName("PUBD_batch")[0];
         if (PUBD_batch) PUBD_batch.value = li2.innerHTML;
+        var PUBD_dLink = document.getElementsByClassName("PUBD_dLink")[0];
+        if (PUBD_dLink) PUBD_dLink.innerHTML = li2.innerHTML;
     }
     console.log("获取" + getPicNum + "/" + dataset.illust_file_count);
 }
@@ -1017,6 +1113,24 @@ function startDownload(mode) {
             }
             //console.log(txt);
             break;
+    	case 2: //生成直接下载链接模式
+    		var linksDom = document.getElementsByClassName("PUBD_dLink")[0];
+    		linksDom.innerHTML = "";
+			for (ii = 0; ii < dataset.illust.length; ii++)
+			{
+				var ill = dataset.illust[ii];
+				for (pi = 0; pi < ill.original_src.length; pi++)
+				{
+					var dlink = document.createElement("a");
+					var br = document.createElement("br");
+					dlink.href = ill.original_src[pi];
+					dlink.title = replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi));
+					dlink.innerHTML = showMask("%{illust_id}_%{title}_p%{page}", ill, pi);
+					linksDom.appendChild(dlink);
+					linksDom.appendChild(br);
+				}
+			}
+			break;
         default:
             alert("未知的下载模式");
             break;
