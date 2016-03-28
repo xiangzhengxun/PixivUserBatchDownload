@@ -5,7 +5,7 @@
 // @description Batch download pixiv user's images in one key.
 // @description:zh-CN   一键批量下载P站画师的全部作品
 // @include     http://www.pixiv.net/*
-// @version     1.2.1
+// @version     1.2.2
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://source.pixiv.net/www/images/pixiv_logo.gif
@@ -131,32 +131,6 @@ var setWindow = buildSetting();
 //生成导出窗口DOM
 var exportInsertPlace = setInsertPlace;
 var exportWindow = buildExport();
-
-/*
-menu_ul.onmouseout = function (e) //需要判断是不是内部小框架
-{
-	if (!e) e = window.event;
-	var reltg = e.relatedTarget ? e.relatedTarget : e.toElement;
-	while (reltg && reltg != this) reltg = reltg.parentNode;
-	if (reltg != this)
-	{
-		//menu_ul.style.display = "none";
-		li1.removeChild(menu_ul);
-	}
-}
-	
-btnStart.onmouseover = function (e) //需要判断是不是内部小框架
-{
-	if (!e) e = window.event;
-	var reltg = e.relatedTarget ? e.relatedTarget : e.fromElement;
-	while (reltg && reltg != this) reltg = reltg.parentNode;
-	if (reltg != this) {
-		//menu_ul.style.display = "block";
-		li1.appendChild(menu_ul);
-	}
-}
-*/
-
 
 //开始程序
 function startProgram(mode)
@@ -1022,8 +996,8 @@ function startDownload(mode) {
                 {
                     txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true --out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
                     downtxt += ill.original_src[pi]
-						+ "\r\n out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)) + "\""
-						+ "\r\n referer=\"" + ill.url + "\""
+						+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi))
+						+ "\r\n referer=" + ill.url
 						+ "\r\n allow-overwrite=false"
 						+ "\r\n auto-file-renaming=false"
 						+ "\r\n remote-time=true"
@@ -1050,18 +1024,24 @@ function startDownload(mode) {
     //console.log(dataset);
 };
 	
-function getConfig(key) {
-    if (window.localStorage) {
+function getConfig(key)
+{
+	if (window.localStorage)
+	{
         return window.localStorage.getItem(key) || "";
-    } else {
-        return getCookie(key);
+    } else
+    {
+    	console.log("浏览器不支持本地储存。");
     }
 };
-function setConfig(key, value) {
-    if (window.localStorage) {
+function setConfig(key, value)
+{
+	if (window.localStorage)
+	{
         window.localStorage.setItem(key, value);
-    } else {
-        setGdCookie(key, value, 86400 * 365);
+    } else
+    {
+    	console.log("浏览器不支持本地储存。");
     }
 };
 function ResetConfig() {
