@@ -8,7 +8,7 @@
 // @exclude		http://www.pixiv.net/*mode=manga&illust_id*
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
-// @version     1.3.0
+// @version     1.3.1
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -643,12 +643,15 @@ function buildSetting()
             ].join(';') + "\r\n}",
             "#PixivUserBatchDownloadSetting .thread" + "{\r\n" + [
                 'height:40px',
+                'margin:0',
+                'padding-left:5px',
             ].join(';') + "\r\n}",
             "#PixivUserBatchDownloadSetting .type_name" + "{\r\n" + [
                 'height:60px',
             ].join(';') + "\r\n}",
             "#PixivUserBatchDownloadSetting .text" + "{\r\n" + [
                 'height:4em',
+                'margin-right:0',
             ].join(';') + "\r\n}",
         ].join('\r\n');
 
@@ -894,7 +897,7 @@ function buildExport() {
                 'width:350px',
                 'max-width:350px',
                 'min-width:350px',
-                'min-height:100px',
+                'height:300px',
             ].join(';\r\n') + "\r\n}",
         ].join('\r\n');
 
