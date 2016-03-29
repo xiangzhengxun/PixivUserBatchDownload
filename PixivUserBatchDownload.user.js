@@ -8,7 +8,8 @@
 // @exclude		http://www.pixiv.net/*mode=manga&illust_id*
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
-// @version     1.4.0
+// @exclude		http://www.pixiv.net/*search.php*
+// @version     1.4.1
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -1254,8 +1255,8 @@ function showMask(str,ill,index)
     return newTxt;
 }
 
-function replacePathSafe(str) //去除Windows下无法作为文件名的字符
+function replacePathSafe(str) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 {
-    return str.replace(/[\/|:|\*|\?|"|<|>|]/ig, "_");
+    return str.replace(/[:\*\?"<>\|]/ig, "_");
 }
 })();

@@ -53,6 +53,29 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 
 更多Aria2选项请访问 https://aria2.github.io/manual/en/html/aria2c.html#options
 
+###支持Aria2搭建NAS远程下载
+在我的华为盒子（M330）上配置了Aria2，然后打开路由的端口映射，通过另一个网络成功访问（但是不是所有网络都能访问此IP）。
+
+注意Linux（含安卓）系一定得改用左斜杠，不然无法正确生成路径。
+
+![脚本的设置](http://ww3.sinaimg.cn/large/6c84b2d6jw1f2eano3hd7j20al0bign5.jpg)
+
+因为开公网访问需要设置加密，在Aria2配置文件中加入
+```ini
+# token验证
+rpc-secret=访问密码
+```
+脚本设置中的RPC路径为
+`http://token:访问密码@域名:端口/jsonrpc`
+
+webui-aria2则这样设置
+
+![网页端的设置](http://ww4.sinaimg.cn/large/6c84b2d6jw1f2eao7814vj20sa0jbadz.jpg)
+
+成功的下载到安卓电视盒子里，可以通过其他手段访问盒子里的文件（我下载到扩展SD卡的）。
+
+![电视盒子上运行的Aria2](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2eajkd4l6j21be0qotkh.jpg)
+
 ## 开始下载
 安装或手动执行脚本后，在P站画师的页面会生成一个按钮。
 
