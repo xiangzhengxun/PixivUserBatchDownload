@@ -5,6 +5,15 @@
 
 需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
 
+## License|许可协议
+用到了一部分[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)的代码
+
+PixivUserBatchDownload Copyright(C) 2016 by Mapaler
+
+此程序是免费软件。你可以将它根据GNU通用公共许可证第三版重新分发和/或修改。[LICENSE](https://github.com/Mapaler/PixivUserBatchDownload/blob/master/LICENSE)
+
+如果你想分发你修改后的程序，但是你不想要公布修改后的源代码，请与我联系。
+
 ## 配置Aria2
 [下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.21.0-win-64bit-build1.zip”，然后解压到文件夹。
 
@@ -45,36 +54,9 @@
 
 然后运行bat文件即可开启Aria2的RPC模式。
 
-[下载最新的webui-aria2（有中文）](https://github.com/ziahamza/webui-aria2/archive/master.zip)，然后解压到文件夹，打开“index.html”，默认设置下会自动连接上刚才配置的本地的Aria2 RPC模式。然后你便可以像普通下载软件一样对Aria2进行管理了。（还可将webui-aria2下到手机，更改设置里的RPC路径访问电脑上的Aria2）
+[下载最新的webui-aria2（有中文）](https://github.com/ziahamza/webui-aria2/archive/master.zip)，然后解压到文件夹，打开“index.html”，默认设置下会自动连接上刚才配置的本地的Aria2 RPC模式。然后你便可以像普通下载软件一样对Aria2进行管理了。
 
 ![webui-aria2界面](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o5q4ljyqj20vv0nvgq4.jpg)
-
-Aria2是跨平台下载软件，你可以在其他系统下配置本程序，MacOS、Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
-
-更多Aria2选项请访问 https://aria2.github.io/manual/en/html/aria2c.html#options
-
-###支持Aria2搭建NAS远程下载
-在我的华为盒子（M330）上配置了Aria2，然后打开路由的端口映射，通过另一个网络成功访问（但是不是所有网络都能访问此IP）。
-
-注意Linux（含安卓）系一定得改用左斜杠，不然无法正确生成路径。
-
-![脚本的设置](http://ww3.sinaimg.cn/large/6c84b2d6jw1f2eano3hd7j20al0bign5.jpg)
-
-因为开公网访问需要设置加密，在Aria2配置文件中加入
-```ini
-# token验证
-rpc-secret=访问密码
-```
-脚本设置中的RPC路径为
-`http://token:访问密码@域名:端口/jsonrpc`
-
-webui-aria2则这样设置
-
-![网页端的设置](http://ww4.sinaimg.cn/large/6c84b2d6jw1f2eao7814vj20sa0jbadz.jpg)
-
-成功的下载到安卓电视盒子里，可以通过其他手段访问盒子里的文件（我下载到扩展SD卡的）。
-
-![电视盒子上运行的Aria2](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2eajkd4l6j21be0qotkh.jpg)
 
 ## 开始下载
 安装或手动执行脚本后，在P站画师的页面会生成一个按钮。
@@ -149,11 +131,29 @@ tools : 使用工具
 caption : 说明
 tags : 标签
 ```
-## License|许可协议
-用到了一部分[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)的代码
+###支持Aria2搭建NAS远程下载
+Aria2是跨平台下载软件，你可以在其他系统下配置本程序，MacOS、Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
 
-PixivUserBatchDownload Copyright(C) 2016 by Mapaler
+在我的华为盒子（M330）上配置了Aria2，然后打开路由的端口映射，通过另一个网络成功访问（但是不是所有网络都能访问此IP，因为我盒子连的铁通的）。
 
-此程序是免费软件。你可以将它根据GNU通用公共许可证第三版重新分发和/或修改。[LICENSE](https://github.com/Mapaler/PixivUserBatchDownload/blob/master/LICENSE)
+注意Linux（含安卓）系一定得改用左斜杠，不然无法正确生成路径。
 
-如果你想分发你修改后的程序，但是你不想要公布修改后的源代码，请与我联系。
+![脚本的设置](http://ww3.sinaimg.cn/large/6c84b2d6jw1f2eano3hd7j20al0bign5.jpg)
+
+因为开公网访问需要设置加密，在Aria2配置文件中加入如下。更多Aria2选项请访问 https://aria2.github.io/manual/en/html/aria2c.html#options
+```ini
+# token验证
+rpc-secret=访问密码
+```
+脚本设置中的RPC路径为
+`http://token:访问密码@域名:端口/jsonrpc`
+
+webui-aria2则这样设置
+
+![网页端的设置](http://ww4.sinaimg.cn/large/6c84b2d6jw1f2eao7814vj20sa0jbadz.jpg)
+
+成功的下载到安卓电视盒子里，可以通过其他手段访问盒子里的文件（我下载到扩展SD卡的）。
+
+![电视盒子上运行的Aria2](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2eajkd4l6j21be0qotkh.jpg)
+
+经测试脚本在安卓火狐用usi无法正常工作，原因暂未知。感兴趣还可以尝试从电脑上发送到手机下载之类的奇怪行为。
