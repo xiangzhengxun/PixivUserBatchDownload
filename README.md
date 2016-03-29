@@ -6,32 +6,42 @@
 需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
 
 ## 配置Aria2
-[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.20.0-win-64bit-build1.zip”，然后解压到文件夹。
+[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.21.0-win-64bit-build1.zip”，然后解压到文件夹。
 
-在aria2c路径下新建文本文件，内容为，并将扩展名更改为bat。
+1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。
 
-`aria2c.exe --conf-path="aria2.conf"`
+	`aria2c.exe --conf-path="aria2_Pixiv.ini"`
 
-然后继续建立“aria2.conf”，内容为。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
-```ini
-# 保存路径请自行修改
-dir=D:\Pictures\PixivUserBatchDownload
-# 禁用覆盖（跳过已下载的）
-allow-overwrite=false
-# 禁用重命名（跳过已下载的）
-auto-file-renaming=false
-# 修改为服务器时间
-remote-time=true
+2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
+	```ini
+	# Aria2默认保存路径可自行修改，v1.4.0开始此设置已内置到下载设置，留空时才使用这里的设置。
+	dir=C:\Users\Public\Downloads\
+	# 禁用覆盖（跳过已下载的）
+	allow-overwrite=false
+	# 禁用重命名（跳过已下载的）
+	auto-file-renaming=false
+	# 修改为服务器时间
+	remote-time=true
 
-# 开启RPC选项
-enable-rpc=true
-pause=false
-rpc-allow-origin-all=true
-rpc-listen-all=true
-rpc-save-upload-metadata=true
-rpc-secure=false
-```
-![文件示例](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o5iqlyu5j20io0f60vv.jpg)
+	# 保存会话内容到文件
+	save-session=aria2_Pixiv.session.txt
+	# 每30秒保存当前会话，关闭时也会保存，设置为0只有关闭时才保存
+	save-session-interval=30
+	# 启动时读取会话内容
+	input-file=aria2_Pixiv.session.txt
+
+	# 开启RPC相关选项
+	enable-rpc=true
+	rpc-allow-origin-all=true
+	rpc-listen-all=true
+	rpc-save-upload-metadata=true
+	rpc-secure=false
+	```
+	注意需要保存为UTF-8编码，下图分别是Windows自带记事本与Notepad2的保存方法。
+	![Windows自带记事本保存为UTF-8编码](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2dwz1csn0j20kw0dxtah.jpg)![Notepad2保存为UTF-8编码](http://ww2.sinaimg.cn/large/6c84b2d6gw1f2dwshr79mj20fw0ejdho.jpg)
+3. 再建立“aria2_Pixiv.session.txt”的空文件。此文件用来保存下载会话，可以使关闭Aria2程序后，再次打开继续下载之前没下载完成的。
+
+![文件示例](http://ww2.sinaimg.cn/large/6c84b2d6gw1f2dwm3rlooj20j20nr42z.jpg)
 
 然后运行bat文件即可开启Aria2的RPC模式。
 
@@ -56,11 +66,11 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 
 ![下载状态](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1ky66pylwj21gs0utasp.jpg)
 
-流量不够也可导出成bat命令或者down文件拿回家下载。
+流量不够也可导出成批处理命令或者会话文件拿回家下载，多个文件可以简单的换行合并。
 
 ![导出窗口](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1o5wn8jlsj20ah067js9.jpg)
 
-使用down文件的命令行为`aria2c.exe --input-file="filename.down"`
+使用会话文件的命令行为`aria2c.exe --input-file="filename"`
 
 默认设置，下载会将不同画师作品分文件夹存放，每个画师里多图则再建一个文件夹。
 
@@ -72,9 +82,11 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 
 需要修改请参考下方设置
 ## 设置
-![设置界面](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1kxnqiz44j20aj0as0tu.jpg)
+![设置界面](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2dwvwda6rj20ad0b1wfu.jpg)
 
-因为已经在“aria2.conf”里设定了下载父文件夹的位置，因此这里只需要写子文件夹路径就可以了。
+为了方便批处理与会话文件的使用，以及方便将Aria2同时用在其他地方（比如批量下载百度云），v1.4.0版本开始添加了内置的下载目录设置，请在下载前先修改下载目录到你所需要的地方。留空时则使用“aria2_Pixiv.ini”里设定了的默认下载目录的位置。
+
+保存路径负责根据画师、作品名进行分类建立文件夹和改名，使用掩码进行自动重命名。
 
 掩码格式为“%{掩码名}”，可用的掩码有如下这些
 ```

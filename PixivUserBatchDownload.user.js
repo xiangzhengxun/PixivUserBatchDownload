@@ -8,7 +8,7 @@
 // @exclude		http://www.pixiv.net/*mode=manga&illust_id*
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
-// @version     1.3.1
+// @version     1.4.0
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -18,8 +18,12 @@
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
 var getPicNum = 0; //Ajax获取了文件的数量
 var downOver; //检测下载是否完成的循环函数
-
-if (getConfig("PUBD_reset") != "1") ResetConfig(); //新用户重置设置
+var Version = 2; //当前设置版本，用于提醒是否需要
+if (getConfig("PUBD_reset").replace(/\D/ig, "").length < 1)ResetConfig(); //新用户重置设置}
+if (parseInt(getConfig("PUBD_reset").replace(/\D/ig, "")) < Version)
+{ //老用户提醒更改设置
+	alert("本次1.4.0版本更新将下载目录设置内置了，请先修改设置。");
+}
 
 var dataset =
 {
@@ -638,7 +642,7 @@ function buildSetting()
             ".PUBD_PRC_path" + "{\r\n" + [
                 'width:180px' ,
             ].join(';') + "\r\n}",
-            ".PUBD_save_path,.PUBD_multiple_mask" + "{\r\n" + [
+            ".PUBD_save_dir,.PUBD_save_path,.PUBD_multiple_mask" + "{\r\n" + [
                 'width:340px' ,
             ].join(';') + "\r\n}",
             "#PixivUserBatchDownloadSetting .thread" + "{\r\n" + [
@@ -741,6 +745,28 @@ function buildSetting()
         aria2.getVersion();
     }
     divText.appendChild(btnCheckLink);
+	//设置-下载目录
+    var li = document.createElement("li");
+    li.className = "thread";
+    var divTime = document.createElement("div");
+    divTime.className = "time date";
+    var divName = document.createElement("div");
+    divName.className = "name";
+    var divText = document.createElement("div");
+    divText.className = "text";
+    li.appendChild(divTime);
+    li.appendChild(divName);
+    li.appendChild(divText);
+    ul.appendChild(li);
+
+    divName.innerHTML = "下载目录";
+    divTime.innerHTML = "下载主目录绝对路径，留空使用Aria2默认路径"
+    var ipt = document.createElement("input");
+    ipt.type = "text";
+    ipt.className = "PUBD_save_dir";
+    ipt.name = "PUBD_save_dir";
+    ipt.value = getConfig("PUBD_save_dir");
+    divText.appendChild(ipt);
     //设置-下载路径
     var li = document.createElement("li");
     li.className = "thread";
@@ -755,8 +781,8 @@ function buildSetting()
     li.appendChild(divText);
     ul.appendChild(li);
 
-    divName.innerHTML = "下载路径";
-    divTime.innerHTML = "下载到本地路径和文件名"
+    divName.innerHTML = "保存路径";
+    divTime.innerHTML = "分组保存的文件夹和文件名"
     var ipt = document.createElement("input");
     ipt.type = "text";
     ipt.className = "PUBD_save_path";
@@ -867,7 +893,9 @@ function buildSetting()
 
     btnConfirm.onclick = function ()
     {
-        setConfig("PUBD_PRC_path", document.getElementsByName("PUBD_PRC_path")[0].value);
+    	setConfig("PUBD_reset", Version);
+    	setConfig("PUBD_PRC_path", document.getElementsByName("PUBD_PRC_path")[0].value);
+    	setConfig("PUBD_save_dir", document.getElementsByName("PUBD_save_dir")[0].value);
         setConfig("PUBD_save_path", document.getElementsByName("PUBD_save_path")[0].value);
         setConfig("PUBD_type_name0", document.getElementsByName("PUBD_type_name0")[0].value);
         setConfig("PUBD_type_name1", document.getElementsByName("PUBD_type_name1")[0].value);
@@ -951,8 +979,8 @@ function buildExport() {
     btnExport.className = "_button";
     btnExport.name = "PUBD_down";
     btnExport.target = "_blank"
-    btnExport.download = "aria2" + ".down"
-    btnExport.innerHTML = "导出Aria2 *.down文件";
+    btnExport.download = "aria2" + ".session.txt"
+    btnExport.innerHTML = "导出Aria2会话文件";
     //btnExport.onclick = function () { startProgram(2); }
     divText.appendChild(btnExport);
 
@@ -1074,13 +1102,17 @@ function startDownload(mode) {
             for (ii = 0; ii < dataset.illust.length; ii++) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++) {
-                    aria2.addUri(ill.original_src[pi], {
-                        "out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)),
-                        "referer": ill.url,
-                        "remote-time": "true",
-                        "allow-overwrite": "false",
-                        "auto-file-renaming": "false"
-                    });
+                	var srtObj = {
+							"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)),
+							"referer": ill.url,
+							"remote-time": "true",
+							"allow-overwrite": "false",
+							"auto-file-renaming": "false"
+                		}
+                	if(getConfig("PUBD_save_dir").length>0){
+                		srtObj.dir = showMask(getConfig("PUBD_save_dir"), ill, pi);
+                	}
+                	aria2.addUri(ill.original_src[pi], srtObj);
                 }
             }
             alert("全部发送完毕");
@@ -1093,8 +1125,9 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++)
                 {
-                    txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true --out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
-                    downtxt += ill.original_src[pi]
+                	txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + showMask(getConfig("PUBD_save_dir"), ill, pi) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
+                	downtxt += ill.original_src[pi]
+						+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + showMask(getConfig("PUBD_save_dir"), ill, pi) : "")
 						+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi))
 						+ "\r\n referer=" + ill.url
 						+ "\r\n allow-overwrite=false"
@@ -1112,7 +1145,7 @@ function startDownload(mode) {
             if (btn)
             {
             	btn.href = downurl;
-            	btn.download = dataset.user_id + "_" + dataset.user_name + ".down"
+            	btn.download = dataset.user_id + "_" + dataset.user_name + ".session.txt"
             }
             //console.log(txt);
             break;
@@ -1162,8 +1195,8 @@ function setConfig(key, value)
     }
 };
 function ResetConfig() {
-    setConfig("PUBD_reset", "1");
     setConfig("PUBD_PRC_path", "http://localhost:6800/jsonrpc");
+    setConfig("PUBD_save_dir", "C:\\Users\\Public\\Pictures\\PixivUserBatchDownload\\");
     setConfig("PUBD_save_path", "%{user_id}_%{user_name}\\%{multiple}%{filename}.%{extention}");
     setConfig("PUBD_type_name0", "");
     setConfig("PUBD_type_name1", "multiple");
@@ -1172,6 +1205,7 @@ function ResetConfig() {
     setConfig("PUBD_multiple_mask", "%{illust_id}_%{title}\\");
 
     if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
+    if (document.getElementsByName("PUBD_save_dir")[0]) document.getElementsByName("PUBD_save_dir")[0].value = getConfig("PUBD_save_dir");
     if (document.getElementsByName("PUBD_save_path")[0]) document.getElementsByName("PUBD_save_path")[0].value = getConfig("PUBD_save_path");
     if (document.getElementsByName("PUBD_type_name0")[0]) document.getElementsByName("PUBD_type_name0")[0].value = getConfig("PUBD_type_name0");
     if (document.getElementsByName("PUBD_type_name1")[0]) document.getElementsByName("PUBD_type_name1")[0].value = getConfig("PUBD_type_name1");
