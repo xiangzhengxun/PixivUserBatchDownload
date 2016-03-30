@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version     1.4.1
+// @version     1.4.2
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -29,7 +29,9 @@ if (parseInt(getConfig("PUBD_reset").replace(/\D/ig, "")) < Version)
 var dataset =
 {
     user_id: 0, //作者ID
+	//user_account: "", //作者账户，可以从作者头像文件获取。
     user_name: "", //作者昵称
+    user_head: "", //作者头像url。考虑生成ico保存到文件夹
     illust_count: 0, //作品总数
     illust_file_count: 0, //作品文件总数（含多图）
     illust:[
@@ -1104,14 +1106,14 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++) {
                 	var srtObj = {
-							"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)),
-							"referer": ill.url,
-							"remote-time": "true",
-							"allow-overwrite": "false",
-							"auto-file-renaming": "false"
-                		}
+                		"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe)),
+						"referer": ill.url,
+						"remote-time": "true",
+						"allow-overwrite": "false",
+						"auto-file-renaming": "false"
+                	}
                 	if(getConfig("PUBD_save_dir").length>0){
-                		srtObj.dir = showMask(getConfig("PUBD_save_dir"), ill, pi);
+                		srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe));
                 	}
                 	aria2.addUri(ill.original_src[pi], srtObj);
                 }
@@ -1126,10 +1128,10 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++)
                 {
-                	txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + showMask(getConfig("PUBD_save_dir"), ill, pi) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi)) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
+                	txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe)) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe)) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
                 	downtxt += ill.original_src[pi]
-						+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + showMask(getConfig("PUBD_save_dir"), ill, pi) : "")
-						+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi))
+						+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe)) : "")
+						+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe))
 						+ "\r\n referer=" + ill.url
 						+ "\r\n allow-overwrite=false"
 						+ "\r\n auto-file-renaming=false"
@@ -1161,7 +1163,7 @@ function startDownload(mode) {
 					var dlink = document.createElement("a");
 					var br = document.createElement("br");
 					dlink.href = ill.original_src[pi];
-					dlink.title = replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi));
+					dlink.title = showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe);
 					dlink.innerHTML = showMask("%{illust_id}_%{title}_p%{page}", ill, pi);
 					linksDom.appendChild(dlink);
 					linksDom.appendChild(br);
@@ -1215,8 +1217,10 @@ function ResetConfig() {
     if (document.getElementsByName("PUBD_multiple_mask")[0]) document.getElementsByName("PUBD_multiple_mask")[0].value = getConfig("PUBD_multiple_mask");
 };
 
-function showMask(str,ill,index)
+function showMask(str,ill,index,deal)
 {
+	if (deal == undefined)
+		deal = function (arg) { return arg;}
     var newTxt = str;
     var regMask = /%{([^}]+)}/g;
     var rs = regMask.exec(str);
@@ -1229,7 +1233,7 @@ function showMask(str,ill,index)
                 if (getConfig("PUBD_multiple_mask").indexOf("%{multiple}") >= 0 || getConfig("PUBD_multiple_mask").indexOf("%{type_name}") >= 0 && getConfig("PUBD_type_name" + ill.type).indexOf("%{multiple}" >= 0))
                     console.log("掩码中存在循环自身引用");
                 else
-                    var rp = showMask(getConfig("PUBD_multiple_mask"), ill, index);
+                    var rp = showMask(getConfig("PUBD_multiple_mask"), ill, index, deal);
             }
             newTxt = newTxt.replace(rs[0], rp);
         }
@@ -1239,24 +1243,27 @@ function showMask(str,ill,index)
             if (getConfig("PUBD_type_name" + ill.type).indexOf("%{type_name}") >= 0 || getConfig("PUBD_type_name" + ill.type).indexOf("%{multiple}") >= 0 && getConfig("PUBD_multiple_mask").indexOf("%{type_name}" >= 0))
                 console.log("掩码中存在循环自身引用");
             else
-                var rp = showMask(getConfig("PUBD_type_name" + ill.type), ill, index);
+            	var rp = showMask(getConfig("PUBD_type_name" + ill.type), ill, index, deal);
             newTxt = newTxt.replace(rs[0], rp);
         }
         else if (rs[1] == "page")
-            newTxt = newTxt.replace(rs[0], index);
+        	newTxt = newTxt.replace(rs[0], deal(index));
         else if (rs[1] == "filename" || rs[1] == "extention" || rs[1] == "original_src")
-            newTxt = newTxt.replace(rs[0], ill[rs[1]][index]);
+        	newTxt = newTxt.replace(rs[0], deal(ill[rs[1]][index]));
         else if (ill[rs[1]] != undefined)
-            newTxt = newTxt.replace(rs[0], ill[rs[1]]);
+        	newTxt = newTxt.replace(rs[0], deal(ill[rs[1]]));
         else if (dataset[rs[1]] != undefined)
-            newTxt = newTxt.replace(rs[0], dataset[rs[1]]);
+            newTxt = newTxt.replace(rs[0], deal(dataset[rs[1]]));
         var rs = regMask.exec(str);
     }
     return newTxt;
 }
 
-function replacePathSafe(str) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
+function replacePathSafe(str, keepTree) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 {
-    return str.replace(/[:\*\?"<>\|]/ig, "_");
+	if (keepTree)
+		return str.replace(/[:\*\?"<>\|]/ig, "_");
+	else
+		return str.replace(/[\\\/:\*\?"<>\|]/ig, "_");
 }
 })();
