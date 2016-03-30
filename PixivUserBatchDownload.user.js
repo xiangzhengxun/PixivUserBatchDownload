@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version     1.4.2
+// @version     1.4.2.1
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -1106,14 +1106,14 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++) {
                 	var srtObj = {
-                		"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe)),
+                		"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
 						"referer": ill.url,
 						"remote-time": "true",
 						"allow-overwrite": "false",
 						"auto-file-renaming": "false"
                 	}
                 	if(getConfig("PUBD_save_dir").length>0){
-                		srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe));
+                		srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
                 	}
                 	aria2.addUri(ill.original_src[pi], srtObj);
                 }
@@ -1128,10 +1128,10 @@ function startDownload(mode) {
                 var ill = dataset.illust[ii];
                 for (pi = 0; pi < ill.original_src.length; pi++)
                 {
-                	txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe)) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe)) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
+                	txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
                 	downtxt += ill.original_src[pi]
-						+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe)) : "")
-						+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe))
+						+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) : "")
+						+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true)
 						+ "\r\n referer=" + ill.url
 						+ "\r\n allow-overwrite=false"
 						+ "\r\n auto-file-renaming=false"
