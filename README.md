@@ -97,6 +97,8 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 ```
 user_id : 作者ID
 user_name : 作者昵称
+user_account : 作者账户
+user_head : 作者头像url
 illust_count : 作品总数
 illust_file_count : 作品文件总数（含多图）
 illust_id : 作品ID
@@ -110,6 +112,7 @@ type : 类型，单页0、多图1、动画2、漫画3
 type_name : 类型用文字表示
 multiple : 只在type=1时启用，其他情况替换为空。
 filename : 文件名
+hash : 仅好友可见图片的加密字符串
 extention : 扩展名
 page : 第几页（漫画）
 page_count : 共几页（漫画）
