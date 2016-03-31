@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version     2.0.0
+// @version     2.1.0
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -17,16 +17,17 @@
 
 (function() {
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
-var Version = 2; //当前设置版本，用于提醒是否需要
-if (getConfig("PUBD_reset").replace(/\D/ig, "").length < 1)ResetConfig(); //新用户重置设置}
-if (parseInt(getConfig("PUBD_reset").replace(/\D/ig, "")) < Version)
+var Version = 3; //当前设置版本，用于提醒是否需要
+if (!getConfig("PUBD_reset", -1))ResetConfig(); //新用户重置设置
+if (getConfig("PUBD_reset", 1) < Version)
 { //老用户提醒更改设置
-	alert("1.4.0版本更新将下载目录设置内置了，请先修改设置。");
+	alert("2.1.0版本可自定义下载网址了，可以按需修改。");
+	ResetConfig(true);
 }
 
 
-var download_mod = parseInt(0 + getConfig("PUBD_download_mode").replace(/\D/ig, "")); //下载模式
-var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(?:-([0-9a-zA-Z]+))?(?:_p\\d+|_ugoira\\d+x\\d+)?)(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
+var download_mod = getConfig("PUBD_download_mode",1); //下载模式
+var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(-[0-9a-zA-Z]+)?(?:_p\\d+|_ugoira\\d+x\\d+)?)(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
 //var userImagePattern = "https?://([^/]+)/.+/(\w+)/(\\d+)\\.([\\w\\d]+)"; //P站用户头像图片地址正则匹配式
 
 var getPicNum = 0; //Ajax获取了文件的数量
@@ -205,7 +206,7 @@ var directLinkWindow = buildDirectLink();
 //开始程序
 function startProgram(mode)
 {
-	download_mod = parseInt(0 + getConfig("PUBD_download_mode").replace(/\D/ig, "")); //重新判断下载模式
+	download_mod = getConfig("PUBD_download_mode",1); //重新判断下载模式
     if(getPicNum<1)
     {
     	dealUserPage1();
@@ -751,7 +752,7 @@ function buildSetting()
             ".PUBD_PRC_path" + "{\r\n" + [
                 'width:180px' ,
             ].join(';') + "\r\n}",
-            ".PUBD_save_dir,.PUBD_save_path,.PUBD_multiple_mask" + "{\r\n" + [
+            ".PUBD_save_dir,.PUBD_save_path,.PUBD_multiple_mask,.PUBD_image_src,.PUBD_referer" + "{\r\n" + [
                 'width:340px' ,
             ].join(';') + "\r\n}",
             "#PixivUserBatchDownloadSetting .thread" + "{\r\n" + [
@@ -873,6 +874,28 @@ function buildSetting()
     ipt.name = "PUBD_save_dir";
     ipt.value = getConfig("PUBD_save_dir");
     divText.appendChild(ipt);
+	//设置-图片网址
+    var li = document.createElement("li");
+    li.className = "thread";
+    var divTime = document.createElement("div");
+    divTime.className = "time date";
+    var divName = document.createElement("div");
+    divName.className = "name";
+    var divText = document.createElement("div");
+    divText.className = "text";
+    li.appendChild(divTime);
+    li.appendChild(divName);
+    li.appendChild(divText);
+    ul.appendChild(li);
+
+    divName.innerHTML = "图片网址";
+    divTime.innerHTML = "下载的图片文件地址"
+    var ipt = document.createElement("input");
+    ipt.type = "text";
+    ipt.className = "PUBD_image_src";
+    ipt.name = "PUBD_image_src";
+    ipt.value = getConfig("PUBD_image_src");
+    divText.appendChild(ipt);
     //设置-下载路径
     var li = document.createElement("li");
     li.className = "thread";
@@ -894,6 +917,28 @@ function buildSetting()
     ipt.className = "PUBD_save_path";
     ipt.name = "PUBD_save_path";
     ipt.value = getConfig("PUBD_save_path");
+    divText.appendChild(ipt);
+	//设置-referer（引用）地址
+    var li = document.createElement("li");
+    li.className = "thread";
+    var divTime = document.createElement("div");
+    divTime.className = "time date";
+    var divName = document.createElement("div");
+    divName.className = "name";
+    var divText = document.createElement("div");
+    divText.className = "text";
+    li.appendChild(divTime);
+    li.appendChild(divName);
+    li.appendChild(divText);
+    ul.appendChild(li);
+
+    divName.innerHTML = "引用页面";
+    divTime.innerHTML = "Referer，访问来源页面地址"
+    var ipt = document.createElement("input");
+    ipt.type = "text";
+    ipt.className = "PUBD_referer";
+    ipt.name = "PUBD_referer";
+    ipt.value = getConfig("PUBD_referer");
     divText.appendChild(ipt);
     //设置-类型命名
     var li = document.createElement("li");
@@ -1223,7 +1268,7 @@ function startDownload(mode) {
                 	{
                 		var srtObj = {
                 			"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
-							"referer": ill.url,
+                			"referer": showMask(getConfig("PUBD_referer"), ill, pi),
 							"remote-time": "true",
 							"allow-overwrite": "false",
 							"auto-file-renaming": "false"
@@ -1232,7 +1277,7 @@ function startDownload(mode) {
                 		{
                 			srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
                 		}
-                		aria2.addUri(ill.original_src[pi], srtObj);
+                		aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
 
 						//快速模式重新更改扩展名
                 		if (download_mod == 1)
@@ -1268,11 +1313,11 @@ function startDownload(mode) {
                 	var ext = ill.extention[pi];
                 	for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2 || ill.type == 3) ? 3 : 1) ; dmi++)
                 	{
-                		txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + ill.url + "\" \"" + ill.original_src[pi] + "\"";
-                		downtxt += ill.original_src[pi]
+                		txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" \"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
+                		downtxt += showMask(getConfig("PUBD_image_src"), ill, pi)
 							+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) : "")
 							+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true)
-							+ "\r\n referer=" + ill.url
+							+ "\r\n referer=" + showMask(getConfig("PUBD_referer"), ill, pi)
 							+ "\r\n allow-overwrite=false"
 							+ "\r\n auto-file-renaming=false"
 							+ "\r\n remote-time=true"
@@ -1324,7 +1369,7 @@ function startDownload(mode) {
 					{
 						var dlink = document.createElement("a");
 						var br = document.createElement("br");
-						dlink.href = ill.original_src[pi];
+						dlink.href = showMask(getConfig("PUBD_image_src"), ill, pi);
 						dlink.title = replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true);
 						dlink.innerHTML = dlink.title; //showMask("%{illust_id}_%{title}_p%{page}", ill, pi);
 						linksDom.appendChild(dlink);
@@ -1358,11 +1403,25 @@ function startDownload(mode) {
     //console.log(dataset);
 };
 	
-function getConfig(key)
+function getConfig(key, type)
 {
+	//-1原始，返回null，0 = 字符，返回空, 1 = 数字返回0,
+	if (type == undefined)
+		type = 0;
+	var value = window.localStorage.getItem(key);
 	if (window.localStorage)
 	{
-        return window.localStorage.getItem(key) || "";
+		switch (type)
+		{
+			case 0: //字符
+				return value || "";
+				break;
+			case 1: //数字
+				return value ? parseInt(0 + value.replace(/\D/ig, "")) : 0;
+				break;
+			default: //原始
+				return value;
+		}
     } else
     {
     	console.log("浏览器不支持本地储存。");
@@ -1378,22 +1437,32 @@ function setConfig(key, value)
     	console.log("浏览器不支持本地储存。");
     }
 };
-function ResetConfig() {
-	setConfig("PUBD_PRC_path", "http://localhost:6800/jsonrpc");
-	setConfig("PUBD_download_mode", 0);
-    setConfig("PUBD_save_dir", "C:\\Users\\Public\\Pictures\\PixivUserBatchDownload\\");
-    setConfig("PUBD_save_path", "%{user_id}_%{user_name}\\%{multiple}%{filename}.%{extention}");
-    setConfig("PUBD_type_name0", "");
-    setConfig("PUBD_type_name1", "multiple");
-    setConfig("PUBD_type_name2", "ugoku");
-    setConfig("PUBD_type_name3", "manga");
-    setConfig("PUBD_multiple_mask", "%{illust_id}_%{title}\\");
+function ResetConfig(part)
+{
+	function partReset(key,value,ispart)
+	{
+		if (ispart && !getConfig(key, -1) || !ispart) setConfig(key, value);
+	}
+	partReset("PUBD_reset", Version, part);
+	partReset("PUBD_PRC_path", "http://localhost:6800/jsonrpc", part);
+	partReset("PUBD_download_mode", 0, part);
+	partReset("PUBD_save_dir", "C:\\Users\\Public\\Pictures\\PixivUserBatchDownload\\", part);
+	partReset("PUBD_image_src", "%{original_src}", part);
+	partReset("PUBD_save_path", "%{user_id}_%{user_name}\\%{multiple}%{filename}.%{extention}", part);
+	partReset("PUBD_referer", "%{url}", part);
+    partReset("PUBD_type_name0", "", part);
+    partReset("PUBD_type_name1", "multiple", part);
+    partReset("PUBD_type_name2", "ugoku", part);
+    partReset("PUBD_type_name3", "manga", part);
+    partReset("PUBD_multiple_mask", "%{illust_id}_%{title}\\", part);
 
     if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
-    //if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[parseInt(0 + getConfig("PUBD_download_mode").replace(/\D/ig, ""))].checked = true;
+    //if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[getConfig("PUBD_download_mode",1)].checked = true;
     if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[0].checked = true;
     if (document.getElementsByName("PUBD_save_dir")[0]) document.getElementsByName("PUBD_save_dir")[0].value = getConfig("PUBD_save_dir");
+    if (document.getElementsByName("PUBD_image_src")[0]) document.getElementsByName("PUBD_image_src")[0].value = getConfig("PUBD_image_src");
     if (document.getElementsByName("PUBD_save_path")[0]) document.getElementsByName("PUBD_save_path")[0].value = getConfig("PUBD_save_path");
+    if (document.getElementsByName("PUBD_referer")[0]) document.getElementsByName("PUBD_referer")[0].value = getConfig("PUBD_referer");
     if (document.getElementsByName("PUBD_type_name0")[0]) document.getElementsByName("PUBD_type_name0")[0].value = getConfig("PUBD_type_name0");
     if (document.getElementsByName("PUBD_type_name1")[0]) document.getElementsByName("PUBD_type_name1")[0].value = getConfig("PUBD_type_name1");
     if (document.getElementsByName("PUBD_type_name2")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name2");
@@ -1443,11 +1512,11 @@ function showMask(str,ill,index,deal)
     return newTxt;
 }
 
-function replacePathSafe(stri, keepTree) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
+function replacePathSafe(str, keepTree) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 {
 	if (keepTree)
-		return stri.replace(/[:\*\?"<>\|]/ig, "_");
+		return str.replace(/[\*\?"<>\|]/ig, "_");
 	else
-		return stri.replace(/[\\\/:\*\?"<>\|]/ig, "_");
+		return str.replace(/[\\\/:\*\?"<>\|]/ig, "_");
 }
 })();

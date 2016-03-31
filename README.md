@@ -46,7 +46,7 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 	rpc-save-upload-metadata=true
 	rpc-secure=false
 	```
-	注意需要保存为UTF-8编码，下图分别是Windows自带记事本与Notepad2的保存方法。
+	选项中若含中文/日文字符需要保存为UTF-8编码，下图分别是Windows自带记事本与Notepad2的保存方法。
 	![Windows自带记事本保存为UTF-8编码](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2dwz1csn0j20kw0dxtah.jpg)![Notepad2保存为UTF-8编码](http://ww2.sinaimg.cn/large/6c84b2d6gw1f2dwshr79mj20fw0ejdho.jpg)
 3. 再建立“aria2_Pixiv.session.txt”的空文件。此文件用来保存下载会话，可以使关闭Aria2程序后，再次打开继续下载之前没下载完成的。
 
@@ -112,14 +112,23 @@ type : 类型，单页0、多图1、动画2、漫画3
 type_name : 类型用文字表示
 multiple : 只在type=1时启用，其他情况替换为空。
 filename : 文件名
+	▲如下掩码可组合出相同值
+	“%{illust_id}%{hash}_p%{page}”
 hash : 仅好友可见图片的加密字符串
 extention : 扩展名
 page : 第几页（漫画）
 page_count : 共几页（漫画）
 original_src : 原始图片链接
+	▲如下掩码可组合出相同值
+	“http://%{domain}/img-original/img/%{year}/%{month}/%{day}/%{hour}/%{minute}/%{second}/%{filename}.%{extention}”
 thumbnail_src : 缩略图地址
-domain : 域名
+	▲如下掩码可组合出相同值
+	类型命名掩码“%{type_name}”的值设置为动图“_s”，其他为“_master1200”
+	“http://%{domain}/c/150x150/img-master/img/%{year}/%{month}/%{day}/%{hour}/%{minute}/%{second}/%{filename}%{type_name}.%{extention}”
 url : 作品页面
+	▲如下掩码可组合出相同值
+	“http://www.pixiv.net/member_illust.php?id=%{illust_id}”
+domain : 域名
 year : 年
 month : 月
 day : 日
