@@ -97,7 +97,7 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 ```
 user_id : 作者ID
 user_name : 作者昵称
-user_account : 作者账户
+user_pixiv_id : 作者账户(pixiv ID)
 user_head : 作者头像url
 illust_count : 作品总数
 illust_file_count : 作品文件总数（含多图）

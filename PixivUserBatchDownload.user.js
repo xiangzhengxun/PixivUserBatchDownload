@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version     2.1.0
+// @version     2.1.1
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -36,7 +36,7 @@ var downOver; //检测下载是否完成的循环函数
 var dataset =
 {
     user_id: 0, //作者ID
-	user_account: "", //作者账户，可以从作者头像文件获取。
+	user_pixiv_id: "", //作者账户，可以从作者头像文件获取。
     user_name: "", //作者昵称
     user_head: "", //作者头像url。将来可考虑生成ico保存到文件夹
     illust_count: 0, //作品总数
@@ -233,8 +233,8 @@ function dealUser(response, linkPre, userId)
 	var parser = new DOMParser();
 	PageDOM = parser.parseFromString(response, "text/html");
 
-	var count_badge = PageDOM.getElementsByClassName("count-badge");
-    if (count_badge.length < 1)
+	var count_badge = PageDOM.getElementsByClassName("count-badge")[0];
+    if (!count_badge)
     {
         alert("未发现作品数DOM");
         clearInterval(downOver);
@@ -242,7 +242,7 @@ function dealUser(response, linkPre, userId)
     }
 
     var regPC = /(\d+)/ig;
-    var photoCount = regPC.exec(count_badge[0].textContent);
+    var photoCount = regPC.exec(count_badge.textContent);
 
     if (photoCount.length >= 2) {
     	dataset.illust_count = parseInt(photoCount[1]);
@@ -267,11 +267,11 @@ function dealUser(response, linkPre, userId)
     dataset.user_name = user_dom.textContent;
 
     var userImage = PageDOM.getElementsByClassName("user-image")[0];
-    dataset.user_head = userImage.src;
+    dataset.user_head = userImage?userImage.src:"";
     var tabFeed = PageDOM.getElementsByClassName("tab-feed")[0];
-    var regUserFeed = /.+\/(\w+)$/ig; //用户账户正则匹配式
-    var regrlt = regUserFeed.exec(tabFeed.getAttribute("href"));
-    if (regrlt.length>1) dataset.user_account = regrlt[1];
+    var regUserFeed = /.+\/([\w\-]+)$/ig; //用户账户正则匹配式，您只可以输入小字母a-z, 数字, 英文破折号(-), 以及英文下划线( _ )
+    var regrlt = regUserFeed.exec(tabFeed?tabFeed.getAttribute("href"):"");
+    if (regrlt.length>1) dataset.user_pixiv_id = regrlt[1];
 
     dealPage(response, 1);
     //列表页循环
