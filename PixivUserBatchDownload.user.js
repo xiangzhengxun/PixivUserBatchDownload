@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version     2.1.2
+// @version     2.1.3
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -1056,7 +1056,9 @@ function buildSetting()
     	}
     	setConfig("PUBD_PRC_path", document.getElementsByName("PUBD_PRC_path")[0].value);
     	setConfig("PUBD_save_dir", document.getElementsByName("PUBD_save_dir")[0].value);
-        setConfig("PUBD_save_path", document.getElementsByName("PUBD_save_path")[0].value);
+    	setConfig("PUBD_image_src", document.getElementsByName("PUBD_image_src")[0].value);
+    	setConfig("PUBD_save_path", document.getElementsByName("PUBD_save_path")[0].value);
+    	setConfig("PUBD_referer", document.getElementsByName("PUBD_referer")[0].value);
         setConfig("PUBD_type_name0", document.getElementsByName("PUBD_type_name0")[0].value);
         setConfig("PUBD_type_name1", document.getElementsByName("PUBD_type_name1")[0].value);
         setConfig("PUBD_type_name2", document.getElementsByName("PUBD_type_name2")[0].value);
@@ -1448,13 +1450,13 @@ function ResetConfig(part)
 	partReset("PUBD_download_mode", 0, part);
 	partReset("PUBD_save_dir", "C:\\Users\\Public\\Pictures\\PixivUserBatchDownload\\", part);
 	partReset("PUBD_image_src", "%{original_src}", part);
-	partReset("PUBD_save_path", "%{user_id}_%{user_name}\\%{multiple}%{filename}.%{extention}", part);
+	partReset("PUBD_save_path", "%{user_id}_%{user_name}/%{multiple}%{filename}.%{extention}", part);
 	partReset("PUBD_referer", "%{url}", part);
     partReset("PUBD_type_name0", "", part);
     partReset("PUBD_type_name1", "multiple", part);
     partReset("PUBD_type_name2", "ugoku", part);
     partReset("PUBD_type_name3", "manga", part);
-    partReset("PUBD_multiple_mask", "%{illust_id}_%{title}\\", part);
+    partReset("PUBD_multiple_mask", "%{illust_id}_%{title}/", part);
 
     if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
     //if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[getConfig("PUBD_download_mode",1)].checked = true;
