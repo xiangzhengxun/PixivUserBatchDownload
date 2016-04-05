@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version     2.1.1
+// @version     2.1.2
 // @grant       none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon        http://www.pixiv.net/favicon.ico
@@ -1500,7 +1500,7 @@ function showMask(str,ill,index,deal)
             newTxt = newTxt.replace(rs[0], rp);
         }
         else if (rs[1] == "page")
-        	newTxt = newTxt.replace(rs[0], deal(index));
+        	newTxt = newTxt.replace(rs[0], index);
         else if (rs[1] == "filename" || rs[1] == "extention" || rs[1] == "original_src")
         	newTxt = newTxt.replace(rs[0], deal(ill[rs[1]][index]));
         else if (ill[rs[1]] != undefined)
