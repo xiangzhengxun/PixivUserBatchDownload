@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 2.5.0
+// @version	 3.0.0 Alpha1
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -24,7 +24,7 @@ if (getConfig("PUBD_reset", 1) < Version)
 	alert("2.1.0版本可自定义下载网址了，可以按需修改。");
 	ResetConfig(true);
 }
-
+var icon_size = 256; //生成图标的大小
 
 var download_mod = getConfig("PUBD_download_mode",1); //下载模式
 var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(-[0-9a-zA-Z]+)?(?:_p\\d+|_ugoira\\d+x\\d+)?)(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
@@ -528,7 +528,7 @@ function addFrm(ill)
 	var ifrm = document.createElement("iframe");
 	ifrm.name = "medium_" + ill.illust_id;
 	ifrm.src = ill.url;
-	ifrm.style.display = "none";
+	//ifrm.style.display = "none";
 	if (ifrm.attachEvent)
 	{
 		ifrm.attachEvent('onload', function () { addBig(self.frames["medium_" + ill.illust_id], ill); });
@@ -694,9 +694,205 @@ var ARIA2 = (function () {
 		this.addUri = function (uri, options) {
 			request(this.jsonrpc_path, 'aria2.addUri', [[uri, ], options]);
 		};
+		this.addTorrent = function (base64txt, options)
+		{
+			request(this.jsonrpc_path, 'aria2.addTorrent', [base64txt, [], options]);
+		};
 		this.getVersion = function () {
 			request(this.jsonrpc_path, 'aria2.getVersion', [], true);
 		};
+		return this;
+	}
+})();
+var Icon = (function ()
+{
+	/*!
+	 * Generate Ico Data URL
+	 * http://mrcoles.com/low-res-paint/
+	 *
+	 * Copyright 2010, Peter Coles
+	 * Licensed under the MIT licenses.
+	 * http://mrcoles.com/media/mit-license.txt
+	 *
+	 * Date: Tue Oct 26 00:00:00 2010 -0500
+	 */
+	function _asLittleEndianHex(value, bytes)
+	{
+		// Convert value into little endian hex bytes
+		// value - the number as a decimal integer (representing bytes)
+		// bytes - the number of bytes that this value takes up in a string
+
+		// Example:
+		// _asLittleEndianHex(2835, 4)
+		// > '\x13\x0b\x00\x00'
+
+		var result = [];
+
+		for (; bytes > 0; bytes--)
+		{
+			result.push(String.fromCharCode(value & 255));
+			value >>= 8;
+		}
+
+		return result.join('');
+	}
+
+	function _collapseData(rows, row_padding)
+	{
+		// Convert rows of RGBA arrays into BMP data
+		var i,
+            rows_len = rows.length,
+            j,
+            pixels_len = rows_len ? rows[0].length : 0,
+            pixel,
+            padding = '',
+            result = [];
+
+		for (; row_padding > 0; row_padding--)
+		{
+			padding += '\x00';
+		}
+
+		for (i = 0; i < rows_len; i++)
+		{
+			for (j = 0; j < pixels_len; j++)
+			{
+				pixel = rows[i][j];
+				result.push(String.fromCharCode(pixel[2]) +
+                            String.fromCharCode(pixel[1]) +
+                            String.fromCharCode(pixel[0]) +
+                            (pixel[3] === undefined ? '\xff' : String.fromCharCode(pixel[3])));
+			}
+			result.push(padding);
+		}
+
+		return result.join('');
+	}
+
+	function generateIcoDataURL(rows)
+	{
+		// Expects rows starting in bottom left
+		// formatted like this: [[[255, 0, 0], [255, 255, 0], ...], ...]
+		// which represents: [[red, yellow, ...], ...]
+
+		// optional 4th value in each color is the alpha! -- ignored for now!!
+
+		if (!window.btoa)
+		{
+			alert('Oh no, your browser does not support base64 encoding - window.btoa()!!');
+			return false;
+		}
+		var height = rows.length,                                // the number of rows
+            width = height ? rows[0].length : 0,                 // the number of columns per row
+            row_padding = (width * 3) % 4,                       // pad each row to a multiple of 4 bytes (should be 0)
+            num_data_bytes = (width * 4 + row_padding) * height, // size in bytes of BMP data
+            num_bmp_bytes = 40 + num_data_bytes + 64,            // full header size (offset) + size of data
+            pixmap_height,
+            pixmap_width,
+            raw_1bit_bitmap = (new Array(width * height * 2 / 8 + 1)).join('\x00'),
+            file;
+
+		pixmap_height = _asLittleEndianHex(height * 2, 4); // NOTE: my example .ico had 2x the Pixma height
+		pixmap_width = _asLittleEndianHex(width, 4);
+		height = _asLittleEndianHex(height, 1);
+		width = _asLittleEndianHex(width, 1);
+		num_data_bytes = _asLittleEndianHex(num_data_bytes, 4);
+		num_bmp_bytes = _asLittleEndianHex(num_bmp_bytes, 4);
+
+
+		// ==HEADER==
+		file = ('\x00\x00' +         // Reserved. Should always be 0.
+                '\x01\x00' +         // Specifies image type: 1 for icon (.ICO) image, 2 for cursor (.CUR) image. Other values are invalid.
+                '\x01\x00' +         // Specifies number of images in the file.
+
+                // ==IMAGE==
+                width +             // **Specifies image width in pixels. Can be any number between 0 to 255. Special case: 0 means 256 pixels**
+                height +             // **Specifies image height in pixels. Can be any number between 0 to 255. Special case: 0 means 256 pixels**
+                '\x00' +             // Specifies number of colors in the color palette. Should be 0 if the image is truecolor.
+                '\x00' +             // Reserved. Should be 0.
+                '\x01\x00' +         // In .ICO format: Specifies color planes. Should be 0 or 1.
+                '\x20\x00' +         // In .ICO format: Specifies bits per pixel (32 = 24 color + 8 alpha)
+                num_bmp_bytes +      // **Specifies the size of the bitmap data in bytes**
+                '\x16\x00\x00\x00' + // Specifies the offset of bitmap data address in the file (22 bytes!)
+
+                // ==ICO Data Header ==
+                '\x28\x00\x00\x00' + // Header size (40 bytes!)
+                pixmap_width +       // **Pixmap width**
+                pixmap_height +      // **Pixmap height (why 32 for the 16x16 example?)**
+                '\x01\x00' +         // Color Planes
+                '\x20\x00' +         // The number of bits per pixel
+                '\x00\x00\x00\x00' + // The compression method being used (0 is uncompressed)
+                num_data_bytes +     // **The image size. This is the size of the raw bitmap data . should not be confused with the file size**
+                '\x00\x00\x00\x00' + // The horizontal resolution of the image. (pixel per meter, signed integer, usually 2835)
+                '\x00\x00\x00\x00' + // The vertical resolution of the image. (pixel per meter, signed integer, usually 2835)
+                '\x00\x00\x00\x00' + // The number of colors in the color palette, or 0 to default to 24 or 32 bits
+                '\x00\x00\x00\x00' + // The number of important colors used, or 0 when every color is important; generally ignored.
+
+                // ==Raw Data 4 bytes each (B, G, R, A) ==
+                _collapseData(rows, row_padding) +
+
+                // ==After this RAW data, a 1-bit bitmap is also RAW saved. If you save it as a back of bytes with the value 0, it will get the Alpha channel instead.==
+                raw_1bit_bitmap
+               );
+
+		return btoa(file);
+		//return 'data:image/vnd.microsoft.icon;base64,' + btoa(file);
+	};
+
+	return function (rows)
+	{
+		this.IcoDataURL = generateIcoDataURL(rows);
+		this.IcoDataURL_with_Header = 'data:image/vnd.microsoft.icon;base64,' + this.IcoDataURL;
+		return this;
+	}
+})();
+function canvas_RGBA_Array(context)
+{
+	var imgData = context.getImageData(0, 0, icon_size, icon_size);
+	var raws = [];
+	var ti = 0;
+	for (var pyi = icon_size - 1; pyi >= 0; pyi--)
+	{
+		var row = [];
+		for (var pxi = 0; pxi < icon_size; pxi++)
+		{
+			var cY = pyi * icon_size * 4;
+			var cX = pxi * 4;
+			var pixel = [
+				imgData.data[cY + cX],
+				imgData.data[cY + cX + 1],
+				imgData.data[cY + cX + 2],
+				imgData.data[cY + cX + 3],
+			];
+			row.push(pixel);
+		}
+		raws.push(row);
+	}
+	return raws;
+}
+var UTF16LE = (function ()
+{
+	function generateByteArray(str)
+	{
+		var byteArray = new Uint16Array(str.length + 1);
+		byteArray[0] = 0xFEFF;
+		for (var i = 0; i < str.length; i++)
+		{
+			byteArray[i + 1] = str.charCodeAt(i) // & 0xff;
+		}
+		return byteArray;
+	};
+
+	function generateBlob(arr)
+	{
+		var blob = new Blob([arr]);
+		return blob;
+	};
+
+	return function (str)
+	{
+		this.byteArray = generateByteArray(str);
+		this.blob = generateBlob(this.byteArray);
 		return this;
 	}
 })();
@@ -773,8 +969,10 @@ function buildSetting()
 			".PUBD_PRC_path" + "{\r\n" + [
 				'width:180px' ,
 			].join(';') + "\r\n}",
-			".PUBD_save_dir,.PUBD_save_path,.PUBD_multiple_mask,.PUBD_image_src,.PUBD_referer" + "{\r\n" + [
+			".full_text_width" + "{\r\n" + [
 				'width:340px' ,
+				'min-width:340px' ,
+				'max-width:340px' ,
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .thread" + "{\r\n" + [
 				'margin:0',
@@ -786,6 +984,17 @@ function buildSetting()
 			"#PixivUserBatchDownloadSetting .text" + "{\r\n" + [
 				'height:4em',
 				'margin-right:0',
+			].join(';') + "\r\n}",
+			"#PixivUserBatchDownloadSetting .desktop" + "{\r\n" + [
+				'height:250px',
+			].join(';') + "\r\n}",
+			"#PixivUserBatchDownloadSetting .desktop .text" + "{\r\n" + [
+				'height:240px',
+			].join(';') + "\r\n}",
+			".PUBD_desktop_main" + "{\r\n" + [
+				'height:150px',
+				'min-height:150px',
+				'max-height:150px',
 			].join(';') + "\r\n}",
 		].join('\r\n');
 
@@ -821,23 +1030,30 @@ function buildSetting()
 	divName.innerHTML = "分析模式";
 	divTime.innerHTML = "选择是否获得文件的准确扩展名"
 
-	var lbl = document.createElement("label");
 	var ipt = document.createElement("input");
 	ipt.type = "radio";
 	ipt.value = 0;
 	if (download_mod == ipt.value) ipt.setAttribute('checked', 'true');
 	ipt.name = "PUBD_download_mode";
-	lbl.appendChild(ipt);
-	lbl.innerHTML += "准确模式（分析扩展名）";
-	divText.appendChild(lbl);
+	ipt.id = ipt.name + ipt.value;
 	var lbl = document.createElement("label");
+	lbl.innerHTML = "准确模式（分析扩展名）";
+	lbl.setAttribute('for', ipt.id);
+	divText.appendChild(ipt);
+	divText.appendChild(lbl);
+
+	divText.appendChild(document.createElement("br"));
+
 	var ipt = document.createElement("input");
 	ipt.type = "radio";
 	ipt.value = 1;
 	if (download_mod == ipt.value) ipt.setAttribute('checked', 'true');
 	ipt.name = "PUBD_download_mode";
-	lbl.appendChild(ipt);
-	lbl.innerHTML += "快速模式（直接生成3种可能的扩展名，无法获取作品介绍）";
+	ipt.id = ipt.name + ipt.value;
+	var lbl = document.createElement("label");
+	lbl.innerHTML = "快速模式（直接生成3种可能的扩展名，无法获取作品介绍）";
+	lbl.setAttribute('for', ipt.id);
+	divText.appendChild(ipt);
 	divText.appendChild(lbl);
 
 	//设置-RPC Path
@@ -860,6 +1076,7 @@ function buildSetting()
 	ipt.type = "text";
 	ipt.className = "PUBD_PRC_path";
 	ipt.name = "PUBD_PRC_path";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_PRC_path");
 	divText.appendChild(ipt);
 	var btnCheckLink = document.createElement("button");
@@ -891,8 +1108,9 @@ function buildSetting()
 	divTime.innerHTML = "下载主目录绝对路径，留空使用Aria2默认路径"
 	var ipt = document.createElement("input");
 	ipt.type = "text";
-	ipt.className = "PUBD_save_dir";
+	ipt.className = "PUBD_save_dir full_text_width";
 	ipt.name = "PUBD_save_dir";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_save_dir");
 	divText.appendChild(ipt);
 	//设置-图片网址
@@ -913,8 +1131,9 @@ function buildSetting()
 	divTime.innerHTML = "下载的图片文件地址"
 	var ipt = document.createElement("input");
 	ipt.type = "text";
-	ipt.className = "PUBD_image_src";
+	ipt.className = "PUBD_image_src full_text_width";
 	ipt.name = "PUBD_image_src";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_image_src");
 	divText.appendChild(ipt);
 	//设置-下载路径
@@ -935,8 +1154,9 @@ function buildSetting()
 	divTime.innerHTML = "分组保存的文件夹和文件名"
 	var ipt = document.createElement("input");
 	ipt.type = "text";
-	ipt.className = "PUBD_save_path";
+	ipt.className = "PUBD_save_path full_text_width";
 	ipt.name = "PUBD_save_path";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_save_path");
 	divText.appendChild(ipt);
 	//设置-referer（引用）地址
@@ -957,8 +1177,9 @@ function buildSetting()
 	divTime.innerHTML = "Referer，访问来源页面地址"
 	var ipt = document.createElement("input");
 	ipt.type = "text";
-	ipt.className = "PUBD_referer";
+	ipt.className = "PUBD_referer full_text_width";
 	ipt.name = "PUBD_referer";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_referer");
 	divText.appendChild(ipt);
 	//设置-类型命名
@@ -978,45 +1199,55 @@ function buildSetting()
 	divName.innerHTML = "类型命名";
 	divTime.innerHTML = "%{type_name}的内容"
 
-	var lbl = document.createElement("label");
-	lbl.innerHTML = "单图：";
 	var ipt = document.createElement("input");
 	ipt.type = "text";
 	ipt.className = "PUBD_type_name";
 	ipt.name = "PUBD_type_name0";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_type_name0");
-	lbl.appendChild(ipt);
-	divText.appendChild(lbl);
-
 	var lbl = document.createElement("label");
-	lbl.innerHTML = "多图：";
+	lbl.innerHTML = "单图：";
+	lbl.setAttribute('for', ipt.id);
+	divText.appendChild(lbl);
+	divText.appendChild(ipt);
+
 	var ipt = document.createElement("input");
 	ipt.type = "text";
 	ipt.className = "PUBD_type_name";
 	ipt.name = "PUBD_type_name1";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_type_name1");
-	lbl.appendChild(ipt);
-	divText.appendChild(lbl);
-
 	var lbl = document.createElement("label");
-	lbl.innerHTML = "动图：";
+	lbl.innerHTML = "多图：";
+	lbl.setAttribute('for', ipt.id);
+	divText.appendChild(lbl);
+	divText.appendChild(ipt);
+
+	divText.appendChild(document.createElement("br"));
+
 	var ipt = document.createElement("input");
 	ipt.type = "text";
 	ipt.className = "PUBD_type_name";
 	ipt.name = "PUBD_type_name2";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_type_name2");
-	lbl.appendChild(ipt);
-	divText.appendChild(lbl);
-
 	var lbl = document.createElement("label");
-	lbl.innerHTML = "单漫：";
+	lbl.innerHTML = "动图：";
+	lbl.setAttribute('for', ipt.id);
+	divText.appendChild(lbl);
+	divText.appendChild(ipt);
+
 	var ipt = document.createElement("input");
 	ipt.type = "text";
 	ipt.className = "PUBD_type_name";
 	ipt.name = "PUBD_type_name3";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_type_name3");
-	lbl.appendChild(ipt);
+	var lbl = document.createElement("label");
+	lbl.innerHTML = "单漫：";
+	lbl.setAttribute('for', ipt.id);
 	divText.appendChild(lbl);
+	divText.appendChild(ipt);
 	//设置-多图掩码
 	var li = document.createElement("li");
 	li.className = "thread";
@@ -1035,9 +1266,78 @@ function buildSetting()
 	divTime.innerHTML = "替换%{multiple}的内容"
 	var ipt = document.createElement("input");
 	ipt.type = "text";
-	ipt.className = "PUBD_multiple_mask";
+	ipt.className = "PUBD_multiple_mask full_text_width";
 	ipt.name = "PUBD_multiple_mask";
+	ipt.id = ipt.name;
 	ipt.value = getConfig("PUBD_multiple_mask");
+	divText.appendChild(ipt);
+
+	//设置-Desktop.ini
+	var li = document.createElement("li");
+	li.className = "thread desktop";
+	var divTime = document.createElement("div");
+	divTime.className = "time date";
+	var divName = document.createElement("div");
+	divName.className = "name";
+	var divText = document.createElement("div");
+	divText.className = "text";
+	li.appendChild(divTime);
+	li.appendChild(divName);
+	li.appendChild(divText);
+	ul.appendChild(li);
+
+	divName.innerHTML = "RPC模式自定义文件夹";
+	divTime.innerHTML = "通过Desktop.ini实现（仅支持Windows Explorer）"
+	var ipt = document.createElement("input");
+	ipt.type = "checkbox";
+	ipt.className = "PUBD_desktop";
+	ipt.name = "PUBD_desktop";
+	ipt.id = ipt.name;
+	ipt.value = 1;
+	ipt.onclick = function ()
+	{
+		document.getElementsByName("PUBD_desktop_main")[0].disabled = !this.checked;
+		document.getElementsByName("PUBD_desktop_line")[0].disabled = !this.checked;
+	}
+	if (getConfig("PUBD_desktop", 1)) ipt.setAttribute('checked', 'true');
+	var lbl = document.createElement("label");
+	lbl.setAttribute('for', ipt.id);
+	lbl.innerHTML = "启用";
+	divText.appendChild(ipt);
+	divText.appendChild(lbl);
+
+	divText.appendChild(document.createElement("br"));
+
+	var txt = document.createElement("textarea");
+	txt.className = "PUBD_desktop_main full_text_width";
+	txt.name = "PUBD_desktop_main";
+	txt.id = txt.name;
+	if (!getConfig("PUBD_desktop", 1)) txt.setAttribute('disabled', 'true');
+	txt.value = getConfig("PUBD_desktop_main");
+	txt.wrap = "off";
+
+	var lbl = document.createElement("label");
+	lbl.setAttribute('for', txt.id);
+	lbl.innerHTML = "Desktop.ini文件主要格式";
+	divText.appendChild(lbl);
+	divText.appendChild(document.createElement("br"));
+	divText.appendChild(txt);
+
+	divText.appendChild(document.createElement("br"));
+
+	var ipt = document.createElement("input");
+	ipt.type = "text";
+	ipt.className = "PUBD_desktop_line full_text_width";
+	ipt.name = "PUBD_desktop_line";
+	ipt.id = ipt.name;
+	if (!getConfig("PUBD_desktop", 1)) ipt.setAttribute('disabled', 'true');
+	ipt.value = getConfig("PUBD_desktop_line");
+
+	var lbl = document.createElement("label");
+	lbl.setAttribute('for', ipt.id);
+	lbl.innerHTML = "尾端的每文件格式";
+	divText.appendChild(lbl);
+	divText.appendChild(document.createElement("br"));
 	divText.appendChild(ipt);
 
 	//确定按钮行
@@ -1085,6 +1385,9 @@ function buildSetting()
 		setConfig("PUBD_type_name2", document.getElementsByName("PUBD_type_name2")[0].value);
 		setConfig("PUBD_type_name3", document.getElementsByName("PUBD_type_name3")[0].value);
 		setConfig("PUBD_multiple_mask", document.getElementsByName("PUBD_multiple_mask")[0].value);
+		setConfig("PUBD_desktop", document.getElementsByName("PUBD_desktop")[0].value);
+		setConfig("PUBD_desktop_main", document.getElementsByName("PUBD_desktop_main")[0].value);
+		setConfig("PUBD_desktop_line", document.getElementsByName("PUBD_desktop_line")[0].value);
 
 		btnCancel.onclick();
 	}
@@ -1136,11 +1439,11 @@ function buildExport() {
 
 	divName.innerHTML = "命令行提示符批处理";
 	//divTime.innerHTML = "保存为bat文件运行"
-	var ipt = document.createElement("textarea");
-	ipt.className = "PUBD_batch";
-	ipt.name = "PUBD_batch";
-	ipt.wrap = "off";
-	divText.appendChild(ipt);
+	var txt = document.createElement("textarea");
+	txt.className = "PUBD_batch";
+	txt.name = "PUBD_batch";
+	txt.wrap = "off";
+	divText.appendChild(txt);
 
 	//导出-Down
 	var li = document.createElement("li");
@@ -1282,6 +1585,11 @@ function startDownload(mode) {
 		case 0: //RPC模式
 			var aria2 = new ARIA2(getConfig("PUBD_PRC_path"));
 
+			if (getConfig("PUBD_desktop", 1))
+			{
+				var desktopTxt = showMask(getConfig("PUBD_desktop_main"));
+			}
+
 			for (var ii = 0; ii < dataset.illust.length; ii++) {
 				var ill = dataset.illust[ii];
 				for (var pi = 0; pi < ill.original_src.length; pi++)
@@ -1292,9 +1600,6 @@ function startDownload(mode) {
 						var srtObj = {
 							"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
 							"referer": showMask(getConfig("PUBD_referer"), ill, pi),
-							"remote-time": "true",
-							"allow-overwrite": "false",
-							"auto-file-renaming": "false"
 						}
 						if(getConfig("PUBD_save_dir").length>0)
 						{
@@ -1302,6 +1607,10 @@ function startDownload(mode) {
 						}
 						aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
 
+						if (getConfig("PUBD_desktop", 1))
+						{
+							desktopTxt += "\r\n"+showMask(getConfig("PUBD_desktop_line"),ill,pi);
+						}
 						//快速模式重新更改扩展名
 						if (download_mod == 1)
 						{
@@ -1323,6 +1632,43 @@ function startDownload(mode) {
 					}
 				}
 			}
+
+			if (getConfig("PUBD_desktop", 1))
+			{
+				var srtObj = {}
+				if (getConfig("PUBD_save_dir").length > 0)
+				{
+					srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
+				}
+				//if (!/no_profile/ig.test(dataset.user_head))
+				//{
+					var headimg = new Image();
+					headimg.src = dataset.user_head;
+					headimg.onload = function (e)
+					{
+						var canvas = document.createElement("canvas");
+						canvas.width = icon_size;
+						canvas.height = icon_size;
+						var ctx = canvas.getContext("2d");
+						ctx.clearRect(0, 0, icon_size, icon_size); //清空画布
+						ctx.drawImage(headimg, 0, 0, icon_size, icon_size);
+						var RGBA_Array = canvas_RGBA_Array(ctx);
+
+						var icourl = new Icon(RGBA_Array);
+						aria2.addTorrent(icourl.IcoDataURL, srtObj);
+					};
+				//}
+
+				var txtblod = new UTF16LE(desktopTxt);
+				var reader = new FileReader();
+				reader.onload = function (res)
+				{
+					var txt = res.target.result;
+					aria2.addTorrent(txt.split(',')[1], srtObj);
+				};
+				reader.readAsDataURL(txtblod.blob);
+			}
+
 			alert("全部发送完毕");
 			break;
 		case 1: //生成BAT下载命令模式
@@ -1336,14 +1682,11 @@ function startDownload(mode) {
 					var ext = ill.extention[pi];
 					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
 					{
-						txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" \"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
+						txt += "aria2c " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" \"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
 						downtxt += showMask(getConfig("PUBD_image_src"), ill, pi)
 							+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) : "")
 							+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true)
 							+ "\r\n referer=" + showMask(getConfig("PUBD_referer"), ill, pi)
-							+ "\r\n allow-overwrite=false"
-							+ "\r\n auto-file-renaming=false"
-							+ "\r\n remote-time=true"
 						;
 						txt += "\r\n";
 						downtxt += "\r\n";
@@ -1467,15 +1810,30 @@ function ResetConfig(part)
 	partReset("PUBD_reset", Version, part);
 	partReset("PUBD_PRC_path", "http://localhost:6800/jsonrpc", part);
 	partReset("PUBD_download_mode", 0, part);
-	partReset("PUBD_save_dir", "C:\\Users\\Public\\Pictures\\PixivUserBatchDownload\\", part);
+	partReset("PUBD_save_dir", "F:\\PivixDownload\\%{user_id}\\", part);
 	partReset("PUBD_image_src", "%{original_src}", part);
-	partReset("PUBD_save_path", "%{user_id}_%{user_name}/%{multiple}%{filename}.%{extention}", part);
+	partReset("PUBD_save_path", "%{filename}.%{extention}", part);
 	partReset("PUBD_referer", "%{url}", part);
 	partReset("PUBD_type_name0", "", part);
 	partReset("PUBD_type_name1", "multiple", part);
 	partReset("PUBD_type_name2", "ugoku", part);
 	partReset("PUBD_type_name3", "manga", part);
-	partReset("PUBD_multiple_mask", "%{illust_id}_%{title}/", part);
+	partReset("PUBD_multiple_mask", "%{illust_id}/", part);
+	partReset("PUBD_desktop", 0, part);
+	partReset("PUBD_desktop_main",[
+		"[.ShellClassInfo]" ,
+		"LocalizedResourceName=%{user_name}" ,
+		"IconResource=head.ico,0" ,
+		"IconFile=head.ico" ,
+		"IconIndex=0" ,
+		"InfoTip=作者id为%{user_id}，账户为%{user_pixiv_id}，目前有%{illust_count}件作品",
+		"[ViewState]" ,
+		"FolderType=Pictures" ,
+		"Logo=head.ico",
+		"[LocalizedFileNames]" ,
+		].join("\r\n")
+		, part);
+	partReset("PUBD_desktop_line", "%{filename}.%{extention}=%{title}_p%{page}", part);
 
 	if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
 	//if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[getConfig("PUBD_download_mode",1)].checked = true;
@@ -1489,10 +1847,17 @@ function ResetConfig(part)
 	if (document.getElementsByName("PUBD_type_name2")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name2");
 	if (document.getElementsByName("PUBD_type_name3")[0]) document.getElementsByName("PUBD_type_name3")[0].value = getConfig("PUBD_type_name3");
 	if (document.getElementsByName("PUBD_multiple_mask")[0]) document.getElementsByName("PUBD_multiple_mask")[0].value = getConfig("PUBD_multiple_mask");
+	if (document.getElementsByName("PUBD_desktop")[0]) document.getElementsByName("PUBD_desktop")[0].checked = false;
+	if (document.getElementsByName("PUBD_desktop_main")[0]) { document.getElementsByName("PUBD_desktop_main")[0].value = getConfig("PUBD_desktop_main"); document.getElementsByName("PUBD_desktop_main")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
+	if (document.getElementsByName("PUBD_desktop_line")[0]) { document.getElementsByName("PUBD_desktop_line")[0].value = getConfig("PUBD_desktop_line"); document.getElementsByName("PUBD_desktop_line")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 };
 
 function showMask(str,ill,index,deal)
 {
+	if (ill == undefined)
+		ill = {};
+	if (index == undefined)
+		index = 0;
 	if (deal == undefined)
 		deal = function (arg) { return arg;}
 	var newTxt = str;
