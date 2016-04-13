@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 3.0.0 Alpha2
+// @version	 3.0.0 Alpha3
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -17,14 +17,13 @@
 
 (function() {
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
-var Version = 3; //当前设置版本，用于提醒是否需要
+var Version = 4; //当前设置版本，用于提醒是否需要
 if (!getConfig("PUBD_reset", -1))ResetConfig(); //新用户重置设置
 if (getConfig("PUBD_reset", 1) < Version)
 { //老用户提醒更改设置
-	alert("2.1.0版本可自定义下载网址了，可以按需修改。");
+	alert("3.0版本可自定义文件夹名誉图标了（仅Windwos Explorer），请重置设置。");
 	ResetConfig(true);
 }
-var icon_size = 256; //生成图标的大小
 
 var download_mod = getConfig("PUBD_download_mode",1); //下载模式
 var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(-[0-9a-zA-Z]+)?(?:_p\\d+|_ugoira\\d+x\\d+)?)(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
@@ -831,6 +830,9 @@ function buildSetting()
 				'min-height:150px',
 				'max-height:150px',
 			].join(';') + "\r\n}",
+			".desktop_readme" + "{\r\n" + [
+				'float:right',
+			].join(';') + "\r\n}",
 		].join('\r\n');
 
 
@@ -1121,8 +1123,16 @@ function buildSetting()
 	li.appendChild(divText);
 	ul.appendChild(li);
 
-	divName.innerHTML = "RPC模式自定义文件夹";
-	divTime.innerHTML = "通过Desktop.ini实现（仅支持Windows Explorer）"
+	divName.innerHTML = "自定义文件夹";
+	divTime.innerHTML = "通过Desktop.ini实现（仅Windows Explorer）"
+
+	var lnk = document.createElement("a");
+	lnk.className = "desktop_readme";
+	lnk.innerHTML = "功能使用说明";
+	lnk.href = "https://github.com/Mapaler/PixivUserBatchDownload/blob/develop/Customize_Folder_README.md";
+	lnk.target = "_blank";
+	divText.appendChild(lnk);
+	
 	var ipt = document.createElement("input");
 	ipt.type = "checkbox";
 	ipt.className = "PUBD_desktop";
@@ -1137,7 +1147,7 @@ function buildSetting()
 	if (getConfig("PUBD_desktop", 1)) ipt.setAttribute('checked', 'true');
 	var lbl = document.createElement("label");
 	lbl.setAttribute('for', ipt.id);
-	lbl.innerHTML = "启用";
+	lbl.innerHTML = "启用（仅RPC模式）";
 	divText.appendChild(ipt);
 	divText.appendChild(lbl);
 
