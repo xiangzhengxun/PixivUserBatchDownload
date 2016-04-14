@@ -44,14 +44,17 @@ For each user in root.SubFolders
 	cstFolder = False
 	'oldAttributes = user.Attributes
 	For each file in user.Files
-		If fs.GetExtensionName(file) = "torrent" Then
+		If file.name = "Desktop.ini" Then
+			cstFolder = True
+		ElseIf fs.GetExtensionName(file) = "torrent" Then
 			If fs.FileExists(user.Path & "\Desktop.ini") Then fs.DeleteFile(user.Path & "\Desktop.ini")
 			file.Move user.Path & "\Desktop.ini"
 			file.Attributes = FILE_ATTRIBUTE_HIDDEN Or FILE_ATTRIBUTE_SYSTEM Or FILE_ATTRIBUTE_ARCHIVE
 			cstFolder = True
 		ElseIf file.name = "head.image" Then
+			If fs.FileExists(user.Path & "\head.ico") Then fs.DeleteFile(user.Path & "\head.ico")
 			'转格式的命令行
-			command = """" & p_ncvt & """ -resize 256 256 -out ico -q -truecolors "
+			command = """" & p_ncvt & """ -resize 256 256 -ratio -out ico "
 			command = command & " -D" '删除原始文件
 			command = command & " -overwrite" '覆盖存在文件
 			command = command & " """ & file.Path & """"
