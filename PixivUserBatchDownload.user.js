@@ -21,7 +21,7 @@ var Version = 4; //当前设置版本，用于提醒是否需要
 if (!getConfig("PUBD_reset", -1))ResetConfig(); //新用户重置设置
 if (getConfig("PUBD_reset", 1) < Version)
 { //老用户提醒更改设置
-	alert("3.0版本可自定义文件夹名誉图标了（仅Windwos Explorer），请重置设置。");
+	alert("3.0版本可自定义文件夹名与图标了（仅Windwos Explorer），请重置设置。");
 	ResetConfig(true);
 }
 
