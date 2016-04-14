@@ -1,3 +1,21 @@
+'*************************************
+' 本程序用于将P站画师个人作品批量下载工具老版本默认目录转换为
+' v3.0版新添加的自定义文件夹功能需要的目录
+' 
+' https://github.com/Mapaler/PixivUserBatchDownload
+'*************************************
+Dim downDir
+If WScript.Arguments.Count>1 Then
+	downDir = WScript.Arguments(0)
+End If
+If Not fso.FolderExists(downDir) Then
+	downDir = InputBox("输入P站图片下载根目录，既所有用户所在文件夹。","自定义文件夹脚本")
+End If
+If Not fso.FolderExists(downDir) Then
+	WScript.Echo "图片目录不存在"
+	WScript.Quit
+End If
+
 Set ws = CreateObject("WScript.Shell")
 set fs = CreateObject("Scripting.FileSystemObject")
 

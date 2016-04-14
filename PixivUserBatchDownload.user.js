@@ -838,8 +838,9 @@ function buildSetting()
 
 	//标题行
 	var h2 = document.createElement("h2");
-	h2.innerHTML = "Pixiv画师作品批量获取工具选项";
+	h2.innerHTML = "Pixiv画师作品批量获取工具 v" + (GM_info.script.version ? GM_info.script.version : "") + " 选项";
 
+	h2.appendChild(document.createElement("br"));
 	var a = document.createElement("a");
 	a.className = "_official-badge";
 	a.innerHTML = "设置说明";
