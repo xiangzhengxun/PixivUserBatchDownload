@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 3.0.0 Alpha4
+// @version	 3.0.0 Alpha5
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -41,7 +41,8 @@ var dataset =
 	illust_count: 0, //作品总数
 	illust_file_count: 0, //作品文件总数（含多图）
 	illust:[
-	]
+	],
+	desktop_line: "", //%{desktop_line} 每文件输出行的集合
 }
 function illust()
 {
@@ -193,7 +194,7 @@ btnStart.onclick = function (e)
 li1.appendChild(btnStart);
 
 //生成设置窗口DOM
-var setInsertPlace = document.getElementsByClassName("column-header")[0] || document.body;
+var setInsertPlace = document.getElementsByClassName("layout-wrapper")[0] || document.body;
 var setWindow = buildSetting();
 //生成导出窗口DOM
 var exportInsertPlace = setInsertPlace;
@@ -1181,7 +1182,7 @@ function buildSetting()
 
 	var lbl = document.createElement("label");
 	lbl.setAttribute('for', ipt.id);
-	lbl.innerHTML = "%{desktop_line} 尾端的每文件格式";
+	lbl.innerHTML = "尾端的每文件格式（%{desktop_line}）";
 	divText.appendChild(lbl);
 	divText.appendChild(document.createElement("br"));
 	divText.appendChild(ipt);
@@ -1431,11 +1432,8 @@ function startDownload(mode) {
 		case 0: //RPC模式
 			var aria2 = new ARIA2(getConfig("PUBD_PRC_path"));
 
-			if (getConfig("PUBD_desktop", 1))
-			{
-				var desktopTxt = showMask(getConfig("PUBD_desktop_main"));
-			}
 
+			dataset.desktop_line = "";
 			for (var ii = 0; ii < dataset.illust.length; ii++) {
 				var ill = dataset.illust[ii];
 				for (var pi = 0; pi < ill.original_src.length; pi++)
@@ -1455,7 +1453,8 @@ function startDownload(mode) {
 
 						if (getConfig("PUBD_desktop", 1))
 						{
-							desktopTxt = desktopTxt.replace("%{desktop_line}", showMask(getConfig("PUBD_desktop_line"), ill, pi));
+							dataset.desktop_line += showMask(getConfig("PUBD_desktop_line"), ill, pi);
+							dataset.desktop_line += "\r\n";
 						}
 						//快速模式重新更改扩展名
 						if (download_mod == 1)
@@ -1491,6 +1490,9 @@ function startDownload(mode) {
 				}
 				aria2.addUri(showMask("%{user_head}"), srtObj);
 
+				var desktopTxt = showMask(getConfig("PUBD_desktop_main"));
+				//desktopTxt = desktopTxt.replace("%{desktop_line}", desktop_line);
+
 				var txtblod = new UTF16LE(desktopTxt);
 				var reader = new FileReader();
 				reader.onload = function (res)
@@ -1498,6 +1500,7 @@ function startDownload(mode) {
 					var txt = res.target.result;
 					aria2.addTorrent(txt.split(',')[1], srtObj);
 				};
+				
 				reader.readAsDataURL(txtblod.blob);
 			}
 
