@@ -1130,7 +1130,7 @@ function buildSetting()
 	var lnk = document.createElement("a");
 	lnk.className = "desktop_readme";
 	lnk.innerHTML = "功能使用说明";
-	lnk.href = "https://github.com/Mapaler/PixivUserBatchDownload/blob/develop/Customize_Folder/README.md";
+	lnk.href = "https://github.com/Mapaler/PixivUserBatchDownload/tree/develop/Customize_Folder";
 	lnk.target = "_blank";
 	divText.appendChild(lnk);
 	
