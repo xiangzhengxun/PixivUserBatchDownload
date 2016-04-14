@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 3.0.0 Alpha3
+// @version	 3.0.0 Alpha4
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -838,7 +838,7 @@ function buildSetting()
 
 	//标题行
 	var h2 = document.createElement("h2");
-	h2.innerHTML = "Pixiv画师作品批量获取工具 v" + (GM_info.script.version ? GM_info.script.version : "") + " 选项";
+	h2.innerHTML = "Pixiv画师作品批量获取工具" + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : "");
 
 	h2.appendChild(document.createElement("br"));
 	var a = document.createElement("a");
@@ -1130,7 +1130,7 @@ function buildSetting()
 	var lnk = document.createElement("a");
 	lnk.className = "desktop_readme";
 	lnk.innerHTML = "功能使用说明";
-	lnk.href = "https://github.com/Mapaler/PixivUserBatchDownload/blob/develop/Customize_Folder_README.md";
+	lnk.href = "https://github.com/Mapaler/PixivUserBatchDownload/blob/develop/Customize_Folder/README.md";
 	lnk.target = "_blank";
 	divText.appendChild(lnk);
 	
@@ -1659,9 +1659,9 @@ function ResetConfig(part)
 		"IconFile=head.ico" ,
 		"IconIndex=0" ,
 		"InfoTip=作者id为%{user_id}，账户为%{user_pixiv_id}，目前有%{illust_count}件作品",
-		"[ViewState]" ,
-		"FolderType=Pictures" ,
-		"Logo=head.ico",
+		//"[ViewState]" ,
+		//"FolderType=Pictures" ,
+		//"Logo=head.ico",
 		"[LocalizedFileNames]" ,
 		].join("\r\n")
 		, part);
