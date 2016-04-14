@@ -15,3 +15,4 @@ P站画师个人作品批量下载工具3.0版开始支持自定义文件夹名�
 ![放置](http://ww4.sinaimg.cn/large/6c84b2d6gw1f2vi15qw7ij20gn01gt8s.jpg)
 
 程序会自动将“torrent”文件还原回“Desktop.ini”，“head.image”转换为图标文件。
+

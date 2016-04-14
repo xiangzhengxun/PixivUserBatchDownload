@@ -11,7 +11,7 @@ Dim ws,fs
 Set ws = CreateObject("WScript.Shell")
 set fs = CreateObject("Scripting.FileSystemObject")
 
-If WScript.Arguments.Count>1 Then
+If WScript.Arguments.Count>0 Then
 	downDir = WScript.Arguments(0)
 End If
 If Not fs.FolderExists(downDir) Then
