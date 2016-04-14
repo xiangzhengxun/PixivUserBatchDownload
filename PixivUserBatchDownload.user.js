@@ -1181,7 +1181,7 @@ function buildSetting()
 
 	var lbl = document.createElement("label");
 	lbl.setAttribute('for', ipt.id);
-	lbl.innerHTML = "尾端的每文件格式";
+	lbl.innerHTML = "%{desktop_line} 尾端的每文件格式";
 	divText.appendChild(lbl);
 	divText.appendChild(document.createElement("br"));
 	divText.appendChild(ipt);
@@ -1455,7 +1455,7 @@ function startDownload(mode) {
 
 						if (getConfig("PUBD_desktop", 1))
 						{
-							desktopTxt += "\r\n"+showMask(getConfig("PUBD_desktop_line"),ill,pi);
+							desktopTxt = desktopTxt.replace("%{desktop_line}", showMask(getConfig("PUBD_desktop_line"), ill, pi));
 						}
 						//快速模式重新更改扩展名
 						if (download_mod == 1)
@@ -1662,7 +1662,8 @@ function ResetConfig(part)
 		//"[ViewState]" ,
 		//"FolderType=Pictures" ,
 		//"Logo=head.ico",
-		"[LocalizedFileNames]" ,
+		"[LocalizedFileNames]",
+		"%{desktop_line}",
 		].join("\r\n")
 		, part);
 	partReset("PUBD_desktop_line", "%{filename}.%{extention}=%{title}_p%{page}", part);
