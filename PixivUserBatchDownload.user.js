@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 3.0.0 Alpha5
+// @version	 3.0.0 Alpha6
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -1549,7 +1549,8 @@ function startDownload(mode) {
 			var txta = document.getElementsByName("PUBD_batch")[0];
 			var btn = document.getElementsByName("PUBD_down")[0];
 			if (txta) txta.value = txt;
-			var downurl = "data:text/html;charset=utf-8," + encodeURIComponent(downtxt);
+			var downBlob = new Blob([downtxt], {'type': 'text\/plain'});
+			var downurl = window.URL.createObjectURL(downBlob);//"data:text/plain;charset=utf-8," + encodeURIComponent(downtxt);
 			if (btn)
 			{
 				btn.href = downurl;
