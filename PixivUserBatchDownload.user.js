@@ -1441,6 +1441,11 @@ function startDownload(mode) {
 					var ext = ill.extention[pi];
 					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
 					{
+						if (getConfig("PUBD_desktop", 1))
+						{
+							dataset.desktop_line += showMask(getConfig("PUBD_desktop_line"), ill, pi);
+							dataset.desktop_line += "\r\n";
+						}
 						var srtObj = {
 							"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
 							"referer": showMask(getConfig("PUBD_referer"), ill, pi),
@@ -1451,11 +1456,6 @@ function startDownload(mode) {
 						}
 						aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
 
-						if (getConfig("PUBD_desktop", 1))
-						{
-							dataset.desktop_line += showMask(getConfig("PUBD_desktop_line"), ill, pi);
-							dataset.desktop_line += "\r\n";
-						}
 						//快速模式重新更改扩展名
 						if (download_mod == 1)
 						{

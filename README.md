@@ -15,13 +15,16 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 如果你想分发你修改后的程序，但是你不想要公布修改后的源代码，请与我联系。
 
 ## 配置Aria2
-[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.21.0-win-64bit-build1.zip”，然后解压到文件夹。
+[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.22.0-win-64bit-build1.zip”，然后解压到文件夹。
 
-1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。
+1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_RPC_mode_for_Pixiv.bat)
 
-	`aria2c.exe --conf-path="aria2_Pixiv.ini"`
+	```bat
+	if not exist aria2_Pixiv.session.txt cd .>aria2_Pixiv.session.txt
+	aria2c.exe --conf-path="aria2_Pixiv.ini"
+	```
 
-2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
+2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_Pixiv.ini)
 	```ini
 	# Aria2默认保存路径可自行修改，v1.4.0开始此设置已内置到下载设置，留空时才使用这里的设置。
 	dir=C:\Users\Public\Downloads\
@@ -46,13 +49,11 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 	rpc-save-upload-metadata=true
 	rpc-secure=false
 	```
-	选项中若含中文/日文字符需要保存为UTF-8编码，下图分别是Windows自带记事本与Notepad2的保存方法。
-	![Windows自带记事本保存为UTF-8编码](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2dwz1csn0j20kw0dxtah.jpg)![Notepad2保存为UTF-8编码](http://ww2.sinaimg.cn/large/6c84b2d6gw1f2dwshr79mj20fw0ejdho.jpg)
-3. 再建立“aria2_Pixiv.session.txt”的空文件。此文件用来保存下载会话，可以使关闭Aria2程序后，再次打开继续下载之前没下载完成的。
-
-![文件示例](http://ww2.sinaimg.cn/large/6c84b2d6gw1f2dwm3rlooj20j20nr42z.jpg)
+	设置中若含中文/日文字符需要保存为UTF-8编码。
 
 然后运行bat文件即可开启Aria2的RPC模式。
+
+![文件示例](http://ww4.sinaimg.cn/large/6c84b2d6gw1f30n8ywl7bj20mp0fpaff.jpg)
 
 [下载最新的webui-aria2（有中文）](https://github.com/ziahamza/webui-aria2/archive/master.zip)，然后解压到文件夹，打开“index.html”，默认设置下会自动连接上刚才配置的本地的Aria2 RPC模式。然后你便可以像普通下载软件一样对Aria2进行管理了。
 
@@ -79,11 +80,9 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 
 默认设置，下载会将不同画师作品分文件夹存放，每个画师里多图则再建一个文件夹。
 
-![默认结构](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o64ilrutj20fe09caax.jpg)
+![默认结构](http://ww4.sinaimg.cn/large/6c84b2d6gw1f30mnf8s93j20fx0gpabz.jpg)
 
-![画师文件夹](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1kym1a6ytj20ha07nt9o.jpg)
-
-![多图文件夹](http://ww3.sinaimg.cn/large/6c84b2d6gw1f1kymkw0iwj20id06x0u1.jpg)
+![画师文件夹](http://ww3.sinaimg.cn/large/6c84b2d6gw1f30mpc4h5fj20nb0g7440.jpg)
 
 需要修改请参考下方设置
 ## 设置
