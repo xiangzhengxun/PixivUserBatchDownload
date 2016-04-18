@@ -1,27 +1,33 @@
 // ==UserScript==
 // @name		PixivUserBatchDownload
-// @name:zh-CN  P站画师个人作品批量下载工具
-// @namespace   http://www.mapaler.com/
-// @description Batch download pixiv user's images in one key.
-// @description:zh-CN   一键批量下载P站画师的全部作品
-// @include	 http://www.pixiv.net/*
+// @name:zh-CN	P站画师个人作品批量下载工具
+// @namespace	http://www.mapaler.com/
+// @description	Batch download pixiv user's images in one key.
+// @description:zh-CN	一键批量下载P站画师的全部作品
+// @include		http://www.pixiv.net/*
 // @exclude		http://www.pixiv.net/*mode=manga&illust_id*
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 3.0.1
-// @grant	   none
-// @copyright   2016+, Mapaler <mapaler@163.com>
+// @version		3.0.2
+// @grant		none
+// @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // ==/UserScript==
 
 (function() {
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
 var Version = 4; //当前设置版本，用于提醒是否需要
-if (!getConfig("PUBD_reset", -1))ResetConfig(); //新用户重置设置
+var scriptName = typeof (GM_info) != "undefined" ? GM_info.script.localizedName : "P站画师个人作品批量下载工具"; //本程序的名称
+var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
+if (!getConfig("PUBD_reset", -1))
+{
+	spawnNotification("枫谷剑仙：欢迎使用" + scriptName, "https://avatars1.githubusercontent.com/u/6565860?v=3&s=460", "Welcome!");
+	ResetConfig(true); //新用户重置设置
+}
 if (getConfig("PUBD_reset", 1) < Version)
 { //老用户提醒更改设置
-	alert("3.0版本可自定义文件夹名与图标了（仅Windwos Explorer），请重置设置。");
+	alert("3.0版本可自定义文件夹名与图标了（仅Windwos Explorer），使用此功能建议重置设置。");
 	ResetConfig(true);
 }
 
@@ -30,8 +36,6 @@ var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\
 //var userImagePattern = "https?://([^/]+)/.+/(\w+)/(\\d+)\\.([\\w\\d]+)"; //P站用户头像图片地址正则匹配式
 
 var getPicNum = 0; //Ajax获取了文件的数量
-var scriptName = typeof (GM_info) != "undefined" ? GM_info.script.localizedName : "P站画师个人作品批量下载工具"; //本程序的名称
-var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
 var downOver; //检测下载是否完成的循环函数
 
 var dataset =
@@ -703,12 +707,14 @@ var ARIA2 = (function () {
 				if (xhr.readyState == 4 && xhr.status == 200)
 				{
 					var JSONreq = JSON.parse(xhr.responseText);
-					spawnNotification("发现Aria2 ver" + JSONreq.result.version, scriptIcon, scriptName);
-					//document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="发现Aria2 ver" + JSONreq.result.version;
+					//spawnNotification("发现Aria2 ver" + JSONreq.result.version, scriptIcon, scriptName);
+					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="发现Aria2 ver" + JSONreq.result.version;
 				}
 				else if (xhr.readyState == 4 && xhr.status != 200)
-					spawnNotification("Aria2连接失败" + JSONreq.result.version, scriptIcon, scriptName);
-					//document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="Aria2连接失败";
+				{
+					//spawnNotification("Aria2连接失败", scriptIcon, scriptName);
+					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="Aria2连接失败";
+				}
 			}
 		}
 	};
@@ -826,7 +832,7 @@ function buildSetting()
 				'width:120px',
 			].join(';\r\n') + "\r\n}",
 			".PUBD_PRC_path" + "{\r\n" + [
-				'width:260px' ,
+				'width:180px' ,
 			].join(';') + "\r\n}",
 			".full_text_width" + "{\r\n" + [
 				'width:340px' ,
@@ -958,7 +964,8 @@ function buildSetting()
 	btnCheckLink.innerHTML = "检测地址";
 	btnCheckLink.onclick = function ()
 	{
-		//this.innerHTML = "正在连接...";
+		this.innerHTML = "正在连接...";
+		//spawnNotification("正在连接Aria2...", scriptIcon, scriptName);
 		var aria2 = new ARIA2(document.getElementsByName("PUBD_PRC_path")[0].value);
 		aria2.getVersion();
 	}
@@ -1450,7 +1457,7 @@ function buildDirectLink()
 function startProgramCheck(mode) {
 	if (getPicNum > 0 && getPicNum >= dataset.illust_file_count) {
 		li2.innerHTML = "获取完成：" + getPicNum + "/" + dataset.illust_file_count;
-		if (mode!=0) spawnNotification(dataset.user_name + " 的作品解析完成。", dataset.user_head, scriptName);
+		if (mode!=0) spawnNotification(dataset.user_name + " 的作品解析完成", dataset.user_head, scriptName);
 		startDownload(mode);
 		clearInterval(downOver);
 	}
