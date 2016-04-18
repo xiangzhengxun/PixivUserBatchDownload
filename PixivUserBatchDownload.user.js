@@ -1758,7 +1758,7 @@ function replacePathSafe(str, keepTree) //去除Windows下无法作为文件名�
 	if (keepTree)
 		var nstr = str.replace(/[\*\?"<>\|]/ig, "_");
 	else
-		var nstr = str.replace(/[\\\/:\*\?"<>\|]/ig, "_");
+		var nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_");
 	return nstr;
 }
 })();

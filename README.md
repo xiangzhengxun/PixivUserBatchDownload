@@ -17,18 +17,14 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 ## 配置Aria2
 [下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.22.0-win-64bit-build1.zip”，然后解压到文件夹。
 
-1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。<a href="https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_RPC_mode_for_Pixiv.bat" target="_blank" download="aria2_RPC_mode_for_Pixiv.bat">直接下载</a>
-	
-	[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_RPC_mode_for_Pixiv.bat)
+1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_RPC_mode_for_Pixiv.bat)
 	
 	```bat
 	if not exist aria2_Pixiv.session.txt cd .>aria2_Pixiv.session.txt
 	aria2c.exe --conf-path="aria2_Pixiv.ini"
 	```
 
-2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。<a href="https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_RPC_mode_for_Pixiv.bat" target="_blank" download="aria2_RPC_mode_for_Pixiv.bat">直接下载</a>
-	
-	[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_Pixiv.ini)
+2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_Pixiv.ini)
 	
 	```ini
 	# Aria2默认保存路径可自行修改，v1.4.0开始此设置已内置到下载设置，留空时才使用这里的设置。
@@ -77,21 +73,21 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 
 ![下载状态](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1ky66pylwj21gs0utasp.jpg)
 
-流量不够也可导出成批处理命令或者会话文件拿回家下载，多个文件可以简单的换行合并。
+流量不够也可导出成批处理命令或者会话文件拿回家下载(多个文件可以简单的换行合并)。
 
 ![导出窗口](http://ww2.sinaimg.cn/large/6c84b2d6gw1f30npja9o8j20an0bztcw.jpg)
 
 使用会话文件的命令行为`aria2c.exe --input-file="xxxxx.session.txt"`
 
-默认设置，下载会将不同画师作品分文件夹存放，每个画师里多图则再建一个文件夹。
+默认设置，下载会将不同画师作品分文件夹存放。
 
 ![默认结构](http://ww4.sinaimg.cn/large/6c84b2d6gw1f30mnf8s93j20fx0gpabz.jpg)
 
 ![画师文件夹](http://ww3.sinaimg.cn/large/6c84b2d6gw1f30mpc4h5fj20nb0g7440.jpg)
 
-需要修改请参考下方设置
+自定义文件夹请参考[文件夹自定义工具使用方法](https://github.com/Mapaler/PixivUserBatchDownload/tree/develop/Customize_Folder)
 ## 设置
-![设置界面](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2dwvwda6rj20ad0b1wfu.jpg)
+![设置界面](http://ww3.sinaimg.cn/large/6c84b2d6gw1f30p81rd7dj20ai0nhgqh.jpg)
 
 为了方便批处理与会话文件的使用，以及方便将Aria2同时用在其他地方（比如批量下载百度云），v1.4.0版本开始添加了内置的下载目录设置，请在下载前先修改下载目录到你所需要的地方。留空时则使用“aria2_Pixiv.ini”里设定了的默认下载目录的位置。
 
@@ -120,8 +116,8 @@ filename : 文件名
 	“%{illust_id}%{hash}_p%{page}”
 hash : 仅好友可见图片的加密字符串
 extention : 扩展名
-page : 第几页（漫画）
-page_count : 共几页（漫画）
+page : 第几页（多图只有一个zip，为0）
+page_count : 共几页（多图为帧数）
 original_src : 原始图片链接
 	▲如下掩码可组合出相同值
 	“http://%{domain}/img-original/img/%{year}/%{month}/%{day}/%{hour}/%{minute}/%{second}/%{filename}.%{extention}”
@@ -140,17 +136,18 @@ hour : 时
 minute : 分
 second : 秒
 time : 显示时间
-size : 显示大小
-width : 宽
-height : 高
+size : 作品页面上显示的大小（多图为张数）
+width : 宽（多图为第一张的数值）
+height : 高（多图为第一张的数值）
 tools : 使用工具
 caption : 说明
 tags : 标签
+desktop_line : 自定义文件夹里每个文件改名的部分，如果要自己使用请确保你知道它的意思。
 ```
 ##支持Aria2搭建NAS远程下载
 Aria2是跨平台下载软件，你可以在其他系统下配置本程序，MacOS、Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
 
-在我的华为盒子（M330）上配置了Aria2，然后打开路由的端口映射，在单位办公室成功访问（看你的网络通畅情况）。
+在我的华为盒子（M330）上配置了Aria2，然后打开路由的端口映射（还可以上个动态DNS），在单位办公室成功访问。能否访问取决于你的网络拓扑情况，移动、铁通的网络，电信联通就可能访问不了，但是你可以用移动的数据流量访问。
 
 注意Linux（含安卓）系一定得改用左斜杠，不然无法正确生成路径。
 
