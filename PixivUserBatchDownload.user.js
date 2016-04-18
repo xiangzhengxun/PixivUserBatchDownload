@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.0.2
+// @version		3.0.3
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -69,12 +69,12 @@ function illust()
 		extention: [""], //扩展名
 		original_src: [""], //原始图片链接
 		page_count: 0, //共几页（漫画）
-		year: 0,
-		month: 0,
-		day: 0,
-		hour: 0,
-		minute: 0,
-		second: 0,
+		year: "",
+		month: "",
+		day: "",
+		hour: "",
+		minute: "",
+		second: "",
 
 		thumbnail_src: "", //缩略图地址
 		domain: "", //域名
@@ -230,7 +230,10 @@ function startProgram(mode)
 function dealUserPage1(userId)
 {
 	if (userId == undefined)
-		userId = pixiv.context.userId;
+	{
+		var user_link = document.getElementsByClassName("user-link")[0];
+		userId = parseInt(user_link.href.replace(/\D+(\d+)$/ig, "$1"));
+    }
 	dataset.user_id = userId;
 
 	var locationSearch = (document.location.search.length > 0 ? document.location.search.replace(/mode=\w+/ig, "").replace(/illust_id=\d+/ig, "").replace(/id=\d+/ig, "") : "?");
