@@ -1,7 +1,7 @@
 ﻿# PixivUserBatchDownload
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。
 
-建议使用[![](https://www.mozilla.org/media/img/firefox/favicon.dc6635050bf5.ico)FireFox](http://www.firefox.com)的[![](https://github.com/greasemonkey/greasemonkey/raw/master/skin/icon32.png)GreaseMonkey](http://www.greasespot.net/)扩展[![](https://greasyfork.org/assets/blacklogo16-b25b443f36e2d36c54cd2ca280f158c5.png)安装本脚本程序](https://greasyfork.org/scripts/17879)（←到Greasy Fork安装可以自动更新的哦）。因为Chrome本身的原因仅提供有限支持，需安装Tampermonkey扩展使用。
+建议使用[![](https://www.mozilla.org/media/img/firefox/favicon.dc6635050bf5.ico)FireFox](http://www.firefox.com)的[![](https://github.com/greasemonkey/greasemonkey/raw/master/skin/icon32.png)GreaseMonkey](http://www.greasespot.net/)扩展[安装v3.0脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/PixivUserBatchDownload.user.js)。因为Chrome本身的原因仅提供有限支持，需安装Tampermonkey扩展使用。
 
 需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
 
