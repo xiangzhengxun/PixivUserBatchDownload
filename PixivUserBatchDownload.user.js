@@ -1,4 +1,4 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name		PixivUserBatchDownload
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @namespace	http://www.mapaler.com/
