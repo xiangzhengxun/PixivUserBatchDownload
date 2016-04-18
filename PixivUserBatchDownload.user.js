@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 2.5.0
+// @version	 2.6.0
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -792,7 +792,14 @@ function buildSetting()
 
 	//标题行
 	var h2 = document.createElement("h2");
-	h2.innerHTML = "Pixiv画师作品批量获取工具选项";
+	h2.innerHTML = "Pixiv画师作品批量获取工具" + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : "");
+	h2.appendChild(document.createElement("br"));
+	var a = document.createElement("a");
+	a.style.color = "red";
+	a.href = "https://github.com/Mapaler/PixivUserBatchDownload/tree/develop";
+	a.target = "_blank";
+	a.innerHTML = "试用3.0，提供反馈，参与开发";
+	h2.appendChild(a);
 
 	var a = document.createElement("a");
 	a.className = "_official-badge";
@@ -1371,7 +1378,8 @@ function startDownload(mode) {
 			var txta = document.getElementsByName("PUBD_batch")[0];
 			var btn = document.getElementsByName("PUBD_down")[0];
 			if (txta) txta.value = txt;
-			var downurl = "data:text/html;charset=utf-8," + encodeURIComponent(downtxt);
+			var downBlob = new Blob([downtxt], {'type': 'text\/plain'});
+			var downurl = window.URL.createObjectURL(downBlob);//"data:text/plain;charset=utf-8," + encodeURIComponent(downtxt);
 			if (btn)
 			{
 				btn.href = downurl;
