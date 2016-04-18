@@ -1,4 +1,4 @@
-﻿# PixivUserBatchDownload
+﻿# PixivUserBatchDownload v3.0开发中
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。
 
 建议使用[![](https://www.mozilla.org/media/img/firefox/favicon.dc6635050bf5.ico)FireFox](http://www.firefox.com)的[![](https://github.com/greasemonkey/greasemonkey/raw/master/skin/icon32.png)GreaseMonkey](http://www.greasespot.net/)扩展[安装v3.0脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/PixivUserBatchDownload.user.js)。因为Chrome本身的原因仅提供有限支持，需安装Tampermonkey扩展使用。
@@ -10,7 +10,7 @@
 
 PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 
-此程序是免费软件。你可以将它根据GNU通用公共许可证第三版重新分发和/或修改。[LICENSE](https://github.com/Mapaler/PixivUserBatchDownload/blob/master/LICENSE)
+此程序是免费软件。你可以将它根据“GNU通用公共许可证第三版(GPLv3)”重新分发和/或修改。[LICENSE](https://github.com/Mapaler/PixivUserBatchDownload/blob/master/LICENSE)
 
 如果你想分发你修改后的程序，但是你不想要公布修改后的源代码，请与我联系。
 
@@ -61,7 +61,7 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 ![webui-aria2界面](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o5q4ljyqj20vv0nvgq4.jpg)
 
 ## 开始下载
-安装或手动执行脚本后，在P站画师的页面会生成一个按钮。
+安装脚本后，在P站画师的页面会生成一个按钮。
 
 ![页面位置](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohqawkotj20ew0dngni.jpg)
 
@@ -69,7 +69,7 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 
 ![支持筛选](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohp4vafoj20n10boq50.jpg)
 
-点击进行分析后即可自动发送到设置的Aria2下载（下图来自老版本）。
+点击并分析完成后即自动发送到设置的Aria2下载（下图来自老版本）。
 
 ![下载状态](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1ky66pylwj21gs0utasp.jpg)
 
