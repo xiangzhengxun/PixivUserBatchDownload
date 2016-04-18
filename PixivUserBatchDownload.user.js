@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 3.0.0 Beta1
+// @version	 3.0.1
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -30,6 +30,8 @@ var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\
 //var userImagePattern = "https?://([^/]+)/.+/(\w+)/(\\d+)\\.([\\w\\d]+)"; //P站用户头像图片地址正则匹配式
 
 var getPicNum = 0; //Ajax获取了文件的数量
+var scriptName = typeof (GM_info) != "undefined" ? GM_info.script.localizedName : "P站画师个人作品批量下载工具"; //本程序的名称
+var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
 var downOver; //检测下载是否完成的循环函数
 
 var dataset =
@@ -212,7 +214,13 @@ function startProgram(mode)
 		dealUserPage1();
 	}
 	clearInterval(downOver);
-	downOver = setInterval(function () { startProgramCheck(mode) }, 500);
+	if (getPicNum > 0 && getPicNum >= dataset.illust_file_count)
+	{
+		startDownload(mode);
+	} else
+	{
+		downOver = setInterval(function () { startProgramCheck(mode) }, 500);
+	}
 }
 
 function dealUserPage1(userId)
@@ -283,7 +291,21 @@ function dealUser(response, linkPre, userId)
 	}
 
 }
-
+//发送网页通知
+function spawnNotification(theBody, theIcon, theTitle)
+{
+	var options = {
+		body: theBody,
+		icon: theIcon
+	}
+	if (!("Notification" in window))
+	{
+		alert(theBody);
+	} else
+	{
+		var n = new Notification(theTitle, options);
+	}
+}
 //获取页面网址
 function getPageSrc(linkPre, page)
 {
@@ -681,10 +703,12 @@ var ARIA2 = (function () {
 				if (xhr.readyState == 4 && xhr.status == 200)
 				{
 					var JSONreq = JSON.parse(xhr.responseText);
-					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="发现Aria2 ver" + JSONreq.result.version;
+					spawnNotification("发现Aria2 ver" + JSONreq.result.version, scriptIcon, scriptName);
+					//document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="发现Aria2 ver" + JSONreq.result.version;
 				}
 				else if (xhr.readyState == 4 && xhr.status != 200)
-					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="Aria2连接失败";
+					spawnNotification("Aria2连接失败" + JSONreq.result.version, scriptIcon, scriptName);
+					//document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="Aria2连接失败";
 			}
 		}
 	};
@@ -802,7 +826,7 @@ function buildSetting()
 				'width:120px',
 			].join(';\r\n') + "\r\n}",
 			".PUBD_PRC_path" + "{\r\n" + [
-				'width:180px' ,
+				'width:260px' ,
 			].join(';') + "\r\n}",
 			".full_text_width" + "{\r\n" + [
 				'width:340px' ,
@@ -934,7 +958,7 @@ function buildSetting()
 	btnCheckLink.innerHTML = "检测地址";
 	btnCheckLink.onclick = function ()
 	{
-		this.innerHTML = "正在连接...";
+		//this.innerHTML = "正在连接...";
 		var aria2 = new ARIA2(document.getElementsByName("PUBD_PRC_path")[0].value);
 		aria2.getVersion();
 	}
@@ -1249,6 +1273,7 @@ function buildSetting()
 		setConfig("PUBD_desktop_main", document.getElementsByName("PUBD_desktop_main")[0].value);
 		setConfig("PUBD_desktop_line", document.getElementsByName("PUBD_desktop_line")[0].value);
 
+		spawnNotification("设置已保存", scriptIcon, scriptName);
 		btnCancel.onclick();
 	}
 
@@ -1425,6 +1450,7 @@ function buildDirectLink()
 function startProgramCheck(mode) {
 	if (getPicNum > 0 && getPicNum >= dataset.illust_file_count) {
 		li2.innerHTML = "获取完成：" + getPicNum + "/" + dataset.illust_file_count;
+		if (mode!=0) spawnNotification(dataset.user_name + " 的作品解析完成。", dataset.user_head, scriptName);
 		startDownload(mode);
 		clearInterval(downOver);
 	}
@@ -1517,7 +1543,8 @@ function startDownload(mode) {
 				reader.readAsDataURL(txtblod.blob);
 			}
 
-			alert("全部发送完毕");
+			spawnNotification(dataset.user_name + " 的作品下载链接已发送到Aria2", dataset.user_head, scriptName);
+
 			break;
 		case 1: //生成BAT下载命令模式
 			var txt = "";
@@ -1703,6 +1730,8 @@ function ResetConfig(part)
 	if (document.getElementsByName("PUBD_desktop")[0]) document.getElementsByName("PUBD_desktop")[0].checked = false;
 	if (document.getElementsByName("PUBD_desktop_main")[0]) { document.getElementsByName("PUBD_desktop_main")[0].value = getConfig("PUBD_desktop_main"); document.getElementsByName("PUBD_desktop_main")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 	if (document.getElementsByName("PUBD_desktop_line")[0]) { document.getElementsByName("PUBD_desktop_line")[0].value = getConfig("PUBD_desktop_line"); document.getElementsByName("PUBD_desktop_line")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
+
+	if (!part) spawnNotification("已重置为初始设置", scriptIcon, scriptName);
 };
 
 function showMask(str,ill,index,deal)
