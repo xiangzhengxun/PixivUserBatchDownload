@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version	 3.0.0 Alpha6
+// @version	 3.0.0 Beta1
 // @grant	   none
 // @copyright   2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -811,17 +811,21 @@ function buildSetting()
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .thread" + "{\r\n" + [
 				'margin:0',
+				'height:35px',
 				'padding-left:5px',
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .type_name" + "{\r\n" + [
 				'height:60px',
+			].join(';') + "\r\n}",
+			"#PixivUserBatchDownloadSetting .download_mode" + "{\r\n" + [
+				'height:55px',
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .text" + "{\r\n" + [
 				'height:4em',
 				'margin-right:0',
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .desktop" + "{\r\n" + [
-				'height:250px',
+				'height:240px',
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .desktop .text" + "{\r\n" + [
 				'height:240px',
@@ -844,8 +848,14 @@ function buildSetting()
 	h2.appendChild(document.createElement("br"));
 	var a = document.createElement("a");
 	a.className = "_official-badge";
-	a.innerHTML = "设置说明";
+	a.innerHTML = "使用说明";
 	a.href = "https://github.com/Mapaler/PixivUserBatchDownload/blob/master/README.md";
+	a.target = "_blank";
+	h2.appendChild(a);
+	var a = document.createElement("a");
+	a.className = "_official-badge";
+	a.innerHTML = "反馈";
+	a.href = "https://github.com/Mapaler/PixivUserBatchDownload/issues";
 	a.target = "_blank";
 	h2.appendChild(a);
 	//设置内容
@@ -1193,13 +1203,16 @@ function buildSetting()
 	confirmbar.style.display = "block";
 	var btnConfirm = document.createElement("button");
 	btnConfirm.className = "_button";
+	btnConfirm.title = "OK";
 	btnConfirm.innerHTML = "确定";
 	var btnCancel = document.createElement("button");
 	btnCancel.className = "_button";
+	btnCancel.title = "Cancel";
 	btnCancel.innerHTML = "取消";
 	btnCancel.onclick = function () { set.parentNode.removeChild(set); }
 	var btnReset = document.createElement("button");
 	btnReset.className = "_button";
+	btnReset.title = "Reset";
 	btnReset.innerHTML = "重置设置";
 	btnReset.onclick = function () { ResetConfig(); }
 	confirmbar.appendChild(btnConfirm);
@@ -1517,11 +1530,14 @@ function startDownload(mode) {
 					var ext = ill.extention[pi];
 					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
 					{
-						txt += "aria2c " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" \"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
+						txt += "aria2c --out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "\"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
 						downtxt += showMask(getConfig("PUBD_image_src"), ill, pi)
 							+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) : "")
 							+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true)
 							+ "\r\n referer=" + showMask(getConfig("PUBD_referer"), ill, pi)
+							+ "\r\n allow-overwrite=false"
+							+ "\r\n auto-file-renaming=false"
+							+ "\r\n remote-time=true"
 						;
 						txt += "\r\n";
 						downtxt += "\r\n";

@@ -1,7 +1,7 @@
 ﻿# PixivUserBatchDownload
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。
 
-建议使用[火狐](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://greasyfork.org/scripts/17879)（←到Greasy Fork安装可以自动更新的哦），因为Chrome技术原因仅提供有限功能支持，Chrome虽然原生支持但还是建议装Tampermonkey扩展。
+建议使用[FireFox](http://www.firefox.com)的[GreaseMonkey](http://www.greasespot.net/)扩展[安装本脚本程序](https://greasyfork.org/scripts/17879)（←到Greasy Fork安装可以自动更新的哦）。因为Chrome本身的原因仅提供有限支持，安装Tampermonkey扩展使用。
 
 需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
 
@@ -37,8 +37,8 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 
 	# 保存会话内容到文件
 	save-session=aria2_Pixiv.session.txt
-	# 每30秒保存当前会话，关闭时也会保存，设置为0只有关闭时才保存
-	save-session-interval=30
+	# 每60秒保存当前会话，关闭时也会保存，设置为0只有关闭时才保存
+	save-session-interval=60
 	# 启动时读取会话内容
 	input-file=aria2_Pixiv.session.txt
 
@@ -74,9 +74,9 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 
 流量不够也可导出成批处理命令或者会话文件拿回家下载，多个文件可以简单的换行合并。
 
-![导出窗口](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1o5wn8jlsj20ah067js9.jpg)
+![导出窗口](http://ww2.sinaimg.cn/large/6c84b2d6gw1f30npja9o8j20an0bztcw.jpg)
 
-使用会话文件的命令行为`aria2c.exe --input-file="filename"`
+使用会话文件的命令行为`aria2c.exe --input-file="xxxxx.session.txt"`
 
 默认设置，下载会将不同画师作品分文件夹存放，每个画师里多图则再建一个文件夹。
 
