@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.0.3
+// @version		3.0.4
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -18,8 +18,8 @@
 (function() {
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
 var Version = 4; //当前设置版本，用于提醒是否需要
-var scriptName = typeof (GM_info) != "undefined" ? GM_info.script.localizedName : "P站画师个人作品批量下载工具"; //本程序的名称
-var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
+var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
+var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
 if (!getConfig("PUBD_reset", -1))
 {
 	spawnNotification("枫谷剑仙：欢迎使用" + scriptName, "https://avatars1.githubusercontent.com/u/6565860?v=3&s=460", "Welcome!");
@@ -882,7 +882,7 @@ function buildSetting()
 	var a = document.createElement("a");
 	a.className = "_official-badge";
 	a.innerHTML = "使用说明";
-	a.href = "https://github.com/Mapaler/PixivUserBatchDownload/blob/master/README.md";
+	a.href = "https://github.com/Mapaler/PixivUserBatchDownload/tree/develop";
 	a.target = "_blank";
 	h2.appendChild(a);
 	var a = document.createElement("a");
@@ -1460,9 +1460,9 @@ function buildDirectLink()
 function startProgramCheck(mode) {
 	if (getPicNum > 0 && getPicNum >= dataset.illust_file_count) {
 		li2.innerHTML = "获取完成：" + getPicNum + "/" + dataset.illust_file_count;
-		if (mode!=0) spawnNotification(dataset.user_name + " 的作品解析完成", dataset.user_head, scriptName);
-		startDownload(mode);
+		if (mode != 0) spawnNotification(dataset.user_name + " 的作品解析完成", dataset.user_head, scriptName);
 		clearInterval(downOver);
+		startDownload(mode);
 	}
 	else
 	{
@@ -1567,6 +1567,8 @@ function startDownload(mode) {
 					var ext = ill.extention[pi];
 					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
 					{
+						//txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" \"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
+
 						txt += "aria2c --out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "\"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
 						downtxt += showMask(getConfig("PUBD_image_src"), ill, pi)
 							+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) : "")
@@ -1792,12 +1794,13 @@ function showMask(str,ill,index,deal)
 
 function replacePathSafe(str, keepTree) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 {
-	if (typeof(str) == "undefined")
-		return "";
+	var nstr = "";
+	if (typeof (str) == "undefined") return nstr;
+	str = str.toString();
 	if (keepTree)
-		var nstr = str.replace(/[\*\?"<>\|]/ig, "_");
+		nstr = str.replace(/[\*\?"<>\|]/ig, "_");
 	else
-		var nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_");
+		nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_");
 	return nstr;
 }
 })();
