@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.0.4
+// @version		3.0.5
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -22,8 +22,7 @@ var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? 
 var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
 if (!getConfig("PUBD_reset", -1))
 {
-	spawnNotification("枫谷剑仙：欢迎使用" + scriptName, "https://avatars1.githubusercontent.com/u/6565860?v=3&s=460", "Welcome!");
-	ResetConfig(true); //新用户重置设置
+	ResetConfig(); //新用户重置设置
 }
 if (getConfig("PUBD_reset", 1) < Version)
 { //老用户提醒更改设置
@@ -1743,7 +1742,7 @@ function ResetConfig(part)
 	if (document.getElementsByName("PUBD_desktop_main")[0]) { document.getElementsByName("PUBD_desktop_main")[0].value = getConfig("PUBD_desktop_main"); document.getElementsByName("PUBD_desktop_main")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 	if (document.getElementsByName("PUBD_desktop_line")[0]) { document.getElementsByName("PUBD_desktop_line")[0].value = getConfig("PUBD_desktop_line"); document.getElementsByName("PUBD_desktop_line")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 
-	if (!part) spawnNotification("已重置为初始设置", scriptIcon, scriptName);
+	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName +(typeof (GM_info) != "undefined" ? " v" +GM_info.script.version: ""), "https://avatars1.githubusercontent.com/u/6565860?v=3&s=460", "Welcome!");
 };
 
 function showMask(str,ill,index,deal)

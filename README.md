@@ -5,6 +5,8 @@
 
 需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
 
+经Debug，脚本在安卓火狐用“USI”扩展也可以工作了，可以在外面用手机向家里发送下载了，但仍然只支持电脑版页面，请勾选“要求桌面版网站”。
+
 ## License|许可协议
 用到了一部分[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)的代码
 
@@ -172,5 +174,3 @@ webui-aria2则这样设置
 今天在办公室电视机顶盒上成功连上家里的安卓电视盒子并下载。
 
 ![办公室的电脑连上家里的电视盒子](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2f00lxifoj20vl0hs0ue.jpg)
-
-经测试脚本在安卓火狐用usi无法正常工作，原因暂未知。感兴趣还可以尝试从电脑上发送到手机下载之类的奇怪行为。
