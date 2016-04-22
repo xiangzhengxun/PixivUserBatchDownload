@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.0.5
+// @version		3.1.0
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -17,7 +17,7 @@
 
 (function() {
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
-var Version = 4; //当前设置版本，用于提醒是否需要
+var Version = 5; //当前设置版本，用于提醒是否需要
 var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
 var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
 if (!getConfig("PUBD_reset", -1))
@@ -26,7 +26,7 @@ if (!getConfig("PUBD_reset", -1))
 }
 if (getConfig("PUBD_reset", 1) < Version)
 { //老用户提醒更改设置
-	alert("3.0版本可自定义文件夹名与图标了（仅Windwos Explorer），使用此功能建议重置设置。");
+	alert("3.1版本更改了Desktop.ini的保存设置，可以将%{user_id}掩码从下载目录移回保存路径了（为将来的一些自动化工作做准备），建议重置设置。\r\n因为v3.x仍属于不断开发中，所以重置设置的情况还请谅解。");
 	ResetConfig(true);
 }
 
@@ -850,7 +850,7 @@ function buildSetting()
 				'height:60px',
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .download_mode" + "{\r\n" + [
-				'height:55px',
+				'height:45px',
 			].join(';') + "\r\n}",
 			"#PixivUserBatchDownloadSetting .text" + "{\r\n" + [
 				'height:4em',
@@ -1169,7 +1169,7 @@ function buildSetting()
 	ul.appendChild(li);
 
 	divName.innerHTML = "自定义文件夹";
-	divTime.innerHTML = "通过Desktop.ini实现（仅Windows Explorer）"
+	divTime.innerHTML = "文件夹图标改为头像，名称改为作者昵称"
 
 	var lnk = document.createElement("a");
 	lnk.className = "desktop_readme";
@@ -1479,7 +1479,7 @@ function startDownload(mode) {
 	{
 		case 0: //RPC模式
 			var aria2 = new ARIA2(getConfig("PUBD_PRC_path"));
-
+			var desktopDir = "";
 
 			dataset.desktop_line = "";
 			for (var ii = 0; ii < dataset.illust.length; ii++) {
@@ -1504,6 +1504,13 @@ function startDownload(mode) {
 						}
 						aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
 
+						if (!desktopDir && ill.type != 1) //当desktopDir为空，切不为多图则执行。获取desktop应该存放的地点
+						{
+							//获取一个文件的完整路径
+							var fullSavePath = srtObj.dir + ((srtObj.dir.lastIndexOf("\\") == (srtObj.dir.length - 1) || srtObj.dir.lastIndexOf("/") == (srtObj.dir.length - 1)) ? "" : "/") + srtObj.out;
+							//只保留最后一个斜杠前的
+							desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
+						}
 						//快速模式重新更改扩展名
 						if (download_mod == 1)
 						{
@@ -1525,6 +1532,13 @@ function startDownload(mode) {
 					}
 				}
 			}
+			if (!desktopDir) //如果前面的图全部不符合条件（也就是全等于多图，那只好用最后一张图了）
+			{
+				//获取最后一个文件的完整路径
+				var fullSavePath = srtObj.dir + ((srtObj.dir.lastIndexOf("\\") == (srtObj.dir.length - 1) || srtObj.dir.lastIndexOf("/") == (srtObj.dir.length - 1)) ? "" : "/") + srtObj.out;
+				//只保留最后一个斜杠前的
+				desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
+			}
 
 			if (getConfig("PUBD_desktop", 1))
 			{
@@ -1534,7 +1548,7 @@ function startDownload(mode) {
 				}
 				if (getConfig("PUBD_save_dir").length > 0)
 				{
-					srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
+					srtObj.dir = desktopDir;
 				}
 				aria2.addUri(showMask("%{user_head}"), srtObj);
 
@@ -1700,9 +1714,9 @@ function ResetConfig(part)
 	partReset("PUBD_reset", Version, part);
 	partReset("PUBD_PRC_path", "http://localhost:6800/jsonrpc", part);
 	partReset("PUBD_download_mode", 0, part);
-	partReset("PUBD_save_dir", "F:\\PivixDownload\\%{user_id}\\", part);
+	partReset("PUBD_save_dir", "F:/PivixDownload/", part);
 	partReset("PUBD_image_src", "%{original_src}", part);
-	partReset("PUBD_save_path", "%{filename}.%{extention}", part);
+	partReset("PUBD_save_path", "%{user_id}/%{filename}.%{extention}", part);
 	partReset("PUBD_referer", "%{url}", part);
 	partReset("PUBD_type_name0", "", part);
 	partReset("PUBD_type_name1", "multiple", part);
@@ -1724,7 +1738,7 @@ function ResetConfig(part)
 		"%{desktop_line}",
 		].join("\r\n")
 		, part);
-	partReset("PUBD_desktop_line", "%{filename}.%{extention}=%{title}_p%{page}", part);
+	partReset("PUBD_desktop_line", "%{filename}.%{extention}=%{illust_id}_%{title}_p%{page}", part);
 
 	if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
 	//if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[getConfig("PUBD_download_mode",1)].checked = true;
@@ -1742,7 +1756,7 @@ function ResetConfig(part)
 	if (document.getElementsByName("PUBD_desktop_main")[0]) { document.getElementsByName("PUBD_desktop_main")[0].value = getConfig("PUBD_desktop_main"); document.getElementsByName("PUBD_desktop_main")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 	if (document.getElementsByName("PUBD_desktop_line")[0]) { document.getElementsByName("PUBD_desktop_line")[0].value = getConfig("PUBD_desktop_line"); document.getElementsByName("PUBD_desktop_line")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 
-	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName +(typeof (GM_info) != "undefined" ? " v" +GM_info.script.version: ""), "https://avatars1.githubusercontent.com/u/6565860?v=3&s=460", "Welcome!");
+	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : ""), "http://s.gravatar.com/avatar/83ace62a123e9cd6c3451094a932b4f6?s=80", "Welcome!");
 };
 
 function showMask(str,ill,index,deal)
