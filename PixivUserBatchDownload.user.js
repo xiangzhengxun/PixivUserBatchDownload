@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.1.0
+// @version		3.2.0
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -36,6 +36,25 @@ var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\
 
 var getPicNum = 0; //Ajax获取了文件的数量
 var downOver; //检测下载是否完成的循环函数
+
+//访GM_xmlhttpRequest函数v1.0
+if(typeof(GM_xmlhttpRequest) == "undefined")
+{
+	var GM_xmlhttpRequest = function(GM_param){
+		var xhr = new XMLHttpRequest();	//创建XMLHttpRequest对象
+		if(GM_param.responseType) xhr.responseType = GM_param.responseType;
+		xhr.onreadystatechange = function()  //设置回调函数
+		{
+			if (xhr.readyState == 4 && xhr.status == 200)
+			GM_param.onload(xhr);
+		}
+		for (var header in GM_param.headers){
+			xhr.setRequestHeader(header, GM_param.headers[header]);
+		}
+		xhr.open(GM_param.method, GM_param.url, true);
+		xhr.send(GM_param.data ? GM_param.data : null);
+	}
+}
 
 var dataset =
 {
@@ -136,7 +155,14 @@ function illust()
 					break;
 				case 1: //多图
 					var mangaUrl = this.url.replace(/mode=[^&]+/, "mode=manga");
-					getSource(mangaUrl, dealMangaFast, this);
+					GM_xmlhttpRequest({
+						method: "GET",
+						url: mangaUrl,
+						responseType : "document",
+						onload: function(response) {
+							dealMangaFast(response.response,obj);
+						}
+					});
 					break;
 				case 2: //动图
 					this.page_count = 1;
@@ -168,7 +194,14 @@ function illust()
 				var iid = regSrc.exec(url);
 				if (iid.length >= 2) this.illust_id = iid[1];
 			}
-			getSource(url, dealIllust, this);
+			GM_xmlhttpRequest({
+				method: "GET",
+				url: url,
+				responseType : "document",
+				onload: function(response) {
+					dealIllust(response.response,obj);
+				}
+			});
 		},
 	}
 	return obj;
@@ -231,22 +264,32 @@ function dealUserPage1(userId)
 	if (userId == undefined)
 	{
 		var user_link = document.getElementsByClassName("user-link")[0];
-		userId = parseInt(user_link.href.replace(/\D+(\d+)$/ig, "$1"));
+		userId = parseInt(user_link.href.replace(/.+\W+id=(\d+).*/ig, "$1"));
+		if(isNaN(userId) && typeof(pixiv) != "undefined" && typeof(pixiv.context) != "undefined" && typeof(pixiv.userId) != "undefined")
+			userId = pixiv.context.userId;
     }
 	dataset.user_id = userId;
 
 	var locationSearch = (document.location.search.length > 0 ? document.location.search.replace(/mode=\w+/ig, "").replace(/illust_id=\d+/ig, "").replace(/id=\d+/ig, "") : "?");
 	var linkPre = document.location.origin + "/member_illust.php" + locationSearch + "&id=" + userId;
-	var link = getPageSrc(linkPre, 1);
+	var link = linkPre + "&p=1";
 
-	getSource(link, dealUser, linkPre, userId)
+	GM_xmlhttpRequest({
+		method: "GET",
+		url: link,
+		responseType : "document",
+		onload: function(response) {
+			dealUser(response.response,linkPre,userId);
+		}
+	});
 }
 //开始分析本作者
 function dealUser(response, linkPre, userId)
 {
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
-
+	//var parser = new DOMParser();
+	//PageDOM = parser.parseFromString(response, "text/html");
+	PageDOM = response;
+	
 	var count_badge = PageDOM.getElementsByClassName("count-badge")[0];
 	if (!count_badge)
 	{
@@ -292,8 +335,15 @@ function dealUser(response, linkPre, userId)
 	for (pi = 2; pi <= pageCount; pi++)
 	//for (pi = 0; pi < 1; pi++)
 	{
-		var link = getPageSrc(linkPre, pi);
-		getSource(link, dealPage, pi);
+		var link = linkPre + "&p=" +  pi;
+		GM_xmlhttpRequest({
+			method: "GET",
+			url: link,
+			responseType : "document",
+			onload: function(response) {
+				dealPage(response.response,pi);
+			}
+		});
 	}
 
 }
@@ -312,25 +362,7 @@ function spawnNotification(theBody, theIcon, theTitle)
 		var n = new Notification(theTitle, options);
 	}
 }
-//获取页面网址
-function getPageSrc(linkPre, page)
-{
-	return linkPre + "&p=" + page;
-}
 
-//直接通过XMLHttpRequest对象获取远程网页源代码
-function getSource(url,callback,index, index2)
-{
-	var xhr = new XMLHttpRequest();	//创建XMLHttpRequest对象
-	xhr.onreadystatechange = function()  //设置回调函数
-	{
-		if (xhr.readyState == 4 && xhr.status == 200)
-			callback(xhr.responseText, index, index2);
-	}
-	xhr.open("GET", url, true);
-	xhr.send(null);
-	return xhr.responseText;
-}
 //处理列表页面的回调函数
 function dealPage(response, pageIndex)
 {
@@ -340,9 +372,10 @@ function dealPage(response, pageIndex)
 	PageDOM.innerHTML = response; //插入代码
 	*/
 
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
-
+	//var parser = new DOMParser();
+	//PageDOM = parser.parseFromString(response, "text/html");
+	PageDOM = response;
+	
 	var _image_items = PageDOM.getElementsByClassName("_image-items");
 	if (_image_items.length >= 0)
 	{
@@ -394,10 +427,11 @@ function dealPage(response, pageIndex)
 //处理作品的回调函数
 function dealIllust(response, ill)
 {
-	//var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig; //P站图片命名规则
+	//var parser = new DOMParser();
+	//PageDOM = parser.parseFromString(response, "text/html");
+	PageDOM = response;
+	
 	var regSrc = new RegExp(illustPattern, "ig");
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
 	//work_info
 	var work_info = PageDOM.getElementsByClassName("work-info")[0];
 	var works_display = PageDOM.getElementsByClassName("works_display")[0];
@@ -520,14 +554,15 @@ function dealIllust(response, ill)
 			
 			var manga_big = ill.url.replace(/mode=[^&]+/, "mode=manga_big");
 			var manga_big_url = manga_big + "&page=" + 0;
-			getSource(manga_big_url, dealManga, ill);
 			
-			/*以前以为能够多图扩展名不一样
-			for (var pi = 0; pi < ill.page_count; pi++) {
-				var manga_big_url = manga_big + "&page=" + pi;
-				getSource(manga_big_url, dealManga, ill, pi);
-			}
-			*/
+			GM_xmlhttpRequest({
+				method: "GET",
+				url: manga_big_url,
+				responseType : "document",
+				onload: function(response) {
+					dealManga(response.response,ill);
+				}
+			});
 		}
 		else
 		{
@@ -550,7 +585,7 @@ function dealIllust(response, ill)
 		alert("未知的作品类型。作品ID：" + ill.illust_id);
 	}
 }
-//
+//通过iframe模式获取扩展名
 function addFrm(ill)
 {
 	var ifrm = document.createElement("iframe");
@@ -618,10 +653,12 @@ function findBig(prt, ill)
 	return finnaly_pic;
 }
 //处理多图的回调函数
-function dealManga(response, ill, index)
+function dealManga(response, ill)
 {
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
+	//var parser = new DOMParser();
+	//PageDOM = parser.parseFromString(response, "text/html");
+	PageDOM = response;
+		
 	var picture = PageDOM.getElementsByTagName("img")[0];
 	ill.original_src[0] = picture.src;
 	//var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig; //P站图片命名规则
@@ -655,11 +692,12 @@ function dealManga(response, ill, index)
 }
 
 //快速模式处理多图的回调函数
-function dealMangaFast(response, ill, index)
+function dealMangaFast(response, ill)
 {
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
-
+	//var parser = new DOMParser();
+	//PageDOM = parser.parseFromString(response, "text/html");
+	PageDOM = response;
+	
 	var mangaSec = PageDOM.getElementsByClassName("manga")[0];
 	var items = mangaSec.getElementsByClassName("item-container");
 
@@ -1580,8 +1618,6 @@ function startDownload(mode) {
 					var ext = ill.extention[pi];
 					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
 					{
-						//txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" \"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
-
 						txt += "aria2c --out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "\"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
 						downtxt += showMask(getConfig("PUBD_image_src"), ill, pi)
 							+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) : "")
@@ -1683,10 +1719,10 @@ function getConfig(key, type)
 		{
 			case 0: //字符
 				return value || "";
-				break;
+				//break;
 			case 1: //数字
 				return value ? parseInt(0 + value.replace(/\D/ig, "")) : 0;
-				break;
+				//break;
 			default: //原始
 				return value;
 		}
@@ -1756,7 +1792,7 @@ function ResetConfig(part)
 	if (document.getElementsByName("PUBD_desktop_main")[0]) { document.getElementsByName("PUBD_desktop_main")[0].value = getConfig("PUBD_desktop_main"); document.getElementsByName("PUBD_desktop_main")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 	if (document.getElementsByName("PUBD_desktop_line")[0]) { document.getElementsByName("PUBD_desktop_line")[0].value = getConfig("PUBD_desktop_line"); document.getElementsByName("PUBD_desktop_line")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 
-	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : ""), "http://s.gravatar.com/avatar/83ace62a123e9cd6c3451094a932b4f6?s=80", "Welcome!");
+	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : ""), "http://i4.pixiv.net/img92/profile/mapaler/10835493.png", "Welcome!");
 };
 
 function showMask(str,ill,index,deal)
