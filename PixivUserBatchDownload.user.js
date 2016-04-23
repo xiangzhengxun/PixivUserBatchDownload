@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.2.0
+// @version		3.2.1
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -392,7 +392,8 @@ function dealPage(response, pageIndex)
 			if (link[0].href.length < 1)
 			{
 				console.warn("你的浏览器无法获取DOMParser内a标签的href。目前只有Chrome这么做。")
-				ill.url = document.location.origin + link[0].getAttribute("href");
+				var href=link[0].getAttribute("href");
+				ill.url = PageDOM.location.origin + (href.indexOf("/")?PageDOM.location.pathname.substring(0,PageDOM.location.pathname.lastIndexOf("/")):"") + "/" + href;
 			}
 			else
 			{
