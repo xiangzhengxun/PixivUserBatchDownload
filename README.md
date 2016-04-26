@@ -127,7 +127,7 @@ thumbnail_src : 缩略图地址
 	“http://%{domain}/c/150x150/img-master/img/%{year}/%{month}/%{day}/%{hour}/%{minute}/%{second}/%{filename}%{type_name}.%{extention}”
 url : 作品页面
 	▲如下掩码可组合出相同值
-	“http://www.pixiv.net/member_illust.php?id=%{illust_id}”
+	“http://www.pixiv.net/member_illust.php?mode=medium&id=%{illust_id}”
 domain : 域名
 year : 年
 month : 月
