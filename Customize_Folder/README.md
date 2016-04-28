@@ -11,7 +11,7 @@
 [下载链接](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/Customize_Folder/PUBD_old_default_path_to_v3.0.vbs)
 
 ##使用方法
-使用前建议先重置设置。因为“Desktop.ini”将分别下载到每个的下载目录，因此将“%{user_id}”掩码位置从 保存路径 更改到 下载目录 中。
+使用前建议先重置设置。因为“Desktop.ini”将分别下载到每个的下载目录，因此将“%{user_id}”掩码位置从 保存路径 更改到 下载目录 中。（***v3.2已改变路径获取方式，不需要这样设置了***，不重置也可以用，但是为了规范新路径格式还是建议重置）
 
 ![注意设置](http://ww1.sinaimg.cn/large/6c84b2d6gw1f2vhxf7yrzj20bb0bcwfr.jpg)
 
