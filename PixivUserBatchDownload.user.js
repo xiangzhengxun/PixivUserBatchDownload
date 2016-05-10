@@ -1793,7 +1793,7 @@ function ResetConfig(part)
 	if (document.getElementsByName("PUBD_desktop_main")[0]) { document.getElementsByName("PUBD_desktop_main")[0].value = getConfig("PUBD_desktop_main"); document.getElementsByName("PUBD_desktop_main")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 	if (document.getElementsByName("PUBD_desktop_line")[0]) { document.getElementsByName("PUBD_desktop_line")[0].value = getConfig("PUBD_desktop_line"); document.getElementsByName("PUBD_desktop_line")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 
-	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : ""), "http://i4.pixiv.net/img92/profile/mapaler/10835493.png", "Welcome!");
+	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : ""), "http://tp3.sinaimg.cn/1820635862/180/5756282373/1", "Welcome!");
 };
 
 function showMask(str,ill,index,deal)
