@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.2.1
+// @version		3.3.0
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -37,7 +37,7 @@ var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\
 var getPicNum = 0; //Ajax获取了文件的数量
 var downOver; //检测下载是否完成的循环函数
 
-//访GM_xmlhttpRequest函数v1.0
+//访GM_xmlhttpRequest函数v1.1
 if(typeof(GM_xmlhttpRequest) == "undefined")
 {
 	var GM_xmlhttpRequest = function(GM_param){
@@ -45,8 +45,10 @@ if(typeof(GM_xmlhttpRequest) == "undefined")
 		if(GM_param.responseType) xhr.responseType = GM_param.responseType;
 		xhr.onreadystatechange = function()  //设置回调函数
 		{
-			if (xhr.readyState == 4 && xhr.status == 200)
-			GM_param.onload(xhr);
+			if (xhr.readyState == 4 && xhr.status == 200 && GM_param.onload)
+				GM_param.onload(xhr);
+			if (xhr.readyState == 4 && xhr.status != 200 && GM_param.onerror)
+				GM_param.onerror(xhr);
 		}
 		for (var header in GM_param.headers){
 			xhr.setRequestHeader(header, GM_param.headers[header]);
@@ -357,9 +359,21 @@ function spawnNotification(theBody, theIcon, theTitle)
 	if (!("Notification" in window))
 	{
 		alert(theBody);
-	} else
-	{
+	}
+	else if (Notification.permission === "granted") {
+		Notification.requestPermission(function (permission) {
+		// If the user is okay, let's create a notification
 		var n = new Notification(theTitle, options);
+		});
+	}
+	// Otherwise, we need to ask the user for permission
+	else if (Notification.permission !== 'denied') {
+		Notification.requestPermission(function (permission) {
+		// If the user is okay, let's create a notification
+		if (permission === "granted") {
+			var n = new Notification(theTitle, options);
+		}
+		});
 	}
 }
 
@@ -1543,10 +1557,11 @@ function startDownload(mode) {
 						}
 						aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
 
-						if (!desktopDir && ill.type != 1) //当desktopDir为空，切不为多图则执行。获取desktop应该存放的地点
+						if (!desktopDir && ill.type != 1) //当desktopDir为空，且不为多图则执行。获取desktop应该存放的地点
 						{
+							var dirTmp = srtObj.dir || "";
 							//获取一个文件的完整路径
-							var fullSavePath = srtObj.dir + ((srtObj.dir.lastIndexOf("\\") == (srtObj.dir.length - 1) || srtObj.dir.lastIndexOf("/") == (srtObj.dir.length - 1)) ? "" : "/") + srtObj.out;
+							var fullSavePath = dirTmp + ((dirTmp.lastIndexOf("\\") == (dirTmp.length - 1) || dirTmp.lastIndexOf("/") == (dirTmp.length - 1)) ? "" : "/") + srtObj.out;
 							//只保留最后一个斜杠前的
 							desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
 						}
