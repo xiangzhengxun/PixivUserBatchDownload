@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.3.0
+// @version		3.4.1
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -19,6 +19,7 @@
 var pICD = 20; //pageIllustCountDefault默认每页作品数量
 var Version = 5; //当前设置版本，用于提醒是否需要
 var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
+var scriptVersion = typeof(GM_info)!="undefined" ? GM_info.script.version : "LocalDebug"; //本程序的版本
 var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
 if (!getConfig("PUBD_reset", -1))
 {
@@ -737,7 +738,7 @@ var ARIA2 = (function () {
 		return url.match(/^(?:(?![^:@]+:[^:@\/]*@)[^:\/?#.]+:)?(?:\/\/)?(?:([^:@]*(?::[^:@]*)?)?@)?/)[1];
 	};
 
-	function request(jsonrpc_path, method, params, getVersion) {
+	function request(jsonrpc_path, method, params, priority,callback) {
 		var xhr = new XMLHttpRequest();
 		var auth = get_auth(jsonrpc_path);
 		jsonrpc_path = jsonrpc_path.replace(/^((?![^:@]+:[^:@\/]*@)[^:\/?#.]+:)?(\/\/)?(?:(?:[^:@]*(?::[^:@]*)?)?@)?(.*)/, '$1$2$3'); // auth string not allowed in url for firefox
@@ -745,7 +746,7 @@ var ARIA2 = (function () {
 		var request_obj = {
 			jsonrpc: jsonrpc_version,
 			method: method,
-			id: getVersion ? "1" : (new Date()).getTime().toString(),
+			id: priority ? "1" : (new Date()).getTime().toString(),
 		};
 		if (params) request_obj['params'] = params;
 		if (auth && auth.indexOf('token:') == 0) params.unshift(auth);
@@ -756,20 +757,38 @@ var ARIA2 = (function () {
 			xhr.setRequestHeader("Authorization", "Basic " + btoa(auth));
 		}
 		xhr.send(JSON.stringify(request_obj));
-		if (getVersion) {
-			xhr.onreadystatechange = function ()  //设置回调函数
+		if (priority) {
+			switch(priority)
 			{
-				if (xhr.readyState == 4 && xhr.status == 200)
-				{
-					var JSONreq = JSON.parse(xhr.responseText);
-					//spawnNotification("发现Aria2 ver" + JSONreq.result.version, scriptIcon, scriptName);
-					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="发现Aria2 ver" + JSONreq.result.version;
-				}
-				else if (xhr.readyState == 4 && xhr.status != 200)
-				{
-					//spawnNotification("Aria2连接失败", scriptIcon, scriptName);
-					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="Aria2连接失败";
-				}
+				case "getVersion":
+					xhr.onreadystatechange = function ()  //设置回调函数
+					{
+						if (xhr.readyState == 4 && xhr.status == 200)
+						{
+							var JSONreq = JSON.parse(xhr.responseText);
+							callback(JSONreq);
+						}
+						else if (xhr.readyState == 4 && xhr.status != 200)
+						{
+							callback(false);
+						}
+					}
+					break;
+				case "getGlobalOption":
+					xhr.onreadystatechange = function ()  //设置回调函数
+					{
+						if (xhr.readyState == 4 && xhr.status == 200)
+						{
+							var JSONreq = JSON.parse(xhr.responseText);
+							callback(JSONreq);
+						}
+						else if (xhr.readyState == 4 && xhr.status != 200)
+						{
+							spawnNotification("Aria2设置获取失败，请检查连接", scriptIcon, scriptName);
+							callback(false);
+						}
+					}
+					break;
 			}
 		}
 	};
@@ -783,8 +802,11 @@ var ARIA2 = (function () {
 		{
 			request(this.jsonrpc_path, 'aria2.addTorrent', [base64txt, [], options]);
 		};
-		this.getVersion = function () {
-			request(this.jsonrpc_path, 'aria2.getVersion', [], true);
+		this.getVersion = function (callback) {
+			request(this.jsonrpc_path, 'aria2.getVersion', [], "getVersion",callback);
+		};
+		this.getGlobalOption = function (callback) {
+			request(this.jsonrpc_path, 'aria2.getGlobalOption', [], "getGlobalOption",callback);
 		};
 		return this;
 	}
@@ -928,7 +950,7 @@ function buildSetting()
 
 	//标题行
 	var h2 = document.createElement("h2");
-	h2.innerHTML = "Pixiv画师作品批量获取工具" + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : "");
+	h2.innerHTML = scriptName + " v" + scriptVersion;
 
 	h2.appendChild(document.createElement("br"));
 	var a = document.createElement("a");
@@ -1022,7 +1044,13 @@ function buildSetting()
 		this.innerHTML = "正在连接...";
 		//spawnNotification("正在连接Aria2...", scriptIcon, scriptName);
 		var aria2 = new ARIA2(document.getElementsByName("PUBD_PRC_path")[0].value);
-		aria2.getVersion();
+		aria2.getVersion(function (rejson){
+			var checkBtn = document.getElementsByName("PUBD_PRC_path_check")[0];
+			if (rejson)
+				checkBtn.innerHTML="发现Aria2 ver" + rejson.result.version;
+			else
+				checkBtn.innerHTML="Aria2连接失败";
+		});
 	}
 	divText.appendChild(btnCheckLink);
 	//设置-下载目录
@@ -1531,97 +1559,12 @@ function startDownload(mode) {
 	switch (mode)
 	{
 		case 0: //RPC模式
+
 			var aria2 = new ARIA2(getConfig("PUBD_PRC_path"));
-			var desktopDir = "";
-
-			dataset.desktop_line = "";
-			for (var ii = 0; ii < dataset.illust.length; ii++) {
-				var ill = dataset.illust[ii];
-				for (var pi = 0; pi < ill.original_src.length; pi++)
-				{
-					var ext = ill.extention[pi];
-					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
-					{
-						if (getConfig("PUBD_desktop", 1))
-						{
-							dataset.desktop_line += showMask(getConfig("PUBD_desktop_line"), ill, pi);
-							dataset.desktop_line += "\r\n";
-						}
-						var srtObj = {
-							"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
-							"referer": showMask(getConfig("PUBD_referer"), ill, pi),
-						}
-						if(getConfig("PUBD_save_dir").length>0)
-						{
-							srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
-						}
-						aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
-
-						if (!desktopDir && ill.type != 1) //当desktopDir为空，且不为多图则执行。获取desktop应该存放的地点
-						{
-							var dirTmp = srtObj.dir || "";
-							//获取一个文件的完整路径
-							var fullSavePath = dirTmp + ((dirTmp.lastIndexOf("\\") == (dirTmp.length - 1) || dirTmp.lastIndexOf("/") == (dirTmp.length - 1)) ? "" : "/") + srtObj.out;
-							//只保留最后一个斜杠前的
-							desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
-						}
-						//快速模式重新更改扩展名
-						if (download_mod == 1)
-						{
-							switch (dmi)
-							{
-								case 0:
-									ill.extention[pi] = ext == "jpg" ? "png" : "jpg";
-									break;
-								case 1:
-									ill.extention[pi] = ext != "gif" ? "gif" : "png";
-									break;
-								case 2:
-									ill.extention[pi] = ext; //操作完还原
-									break;
-								default:
-							}
-							ill.original_src[pi] = ill.original_src[0].replace(/\.\w+$/, "." + ill.extention[pi]);
-						}
-					}
-				}
-			}
-			if (!desktopDir) //如果前面的图全部不符合条件（也就是全等于多图，那只好用最后一张图了）
-			{
-				//获取最后一个文件的完整路径
-				var fullSavePath = srtObj.dir + ((srtObj.dir.lastIndexOf("\\") == (srtObj.dir.length - 1) || srtObj.dir.lastIndexOf("/") == (srtObj.dir.length - 1)) ? "" : "/") + srtObj.out;
-				//只保留最后一个斜杠前的
-				desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
-			}
-
 			if (getConfig("PUBD_desktop", 1))
-			{
-				var srtObj = {
-					"out": "head.image",
-					"referer": showMask("%{user_head}"),
-				}
-				if (getConfig("PUBD_save_dir").length > 0)
-				{
-					srtObj.dir = desktopDir;
-				}
-				aria2.addUri(showMask("%{user_head}"), srtObj);
-
-				var desktopTxt = showMask(getConfig("PUBD_desktop_main"));
-				//desktopTxt = desktopTxt.replace("%{desktop_line}", desktop_line);
-
-				var txtblod = new UTF16LE(desktopTxt);
-				var reader = new FileReader();
-				reader.onload = function (res)
-				{
-					var txt = res.target.result;
-					aria2.addTorrent(txt.split(',')[1], srtObj);
-				};
-				
-				reader.readAsDataURL(txtblod.blob);
-			}
-
-			spawnNotification(dataset.user_name + " 的作品下载链接已发送到Aria2", dataset.user_head, scriptName);
-
+				aria2.getGlobalOption(function(json){down_RPC(json)});
+			else
+				down_RPC(false);
 			break;
 		case 1: //生成BAT下载命令模式
 			var txt = "";
@@ -1722,7 +1665,100 @@ function startDownload(mode) {
 			break;
 	}
 };
-	
+function down_RPC(option) {
+	var aria2 = new ARIA2(getConfig("PUBD_PRC_path"));
+	var PUBD_desktop = getConfig("PUBD_desktop", 1); //是否打开desktop.ini生成
+
+	var desktopDir = "";
+
+	dataset.desktop_line = "";
+	for (var ii = 0; ii < dataset.illust.length; ii++) {
+		var ill = dataset.illust[ii];
+		for (var pi = 0; pi < ill.original_src.length; pi++)
+		{
+			var ext = ill.extention[pi];
+			for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
+			{
+				if (PUBD_desktop)
+				{
+					dataset.desktop_line += showMask(getConfig("PUBD_desktop_line"), ill, pi);
+					dataset.desktop_line += "\r\n";
+				}
+				var srtObj = {
+					"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
+					"referer": showMask(getConfig("PUBD_referer"), ill, pi),
+				}
+				if(getConfig("PUBD_save_dir").length>0)
+				{
+					srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
+				}
+				aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
+
+				if (PUBD_desktop && !desktopDir && ill.type != 1) //当desktopDir为空，且不为多图则执行。获取desktop应该存放的地点
+				{
+					var dirTmp = srtObj.dir || option.result.dir || "";
+					//获取一个文件的完整路径
+					var fullSavePath = dirTmp + ((dirTmp.lastIndexOf("\\") == (dirTmp.length - 1) || dirTmp.lastIndexOf("/") == (dirTmp.length - 1)) ? "" : "/") + srtObj.out;
+					//只保留最后一个斜杠前的
+					desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
+				}
+				//快速模式重新更改扩展名
+				if (download_mod == 1)
+				{
+					switch (dmi)
+					{
+						case 0:
+							ill.extention[pi] = ext == "jpg" ? "png" : "jpg";
+							break;
+						case 1:
+							ill.extention[pi] = ext != "gif" ? "gif" : "png";
+							break;
+						case 2:
+							ill.extention[pi] = ext; //操作完还原
+							break;
+						default:
+					}
+					ill.original_src[pi] = ill.original_src[0].replace(/\.\w+$/, "." + ill.extention[pi]);
+				}
+			}
+		}
+	}
+	if (PUBD_desktop && !desktopDir) //如果前面的图全部不符合条件（也就是全等于多图，那只好用最后一张图了）
+	{
+		var dirTmp = srtObj.dir || option.result.dir || "";
+		//获取最后一个文件的完整路径
+		var fullSavePath = srtObj.dir + ((srtObj.dir.lastIndexOf("\\") == (srtObj.dir.length - 1) || srtObj.dir.lastIndexOf("/") == (srtObj.dir.length - 1)) ? "" : "/") + srtObj.out;
+		//只保留最后一个斜杠前的
+		desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
+	}
+	if (PUBD_desktop)
+	{
+		var srtObj = {
+			"out": "head.image",
+			"referer": showMask("%{user_head}"),
+			"follow-torrent": "true",
+			"dir": desktopDir,
+		}
+		aria2.addUri(showMask("%{user_head}"), srtObj);
+
+		var desktopTxt = showMask(getConfig("PUBD_desktop_main"));
+		//desktopTxt = desktopTxt.replace("%{desktop_line}", desktop_line);
+
+		var txtblod = new UTF16LE(desktopTxt);
+		var reader = new FileReader();
+		reader.onload = function (res)
+		{
+			var txt = res.target.result;
+			aria2.addTorrent(txt.split(',')[1], srtObj);
+		};
+		
+		reader.readAsDataURL(txtblod.blob);
+	}
+
+	spawnNotification(dataset.user_name + " 的作品下载链接已发送到Aria2", dataset.user_head, scriptName);
+}
+
+
 function getConfig(key, type)
 {
 	//-1原始，返回null，0 = 字符，返回空, 1 = 数字返回0,
@@ -1808,7 +1844,7 @@ function ResetConfig(part)
 	if (document.getElementsByName("PUBD_desktop_main")[0]) { document.getElementsByName("PUBD_desktop_main")[0].value = getConfig("PUBD_desktop_main"); document.getElementsByName("PUBD_desktop_main")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 	if (document.getElementsByName("PUBD_desktop_line")[0]) { document.getElementsByName("PUBD_desktop_line")[0].value = getConfig("PUBD_desktop_line"); document.getElementsByName("PUBD_desktop_line")[0].disabled = !document.getElementsByName("PUBD_desktop")[0].checked; }
 
-	if (!part) spawnNotification("枫谷剑仙：欢迎使用" + scriptName + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : ""), "http://tp3.sinaimg.cn/1820635862/180/5756282373/1", "Welcome!");
+	if (!part) spawnNotification("欢迎使用" + scriptName + " v" + scriptVersion, "http://tp3.sinaimg.cn/1820635862/180/5756282373/1", "枫谷剑仙");
 };
 
 function showMask(str,ill,index,deal)

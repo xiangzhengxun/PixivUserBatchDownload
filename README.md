@@ -3,7 +3,7 @@
 
 建议使用[![](https://www.mozilla.org/media/img/firefox/favicon.dc6635050bf5.ico)FireFox](http://www.firefox.com)的[![](https://github.com/greasemonkey/greasemonkey/raw/master/skin/icon32.png)GreaseMonkey](http://www.greasespot.net/)扩展[安装v3.0脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/PixivUserBatchDownload.user.js)。因为Chrome本身的原因仅提供有限支持，需安装Tampermonkey扩展使用。
 
-需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
+需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载，建议时不时看看有没有更新，从我开始这个项目到现在webui-aria2已经完善了很多翻译了。（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
 
 经Debug，脚本在安卓火狐用“USI”扩展也可以工作了，可以在外面用手机向家里发送下载了，但仍然只支持电脑版页面，请勾选“要求桌面版网站”。
 
@@ -17,7 +17,7 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 如果你想分发你修改后的程序，但是你不想要公布修改后的源代码，请与我联系。
 
 ## 配置Aria2
-[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.22.0-win-64bit-build1.zip”，然后解压到文件夹。
+[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.25.0-win-64bit-build1.zip”，然后解压到文件夹。
 
 1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_RPC_mode_for_Pixiv.bat)
 	
@@ -37,6 +37,8 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 	auto-file-renaming=false
 	# 修改为服务器时间
 	remote-time=true
+	# 断点续传
+	continue=true
 
 	# 保存会话内容到文件
 	save-session=aria2_Pixiv.session.txt
@@ -147,7 +149,9 @@ tags : 标签
 desktop_line : 自定义文件夹里每个文件改名的部分，如果要自己使用请确保你知道它的意思。
 ```
 ##支持Aria2搭建NAS远程下载
-Aria2是跨平台下载软件，你可以在其他系统下配置本程序，MacOS、Linux我不会，安卓上运行Aria2请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
+Aria2是跨平台下载软件，你可以在其他系统下配置本程序。我现在都是从单位下载到家里的安了Aria2的OpenWrt路由器上。
+
+没有OpenWrt的路由器却有安卓盒子可以考虑在安卓上运行，请参考[不需root用aria2搭建NAS方法](http://cn.club.vmall.com/thread-3861317-1-1.html)
 
 在我的华为盒子M330上配置了Aria2，然后打开路由的端口映射（还可以上个动态DNS），在单位办公室成功访问。能否访问取决于你的网络拓扑情况，移动/铁通的网络是半个局域网，电信联通可能访问不了，但是可以用移动的数据流量访问。
 
@@ -161,13 +165,13 @@ Aria2是跨平台下载软件，你可以在其他系统下配置本程序，Mac
 rpc-secret=访问密码
 ```
 脚本设置中的RPC路径为
-`http://token:访问密码@域名:端口/jsonrpc`
+`http://token:访问密码@域名或IP:端口/jsonrpc`
 
 webui-aria2则这样设置
 
 ![网页端的设置](http://ww4.sinaimg.cn/large/6c84b2d6jw1f2eao7814vj20sa0jbadz.jpg)
 
-成功的下载到安卓电视盒子里，可以通过其他手段访问盒子里的文件（我下载到扩展SD卡的）。
+成功的下载到安卓电视盒子里，可以在家里用ES文件管理器的“远程管理”访问盒子里的文件（我下载到扩展SD卡的）。
 
 ![电视盒子上运行的Aria2](http://ww3.sinaimg.cn/large/6c84b2d6gw1f2eajkd4l6j21be0qotkh.jpg)
 
