@@ -9,7 +9,7 @@
 // @exclude		http://www.pixiv.net/*mode=big&illust_id*
 // @exclude		http://www.pixiv.net/*mode=manga_big*
 // @exclude		http://www.pixiv.net/*search.php*
-// @version		3.4.1
+// @version		3.4.2
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -38,10 +38,11 @@ var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\
 var getPicNum = 0; //Ajax获取了文件的数量
 var downOver; //检测下载是否完成的循环函数
 
-//访GM_xmlhttpRequest函数v1.1
+//访GM_xmlhttpRequest函数v1.2
 if(typeof(GM_xmlhttpRequest) == "undefined")
 {
 	var GM_xmlhttpRequest = function(GM_param){
+
 		var xhr = new XMLHttpRequest();	//创建XMLHttpRequest对象
 		if(GM_param.responseType) xhr.responseType = GM_param.responseType;
 		xhr.onreadystatechange = function()  //设置回调函数
@@ -51,10 +52,12 @@ if(typeof(GM_xmlhttpRequest) == "undefined")
 			if (xhr.readyState == 4 && xhr.status != 200 && GM_param.onerror)
 				GM_param.onerror(xhr);
 		}
+		xhr.open(GM_param.method, GM_param.url, true);
+
 		for (var header in GM_param.headers){
 			xhr.setRequestHeader(header, GM_param.headers[header]);
 		}
-		xhr.open(GM_param.method, GM_param.url, true);
+
 		xhr.send(GM_param.data ? GM_param.data : null);
 	}
 }
@@ -784,7 +787,6 @@ var ARIA2 = (function () {
 						}
 						else if (xhr.readyState == 4 && xhr.status != 200)
 						{
-							spawnNotification("Aria2设置获取失败，请检查连接", scriptIcon, scriptName);
 							callback(false);
 						}
 					}
@@ -1562,9 +1564,17 @@ function startDownload(mode) {
 
 			var aria2 = new ARIA2(getConfig("PUBD_PRC_path"));
 			if (getConfig("PUBD_desktop", 1))
-				aria2.getGlobalOption(function(json){down_RPC(json)});
-			else
+			{
+				aria2.getGlobalOption(function(json){
+					if(json)
+						down_RPC(json);
+					else
+						spawnNotification("Aria2设置获取失败，请检查连接", scriptIcon, scriptName);
+				});
+			}else
+			{
 				down_RPC(false);
+			}
 			break;
 		case 1: //生成BAT下载命令模式
 			var txt = "";
