@@ -4,12 +4,12 @@
 // @namespace	http://www.mapaler.com/
 // @description	Batch download pixiv user's images in one key.
 // @description:zh-CN	一键批量下载P站画师的全部作品
-// @include		http://www.pixiv.net/*
-// @exclude		http://www.pixiv.net/*mode=manga&illust_id*
-// @exclude		http://www.pixiv.net/*mode=big&illust_id*
-// @exclude		http://www.pixiv.net/*mode=manga_big*
-// @exclude		http://www.pixiv.net/*search.php*
-// @version		3.4.2
+// @include		*://www.pixiv.net/*
+// @exclude		*://www.pixiv.net/*mode=manga&illust_id*
+// @exclude		*://www.pixiv.net/*mode=big&illust_id*
+// @exclude		*://www.pixiv.net/*mode=manga_big*
+// @exclude		*://www.pixiv.net/*search.php*
+// @version		3.4.3
 // @grant		none
 // @copyright	2016+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
