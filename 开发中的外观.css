@@ -57,7 +57,7 @@
     z-index: 10000;
     position: absolute;
     left: 10px;
-    margin: -1px auto 0;
+    margin: 0;
     text-align: left;
     width: 152px;
     background-color: #fff;
@@ -104,8 +104,8 @@
   .pubd-dialog
   {/*对话框*/
     position: absolute;
-    left:300px;
-    top:100px;
+    left:400px;
+    top:200px;
     z-index: 1000;
     min-width: 210px;
     padding: 30px 8px 8px 8px;
@@ -125,6 +125,11 @@
   .pubd-dialog:hover
   {/*对话框悬停*/
     box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 8px,#72BBFE 0 0 8px;
+  }
+  .pubd-dlg-active
+  {/*对话框激活*/
+    box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 8px,#72BBFE 0 0 8px;
+    z-index: 1001;
   }
   .pubd-dialog .dlg-close
   {/*对话框关闭按钮*/
@@ -155,21 +160,15 @@
   {/*对话框关闭按钮上的文字*/
     text-align: center;
     line-height: 20px;
-    font-size: 10px;
-    font-family: "Microsoft Yahei";
+    font-size: 12px;
+    font-family: HiraginoSans-W3,Hiragino Kaku Gothic Pro,\\30E1イリオ,Meiryo,Verdana,sans-serif;;
     font-weight: bold;
     color: #fff;
     text-shadow: -1px -1px 1px #147DF2,1px 1px 1px #147DF2,-1px 1px 1px #147DF2,1px -1px 1px #147DF2;
-    transform:scaleX(1.6);
+    transform:scaleX(1.5);
   }
   .pubd-dialog .caption .pubd-icon
   {/*对话框图标*/
-    position: absolute;
-    top: 6px;
-    left: 5px;
-    background:url('http://source.pixiv.net/www/images/notification/setting.png') no-repeat 0 -18px;
-    width: 18px;
-    height: 18px;
   }
   .pubd-dialog .caption
   {/*对话框标题*/
@@ -178,16 +177,139 @@
     line-height: 30px;
     top: 0px;
     left: 0px;
-    width: calc(100% - 25px);
+    width: calc(100% - 5px);
     height: 30px;
-    padding-left: 25px;
+    padding-left: 5px;
     cursor: move;
     /*background: RGBA(0,0,0,0.2); */
   }
+  .pubd-dialog .caption span
+  {/*对话框标题文字*/
+    margin-left: 3px;
+  }
   .pubd-dialog .dlg-content
   {/*对话框内容*/
+    padding: 5px;
     background-color: #F0F0F0;
     border: #147DF2 solid 1px;
     outline: white solid 1px;
   }
-}
+  .pubd-config .pubd-icon
+  {/*选项对话框图标*/
+    top: 6px;
+    left: 5px;
+    background:url('http://source.pixiv.net/www/images/notification/setting.png') no-repeat 0 -18px;
+    width: 18px;
+    height: 18px;
+  }
+  .pubd-token
+  {/*token输入框*/
+    width: 300px;
+  }
+  .pubd-login .dlg-content
+  {/*登陆对话框内容*/
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 363px;
+    text-align: center;
+  }
+  .pubd-login .logo-box
+  {
+    margin-bottom: 40px;
+  }
+  .pubd-login .logo
+  {
+    display: inline-block;
+    width: 180px;
+    height: 70px;
+    background: url("https://source.pixiv.net/accounts/assets/c31c0a3245d691c0b64af508293fa2f4.svg") no-repeat;
+    margin-bottom: 6px;
+  }
+  .pubd-login .catchphrase
+  {
+    color: #757c80;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  .pubd-login .input-field
+  {
+    position: relative;
+    width: 300px;
+    padding: 0;
+    border: 1px solid #dfebf2;
+    background-color: #fff;
+    margin: 0 auto;
+    border-bottom: none;
+  }
+  .pubd-login .input-field:first-child
+  {
+    border-radius: 4px 4px 0 0;
+  }
+  .pubd-login .input-field:last-child
+  {
+    border-radius: 0 0 4px 4px;
+    border-bottom: 1px solid #dfebf2;
+  }
+  .pubd-login .input-field input
+  {
+    width: 290px;
+    height: 40px;
+    color: #000;
+    display: block;
+    outline: 0;
+    margin: 0;
+    padding: 0;
+    padding-left: 10px;
+    line-height: normal;
+    border: none;
+    border-radius: 4px;
+  }
+  .pubd-login .error-msg-list
+  {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 8px auto;
+  }
+  .pubd-login .error-msg-list-item
+  {
+    width: 280px;
+    background-color: rgba(0,0,0,.3);
+    margin: 0 auto;
+    margin-bottom: 2px;
+    padding: 13px 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #fff;
+    text-align: left;
+    border: none;
+    border-radius: 4px;
+  }
+  .pubd-login .submit
+  {
+    display: block;
+    margin: 0 auto;
+    margin-bottom: 8px;
+    width: 300px;
+    height: 40px;
+    line-height: 40px;
+    background-color: #25c6ff;
+    color: #fff;
+    font-weight: 700;
+    outline: none;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+  }
+  .pubd-login .signup-form-nav
+  {
+    list-style: none;
+    width: 300px;
+    margin: 0 auto;
+    color: #666;
+    font-size: 12px;
+    overflow: hidden;
+  }

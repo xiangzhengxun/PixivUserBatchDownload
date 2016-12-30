@@ -15,11 +15,13 @@
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
-
+console.log("最初的位置");
 var pubd = {}; //储存设置
 pubd.touch = false; //是触屏
 pubd.loggedIn = false; //登陆了
 
+console.log("第一个位置");
+var pixiv = unsafeWindow.pixiv;
 if (pixiv && pixiv.user.loggedIn)
 {
 	pubd.loggedIn = true;
@@ -37,6 +39,7 @@ if (pixiv.AutoView != undefined) //location.host.indexOf("touch")>=0
 // zxx.drag v1.0 2010-03-23 元素的拖拽实现
 
 var params = {
+	target: null,
 	left: 0,
 	top: 0,
 	currentX: 0,
@@ -50,15 +53,18 @@ var getCss = function(o,key){
 
 //拖拽的实现
 var startDrag = function(bar, target, callback){
-	if(getCss(target, "left") !== "auto"){
-		params.left = getCss(target, "left");
-	}
-	if(getCss(target, "top") !== "auto"){
-		params.top = getCss(target, "top");
-	}
 	//o是移动对象
 	bar.onmousedown = function(event){
 		params.flag = true;
+		params.target = bar.parentNode;
+		dlgActive(params.target);
+		if(getCss(params.target, "left") !== "auto"){
+			params.left = getCss(params.target, "left");
+		}
+		if(getCss(params.target, "top") !== "auto"){
+			params.top = getCss(params.target, "top");
+		}
+
 		if(!event){
 			event = window.event;
 			//防止IE文字选中
@@ -72,11 +78,11 @@ var startDrag = function(bar, target, callback){
 	};
 	document.onmouseup = function(){
 		params.flag = false;	
-		if(getCss(target, "left") !== "auto"){
-			params.left = getCss(target, "left");
+		if(getCss(params.target, "left") !== "auto"){
+			params.left = getCss(params.target, "left");
 		}
-		if(getCss(target, "top") !== "auto"){
-			params.top = getCss(target, "top");
+		if(getCss(params.target, "top") !== "auto"){
+			params.top = getCss(params.target, "top");
 		}
 	};
 	document.onmousemove = function(event){
@@ -84,8 +90,8 @@ var startDrag = function(bar, target, callback){
 		if(params.flag){
 			var nowX = e.clientX, nowY = e.clientY;
 			var disX = nowX - params.currentX, disY = nowY - params.currentY;
-			target.style.left = parseInt(params.left) + disX + "px";
-			target.style.top = parseInt(params.top) + disY + "px";
+			params.target.style.left = parseInt(params.left) + disX + "px";
+			params.target.style.top = parseInt(params.top) + disY + "px";
 		}
 		
 		if (typeof callback == "function") {
@@ -94,6 +100,19 @@ var startDrag = function(bar, target, callback){
 	}	
 };
 
+//激活某窗口
+function dlgActive(dialog)
+{
+	var dlgs = document.getElementsByClassName("pubd-dialog");
+	for (var dlgi=0;dlgi<dlgs.length;dlgi++)
+	{
+		dlgs[dlgi].classList.remove("pubd-dlg-active");//取消激活
+	}
+	dialog.classList.add("pubd-dlg-active");//添加激活
+}
+
+console.log("激活窗口");
+/*
 //访GM_xmlhttpRequest函数v1.2
 if(typeof(GM_xmlhttpRequest) == "undefined")
 {
@@ -117,7 +136,7 @@ if(typeof(GM_xmlhttpRequest) == "undefined")
 		xhr.send(GM_param.data ? GM_param.data : null);
 	}
 }
-
+*/
 
 /* 
 //API获取用户画数
@@ -170,8 +189,10 @@ GM_xmlhttpRequest({
 var domStart; //开始按钮
 var domMenu; //菜单
 var domDlgConfig; //设置窗口
-
+var domDlgLogin; //登陆窗口
+console.log("开始主程序之前");
 startBuild(pubd.touch); //开始主程序
+console.log("开始主程序之后");
 //开始构建UI
 function startBuild(touch)
 {
@@ -191,8 +212,10 @@ function startBuild(touch)
 
 		//var btnDlgInsertPlace = document.getElementsByClassName("layout-wrapper")[0] || document.body;
 		var btnDlgInsertPlace = document.body;
-		domDlgConfig = builddlgConfig(touch);
+		domDlgLogin = buildDlgLogin(touch);
+		domDlgConfig = buildDlgConfig(touch);
 		btnDlgInsertPlace.appendChild(domDlgConfig);
+		btnDlgInsertPlace.appendChild(domDlgLogin);
 	}
 }
 //构建开始按钮
@@ -236,9 +259,12 @@ function buildMenu(touch)
 	menu.appendChild(buildMenuItem("选项","pubd-menu-setting",function()
 			{
 				domMenu.classList.add("display-none");
-				domDlgConfig.classList.toggle("display-none");
+				domDlgConfig.classList.remove("display-none");
+				dlgActive(domDlgConfig);
 			})
 		);
+	menu.appendChild(buildMenuItem("使用说明/主页",null,"https://github.com/Mapaler/PixivUserBatchDownload/tree/develop_v5"));
+	menu.appendChild(buildMenuItem("反馈/咨询",null,"https://github.com/Mapaler/PixivUserBatchDownload/issues"));
 	return menu;
 
 	//生成菜单项
@@ -259,7 +285,16 @@ function buildMenu(touch)
 		span.className = "text";
 		span.innerHTML = title;
 		a.appendChild(span);
-		a.onclick = callback;
+
+		if (typeof(callback) == "string")
+		{
+			a.target = "_blank";
+			a.href = callback;
+		}
+		else
+		{
+			if (callback) a.onclick = callback;
+		}
 
 		item.appendChild(a);
 
@@ -278,13 +313,16 @@ function buildGenneralDialog(touch,caption)
 		dlg.className = "pubd-dialog display-none";
 
 		//添加图标与标题
-		var icon = document.createElement("i");
-		icon.className = "pubd-icon";
-
 		var cpt = document.createElement("div");
 		cpt.className = "caption";
-		cpt.innerHTML = caption;
+
+		var icon = document.createElement("i");
+		icon.className = "pubd-icon";
 		cpt.appendChild(icon);
+
+		var span = document.createElement("span");
+		span.innerHTML = caption;
+		cpt.appendChild(span);
 		dlg.appendChild(cpt);
 
 		//添加关闭按钮
@@ -292,7 +330,7 @@ function buildGenneralDialog(touch,caption)
 		cls.className = "dlg-close";
 		cls.onclick = function()
 		{
-			dlg.classList.toggle("display-none"); //这里不知道为什么不能用add
+			dlg.classList.add("display-none"); //这里不知道为什么不能用add
 		}
 		var clsTxt = document.createElement("div");
 		clsTxt.className = "dlg-close-text";
@@ -305,40 +343,199 @@ function buildGenneralDialog(touch,caption)
 		content.className = "dlg-content";
 		dlg.appendChild(content);
 
-		/*
-		dlg.onmousedown = function (e){
-			var e = e || window.event;
-			disX = e.clientX - this.offsetLeft;
-			disY = e.clientY - this.offsetTop;
-			dlg.onmousemove = function (e){
-				var e = e || window.event;
-				dlg.style.left = (e.clientX - disX) + 'px';
-				dlg.style.top = (e.clientY - disY) + 'px';
-			};
-			dlg.onmouseup = function (){
-				document.onmousemove = null;
-				document.onmouseup = null;
-			};
-			return false;
-		};
-		*/
-		startDrag(cpt, dlg);
+		startDrag(cpt, cpt.parentNode);
 	}
 	return dlg;
 }
 //构建设置对话框
-function builddlgConfig(touch)
+function buildDlgConfig(touch)
 {
 	if (touch) //手机版
 	{
 
 	}else
 	{
-		var dlg = buildGenneralDialog(touch,"软件选项");
+		var dlg = buildGenneralDialog(touch,"PUBD选项");
 		dlg.id = "pubd-config";
 		dlg.classList.add("pubd-config");
 
-		dlg.getElementsByClassName("dlg-content")[0].innerHTML="测试内容";
+		var dlgc = dlg.getElementsByClassName("dlg-content")[0];
+
+		var dl=document.createElement("dl");
+		var dt=document.createElement("dt");
+		dl.appendChild(dt);
+		dt.innerHTML = "账户通行证(Access_Token)，登陆获取"
+		var dd=document.createElement("dd");
+		var ipt = document.createElement("input");
+		ipt.type = "text";
+		ipt.className = "pubd-token";
+		ipt.name = "pubd-token";
+		ipt.id = ipt.name;
+		ipt.placeholder = "免登陆默认Token"
+		dd.appendChild(ipt);
+		
+		var ipt = document.createElement("input");
+		ipt.type = "button";
+		ipt.className = "pubd-login";
+		ipt.name = "pubd-login";
+		ipt.id = ipt.name;
+		ipt.value = "登陆账户"
+		ipt.onclick = function()
+		{
+			domDlgLogin.classList.remove("display-none");
+			dlgActive(domDlgLogin);
+		}
+		dd.appendChild(ipt);
+
+		dl.appendChild(dd);
+		dlgc.appendChild(dl);
 	}
 	return dlg;
+}
+
+//构建登陆对话框
+function buildDlgLogin(touch)
+{
+	if (touch) //手机版
+	{
+
+	}else
+	{
+		var dlg = buildGenneralDialog(touch,"登陆账户");
+		dlg.id = "pubd-login";
+		dlg.classList.add("pubd-login");
+
+		var dlgc = dlg.getElementsByClassName("dlg-content")[0];
+		//Logo部分
+		var logo_box = document.createElement("div");
+		logo_box.className = "logo-box";
+		var logo = document.createElement("div");
+		logo.className = "logo";
+		logo_box.appendChild(logo);
+		var catchphrase = document.createElement("div");
+		catchphrase.className = "catchphrase";
+		catchphrase.innerHTML = "登陆获取你的账户通行证，解除浏览限制"
+		logo_box.appendChild(catchphrase);
+		dlgc.appendChild(logo_box);
+		//实际登陆部分
+		var container_login = document.createElement("div");
+		container_login.className = "container-login";
+
+		var input_field_group = document.createElement("div");
+		input_field_group.className = "input-field-group";
+		container_login.appendChild(input_field_group);
+		var input_field1 = document.createElement("div");
+		input_field1.className = "input-field";
+		var pid = document.createElement("input");
+		pid.type = "text";
+		pid.className = "pubd-account";
+		pid.name = "pubd-account";
+		pid.id = pid.name;
+		pid.placeholder="邮箱地址/pixiv ID";
+		input_field1.appendChild(pid);
+		input_field_group.appendChild(input_field1);
+		var input_field2 = document.createElement("div");
+		input_field2.className = "input-field";
+		var pass = document.createElement("input");
+		pass.type = "password";
+		pass.className = "pubd-password";
+		pass.name = "pubd-password";
+		pass.id =pass.name;
+		pass.placeholder="密码";
+		input_field2.appendChild(pass);
+		input_field_group.appendChild(input_field2);
+		
+
+		var error_msg_list = document.createElement("ul"); //登陆错误信息
+		error_msg_list.className = "error-msg-list";
+		container_login.appendChild(error_msg_list);
+
+		var submit = document.createElement("button");
+		submit.className = "submit";
+		submit.innerHTML = "登陆"
+		container_login.appendChild(submit);
+
+		var signup_form_nav = document.createElement("div");
+		signup_form_nav.className = "signup-form-nav";
+		container_login.appendChild(signup_form_nav);
+		var lblremember = document.createElement("label");
+		var remember = document.createElement("input"); //记住账号密码
+		remember.type = "checkbox";
+		remember.className = "pubd-remember";
+		remember.name = "pubd-remember";
+		remember.id = remember.name;
+		lblremember.appendChild(remember);
+		lblremember.innerHTML += "记住账号密码（警告：明文保存于本地）";
+		signup_form_nav.appendChild(lblremember);
+
+		dlgc.appendChild(container_login);
+
+		submit.onclick = function()
+		{
+			var loginPost = [
+				["get_secure_url",1],
+				["client_id","bYGKuGVw91e0NMfPGp44euvGt59s"],
+				["client_secret","HP3RmkgAmEGro0gn1x9ioawQE8WMfvLXDz3ZqxpK"],
+				["grant_type","password"],
+				["username",pid.value],
+				["password",pass.value],
+				["refresh_token",""],
+			];
+			var loginPostStr = loginPost.map(function (item){
+									return item.join("=");
+								}).join("&");
+			GM_xmlhttpRequest({
+				url:"https://oauth.secure.pixiv.net/auth/token",
+				method:"post",
+				responseType:"text",
+				headers: {
+					'App-OS': 'ios',
+					'App-OS-Version': '9.3.3',
+					'App-Version': '6.0.9',
+					'User-Agent': 'PixivIOSApp/6.0.9 (iOS 9.3.3; iPhone8,1)',
+					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
+					"Referer": "https://spapi.pixiv.net/",
+				},
+				data: loginPostStr,
+				onload: function(response) {
+					var jo = JSON.parse(response.response)
+					if (jo)
+					{
+						console.warn(jo);
+						if (jo.has_error)
+						{
+							loginError("错误代码 " + jo.errors.system.code + " : " + jo.errors.system.message);
+						}else
+						{//登陆成功
+							if (jo.response != undefined)
+							{
+								loginError("登陆成功");
+								document.getElementById("pubd-token").value = jo.response.access_token;
+							}else
+							{
+								loginError("理论上是登陆成功了，但出现了未知错误");
+							}
+						}
+					}else
+					{
+						loginError("登录失败，返回不是JSON");
+					}
+				},
+				onerror: function(response) {
+					loginError("登录失败，AJAX访问失败");
+				}
+			})
+		}
+	}
+	return dlg;
+}
+//登陆失败信息
+function loginError(text)
+{
+	var error_msg_list = domDlgLogin.getElementsByClassName("error-msg-list")[0];
+	error_msg_list.innerHTML = ""; //清空当前信息
+	var error_msg_list_item = document.createElement("li");
+	error_msg_list_item.className = "error-msg-list-item";
+	error_msg_list_item.innerHTML = text;
+	error_msg_list.appendChild(error_msg_list_item);
 }
