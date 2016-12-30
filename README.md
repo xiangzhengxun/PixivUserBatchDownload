@@ -1,14 +1,20 @@
-﻿# PixivUserBatchDownload v3.0开发中
-[P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，本程序仅支持P站电脑版登录后的网页。
+﻿# PixivUserBatchDownload v5.0开发中
+[P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具。
 
-建议使用[![](https://www.mozilla.org/media/img/firefox/favicon.dc6635050bf5.ico)FireFox](http://www.firefox.com)的[![](https://github.com/greasemonkey/greasemonkey/raw/master/skin/icon32.png)GreaseMonkey](http://www.greasespot.net/)扩展[安装v3.0脚本程序](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/PixivUserBatchDownload.user.js)。因为Chrome本身的原因仅提供有限支持，需安装Tampermonkey扩展使用。
-
-需要配和[Aria2](https://aria2.github.io/)下载软件使用，推荐使用PRC模式并用[![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)管理下载，建议时不时看看有没有更新，从我开始这个项目到现在webui-aria2已经完善了很多翻译了。（不推荐[YAAW](https://github.com/binux/yaaw)，因为作者忙着工(tiao)作(cao)早就没更新了）。
-
-经Debug，脚本在安卓火狐用“USI”扩展也可以工作了，可以在外面用手机向家里发送下载了，但仍然只支持电脑版页面，请勾选“要求桌面版网站”。
+##软件需求
+1. 用户脚本扩展，用于实现脚本的功能。
+ * [![](https://www.mozilla.org/media/img/firefox/favicon.dc6635050bf5.ico)FireFox](http://www.firefox.com)安装[![](https://github.com/greasemonkey/greasemonkey/raw/master/skin/icon32.png)GreaseMonkey](http://www.greasespot.net/)扩展。
+ * ![](http://www.chromium.org/_/rsrc/1438879449147/config/customLogo.gif)Chromium系安装[![](https://addons.cdn.mozilla.net/user-media/addon_icons/683/683490-64.png?modified=1463757971)Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=zh-CN)扩展。
+2. 用户样式扩展，用于调整脚本的外观。
+ * 安装[![](https://addons.cdn.mozilla.net/user-media/addon_icons/2/2108-64.png?modified=1453837884)Stylish](https://userstyles.org/)扩展（两浏览器都有）。
+3. 下载软件，接受脚本添加的下载信息。
+ * [Aria2](https://aria2.github.io/) ，推荐使用PRC(Remote Procedure Call Protocol)模式启动。
+ * 管理下载
+  1. [![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)，建议时不时看看有没有更新，webui-aria2经常会增加中文翻译。
+  2. [YAAW](https://github.com/binux/yaaw)，作者是中国人，但更新较少。
 
 ## License|许可协议
-用到了一部分[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)的代码
+用到了一部分[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)的代码，与YAAW是同一开发者。
 
 PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 
@@ -65,89 +71,11 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 ![webui-aria2界面](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o5q4ljyqj20vv0nvgq4.jpg)
 
 ## 开始下载
-安装脚本后，在P站画师的页面会生成一个按钮。
+开发中。
 
-![页面位置](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohqawkotj20ew0dngni.jpg)
-
-需要只下载单图/多图/动图，请先点到作者作品目录里对应筛选中去。筛选TAG同理。
-
-![支持筛选](http://ww4.sinaimg.cn/large/6c84b2d6gw1f1ohp4vafoj20n10boq50.jpg)
-
-点击并分析完成后即自动发送到设置的Aria2下载（下图来自老版本）。
-
-![下载状态](http://ww1.sinaimg.cn/large/6c84b2d6gw1f1ky66pylwj21gs0utasp.jpg)
-
-流量不够也可导出成批处理命令或者会话文件拿回家下载(多个文件可以简单的换行合并)。
-
-![导出窗口](http://ww2.sinaimg.cn/large/6c84b2d6gw1f30npja9o8j20an0bztcw.jpg)
-
-使用会话文件的命令行为`aria2c.exe --input-file="xxxxx.session.txt"`
-
-默认设置，下载会将不同画师作品分文件夹存放。
-
-![默认结构](http://ww4.sinaimg.cn/large/6c84b2d6gw1f30mnf8s93j20fx0gpabz.jpg)
-
-![画师文件夹](http://ww3.sinaimg.cn/large/6c84b2d6gw1f30mpc4h5fj20nb0g7440.jpg)
-
-自定义文件夹请参考[文件夹自定义工具使用方法](https://github.com/Mapaler/PixivUserBatchDownload/tree/develop/Customize_Folder)
 ## 设置
-![设置界面](http://ww3.sinaimg.cn/large/6c84b2d6gw1f30p81rd7dj20ai0nhgqh.jpg)
+开发中。
 
-为了方便批处理与会话文件的使用，以及方便将Aria2同时用在其他地方（比如[批量下载百度云](https://github.com/acgotaku/BaiduExporter)），v1.4.0版本开始添加了内置的下载目录设置，请在下载前先修改下载目录到你所需要的地方。留空时则使用“aria2_Pixiv.ini”里设定了的默认下载目录的位置。
-
-保存路径负责根据画师、作品名进行分类建立文件夹和改名，使用掩码进行自动重命名。
-
-掩码格式为“%{掩码名}”，可用的掩码有如下这些
-```
-user_id : 作者ID
-user_name : 作者昵称
-user_pixiv_id : 作者账户(pixiv ID)
-user_head : 作者头像url
-illust_count : 作品总数
-illust_file_count : 作品文件总数（含多图）
-illust_id : 作品ID
-title : 作品标题
-illust_page : 在作者的第几页
-illust_index : 全部作品中序号（会因为发布新作品而增加）
-illust_index_inverted : 全部作品中序号_倒序
-illust_index_in_page : 该页上序号
-illust_index_in_page_inverted : 该页上序号_倒序
-type : 类型，单页0、多图1、动画2、漫画3
-type_name : 类型用文字表示
-multiple : 只在type=1时启用，其他情况替换为空。
-filename : 文件名
-	▲如下掩码可组合出相同值
-	“%{illust_id}%{hash}_p%{page}”
-hash : 仅好友可见图片的加密字符串
-extention : 扩展名
-page : 第几页（多图只有一个zip，为0）
-page_count : 共几页（多图为帧数）
-original_src : 原始图片链接
-	▲如下掩码可组合出相同值
-	“http://%{domain}/img-original/img/%{year}/%{month}/%{day}/%{hour}/%{minute}/%{second}/%{filename}.%{extention}”
-thumbnail_src : 缩略图地址
-	▲如下掩码可组合出相同值
-	类型命名掩码“%{type_name}”的值设置为动图“_s”，其他为“_master1200”
-	“http://%{domain}/c/150x150/img-master/img/%{year}/%{month}/%{day}/%{hour}/%{minute}/%{second}/%{filename}%{type_name}.%{extention}”
-url : 作品页面
-	▲如下掩码可组合出相同值
-	“http://www.pixiv.net/member_illust.php?mode=medium&id=%{illust_id}”
-domain : 域名
-year : 年
-month : 月
-day : 日
-hour : 时
-minute : 分
-second : 秒
-time : 显示时间
-size : 作品页面上显示的大小（多图为张数）
-width : 宽（多图为第一张的数值）
-height : 高（多图为第一张的数值）
-tools : 使用工具
-caption : 说明
-tags : 标签
-desktop_line : 自定义文件夹里每个文件改名的部分，如果要自己使用请确保你知道它的意思。
-```
 ##支持Aria2搭建NAS远程下载
 Aria2是跨平台下载软件，你可以在其他系统下配置本程序。我现在都是从单位下载到家里的安了Aria2的OpenWrt路由器上。
 
