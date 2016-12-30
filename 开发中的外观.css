@@ -1,0 +1,134 @@
+@namespace url(http://www.w3.org/1999/xhtml);
+
+@-moz-document domain("www.pixiv.net") {
+  .pubd-button
+  {
+    color: #258fb8;
+    background-image: linear-gradient(to bottom, #FCFDFE 0%, #87DCFF 100%);
+    background-color: #CCEEFF;
+    text-shadow: #fcfcf8 0 1px 2px;
+    border: 1px solid #cfe0e9;
+    border-radius: 5px;
+    padding: 2px 0px;
+    margin: 0;
+    display: inline-block;
+    width: 152px;
+    position: relative;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 18px;
+    word-wrap: break-word;
+    text-decoration: none !important;
+  }
+  .pubd-button::after
+  {
+    content: "?";
+    position: absolute;
+    right: 6px;
+    padding-left: 5px;
+    color: #a4b1b7;
+    border-left: 1px solid #77AAB1;
+  }
+  .pubd-button:hover
+  {
+    background-image: linear-gradient(to bottom, #FAFBFD 0%, #43B8D5 100%);
+  }
+  .pubd-button ._icon
+  {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+  }
+  .pubd-menu
+  {
+    z-index: 10000;
+    position: absolute;
+    left: 10px;
+    margin: -1px auto 0;
+    text-align: left;
+    width: 152px;
+    background-color: #fff;
+    border: 1px solid #becad7;
+    outline: 1px solid #fff;
+  }
+  .display-none
+  {
+    display:none;
+  }
+  .pubd-menu-item
+  {
+    display: block;
+    margin: 0;
+    padding-left: 2px;
+    padding-right: 9px;
+    line-height: 2;
+    color: #777;
+    border-left: none !important;
+    border-right: none !important;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none !important;
+  }
+  .pubd-menu-item:hover
+  {
+    background-color: #CEE7FF;
+  }
+  .pubd-menu-setting
+  {
+    border-top: 1px solid #D7E0EA;
+  }
+  
+  .pubd-menu-icon
+  {
+    /*display:inline-block;
+    width: 18px;
+    height: 18px;
+    background: transparent;
+    background-repeat: no-repeat;
+    transform: translateY(4px);*/
+    display: inline-block;
+    overflow: hidden;
+    text-indent: -999px;
+    white-space: nowrap;
+    vertical-align: middle;
+    background-image: url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png');
+    background-repeat: no-repeat;
+    height: 16px;
+    width: 16px;
+    margin: 0 2px;
+  }
+  
+  .pubd-menu-setting .pubd-menu-icon
+  {
+    /*background-image:url('http://source.pixiv.net/www/images/notification/setting.png');*/
+    background-position: 0 -1597px;
+  }
+  
+  .pubd-dialog
+  {
+    position: absolute;
+    z-index: 1000;
+    width: 210px;
+    padding: 20px 10px 10px 10px;
+    background-color: #fff;
+    border: 1px solid #cfe0e9;
+    border-radius: 5px;
+    box-shadow: #666 0 0 3px;
+  }
+  .pubd-dialog .close
+  {
+    background-repeat: no-repeat;
+    background-image: url("http://source.pixiv.net/www/images/sprite.png?20120528");
+    background-position: -1701px -204px;
+    background-color: transparent;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    opacity: 0.8;
+  }
+}

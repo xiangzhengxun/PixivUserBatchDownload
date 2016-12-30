@@ -9,9 +9,9 @@
  * 安装[![](https://addons.cdn.mozilla.net/user-media/addon_icons/2/2108-64.png?modified=1453837884)Stylish](https://userstyles.org/)扩展（两浏览器都有）。
 3. 下载软件，接受脚本添加的下载信息。
  * [Aria2](https://aria2.github.io/) ，推荐使用PRC(Remote Procedure Call Protocol)模式启动。
- * 管理下载
-  1. [![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)，建议时不时看看有没有更新，webui-aria2经常会增加中文翻译。
-  2. [YAAW](https://github.com/binux/yaaw)，作者是中国人，但更新较少。
+4. 管理下载
+ * [![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)，建议时不时看看有没有更新，webui-aria2经常会增加中文翻译。
+ * [YAAW](https://github.com/binux/yaaw)，作者是中国人，但更新较少。
 
 ## License|许可协议
 用到了一部分[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)的代码，与YAAW是同一开发者。
