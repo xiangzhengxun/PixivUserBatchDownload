@@ -17,7 +17,13 @@
 // ==/UserScript==
 
 var pubd = {}; //储存设置
-pubd.touch = false;
+pubd.touch = false; //是触屏
+pubd.loggedIn = false; //登陆了
+
+if (pixiv && pixiv.user.loggedIn)
+{
+	pubd.loggedIn = true;
+}
 if (pixiv.AutoView != undefined) //location.host.indexOf("touch")>=0
 {
 	console.info("当前访问的是P站桌面版");
@@ -27,10 +33,67 @@ if (pixiv.AutoView != undefined) //location.host.indexOf("touch")>=0
 	console.info("当前访问的是P站触屏手机版");
 }
 
-if (!pubd.touch) //桌面版
-{
+// by zhangxinxu welcome to visit my personal website http://www.zhangxinxu.com/
+// zxx.drag v1.0 2010-03-23 元素的拖拽实现
 
-}
+var params = {
+	left: 0,
+	top: 0,
+	currentX: 0,
+	currentY: 0,
+	flag: false
+};
+//获取相关CSS属性
+var getCss = function(o,key){
+	return o.currentStyle? o.currentStyle[key] : document.defaultView.getComputedStyle(o,false)[key]; 	
+};
+
+//拖拽的实现
+var startDrag = function(bar, target, callback){
+	if(getCss(target, "left") !== "auto"){
+		params.left = getCss(target, "left");
+	}
+	if(getCss(target, "top") !== "auto"){
+		params.top = getCss(target, "top");
+	}
+	//o是移动对象
+	bar.onmousedown = function(event){
+		params.flag = true;
+		if(!event){
+			event = window.event;
+			//防止IE文字选中
+			bar.onselectstart = function(){
+				return false;
+			}  
+		}
+		var e = event;
+		params.currentX = e.clientX;
+		params.currentY = e.clientY;
+	};
+	document.onmouseup = function(){
+		params.flag = false;	
+		if(getCss(target, "left") !== "auto"){
+			params.left = getCss(target, "left");
+		}
+		if(getCss(target, "top") !== "auto"){
+			params.top = getCss(target, "top");
+		}
+	};
+	document.onmousemove = function(event){
+		var e = event ? event: window.event;
+		if(params.flag){
+			var nowX = e.clientX, nowY = e.clientY;
+			var disX = nowX - params.currentX, disY = nowY - params.currentY;
+			target.style.left = parseInt(params.left) + disX + "px";
+			target.style.top = parseInt(params.top) + disY + "px";
+		}
+		
+		if (typeof callback == "function") {
+			callback(parseInt(params.left) + disX, parseInt(params.top) + disY);
+		}
+	}	
+};
+
 //访GM_xmlhttpRequest函数v1.2
 if(typeof(GM_xmlhttpRequest) == "undefined")
 {
@@ -127,7 +190,7 @@ function startBuild(touch)
 		btnStartInsertPlace.appendChild(btnStartli);
 
 		//var btnDlgInsertPlace = document.getElementsByClassName("layout-wrapper")[0] || document.body;
-		var btnDlgInsertPlace = btnStartInsertPlace;
+		var btnDlgInsertPlace = document.body;
 		domDlgConfig = builddlgConfig(touch);
 		btnDlgInsertPlace.appendChild(domDlgConfig);
 	}
@@ -141,11 +204,11 @@ function buildbtnStart(touch)
 	}else
 	{
 		var btnStart = document.createElement("a");
-		btnStart.id = "pubd-button";
-		btnStart.className = "pubd-button";
+		btnStart.id = "pubd-start";
+		btnStart.className = "pubd-start";
 		//添加图标
 		var icon = document.createElement("i");
-		icon.className = "_icon sprites-down";
+		icon.className = "pubd-icon";
 		btnStart.appendChild(icon);
 		//添加文字
 		var span = document.createElement("span");
@@ -170,7 +233,7 @@ function buildMenu(touch)
 	menu.appendChild(buildMenuItem("RPC下载",null,function(){alert("点击下载")}));
 	menu.appendChild(buildMenuItem("导出文件",null,function(){alert("点击文件")}));
 	menu.appendChild(buildMenuItem("导出链接",null,function(){alert("点击链接")}));
-	menu.appendChild(buildMenuItem("设置","pubd-menu-setting",function()
+	menu.appendChild(buildMenuItem("选项","pubd-menu-setting",function()
 			{
 				domMenu.classList.add("display-none");
 				domDlgConfig.classList.toggle("display-none");
@@ -189,7 +252,7 @@ function buildMenu(touch)
 		a.className = "pubd-menu-item" + (classname?" "+classname:"");
 		//添加图标
 		var icon = document.createElement("i");
-		icon.className = "pubd-menu-icon";
+		icon.className = "pubd-icon";
 		a.appendChild(icon);
 		//添加文字
 		var span = document.createElement("span");
@@ -204,7 +267,7 @@ function buildMenu(touch)
 	}
 }
 //创建一个通用的对话框
-function buildGenneralDialog(touch)
+function buildGenneralDialog(touch,caption)
 {
 	if (touch) //手机版
 	{
@@ -214,22 +277,52 @@ function buildGenneralDialog(touch)
 		var dlg = document.createElement("div");
 		dlg.className = "pubd-dialog display-none";
 
+		//添加图标与标题
+		var icon = document.createElement("i");
+		icon.className = "pubd-icon";
+
+		var cpt = document.createElement("div");
+		cpt.className = "caption";
+		cpt.innerHTML = caption;
+		cpt.appendChild(icon);
+		dlg.appendChild(cpt);
+
+		//添加关闭按钮
 		var cls = document.createElement("div");
-		cls.className = "close";
+		cls.className = "dlg-close";
 		cls.onclick = function()
 		{
-			dlg.classList.add("display-none");
+			dlg.classList.toggle("display-none"); //这里不知道为什么不能用add
 		}
+		var clsTxt = document.createElement("div");
+		clsTxt.className = "dlg-close-text";
+		clsTxt.innerHTML = "X";
+		cls.appendChild(clsTxt);
 		dlg.appendChild(cls);
 
-		var ttl = document.createElement("div");
-		ttl.className = "title";
-		dlg.appendChild(ttl);
-
+		//添加内容
 		var content = document.createElement("div");
 		content.className = "dlg-content";
 		dlg.appendChild(content);
 
+		/*
+		dlg.onmousedown = function (e){
+			var e = e || window.event;
+			disX = e.clientX - this.offsetLeft;
+			disY = e.clientY - this.offsetTop;
+			dlg.onmousemove = function (e){
+				var e = e || window.event;
+				dlg.style.left = (e.clientX - disX) + 'px';
+				dlg.style.top = (e.clientY - disY) + 'px';
+			};
+			dlg.onmouseup = function (){
+				document.onmousemove = null;
+				document.onmouseup = null;
+			};
+			return false;
+		};
+		*/
+		startDrag(cpt, dlg);
 	}
 	return dlg;
 }
@@ -241,9 +334,9 @@ function builddlgConfig(touch)
 
 	}else
 	{
-		var dlg = buildGenneralDialog(touch);
+		var dlg = buildGenneralDialog(touch,"软件选项");
 		dlg.id = "pubd-config";
-		dlg.classList.add = "pubd-config";
+		dlg.classList.add("pubd-config");
 
 		dlg.getElementsByClassName("dlg-content")[0].innerHTML="测试内容";
 	}

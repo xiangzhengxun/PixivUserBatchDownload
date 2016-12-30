@@ -1,9 +1,9 @@
-@namespace url(http://www.w3.org/1999/xhtml);
+﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-  .pubd-button
-  {
-    color: #258fb8;
+  .pubd-start
+  {/*开始按钮*/
+    color: #1A4483;
     background-image: linear-gradient(to bottom, #FCFDFE 0%, #87DCFF 100%);
     background-color: #CCEEFF;
     text-shadow: #fcfcf8 0 1px 2px;
@@ -22,27 +22,38 @@
     word-wrap: break-word;
     text-decoration: none !important;
   }
-  .pubd-button::after
-  {
-    content: "?";
+  .pubd-start::after
+  {/*开始按钮后面的箭头*/
+    content: "▾";
     position: absolute;
     right: 6px;
     padding-left: 5px;
-    color: #a4b1b7;
+    color: #1A4483;
     border-left: 1px solid #77AAB1;
   }
-  .pubd-button:hover
-  {
+  .pubd-start:hover
+  {/*开始按钮悬停*/
     background-image: linear-gradient(to bottom, #FAFBFD 0%, #43B8D5 100%);
   }
-  .pubd-button ._icon
-  {
+  .pubd-icon
+  {/*所有图标，来自._icon*/
+    display: inline-block;
+    overflow: hidden;
+    text-indent: -999px;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .pubd-start .pubd-icon
+  {/*开始按钮图标*/
     position: absolute;
     top: 3px;
     left: 3px;
+    background: url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png') no-repeat 0 -797px;
+    height: 14px;
+    width: 14px;
   }
   .pubd-menu
-  {
+  {/*菜单*/
     z-index: 10000;
     position: absolute;
     left: 10px;
@@ -54,11 +65,11 @@
     outline: 1px solid #fff;
   }
   .display-none
-  {
+  {/*任何需要隐藏的*/
     display:none;
   }
   .pubd-menu-item
-  {
+  {/*设置菜单项*/
     display: block;
     margin: 0;
     padding-left: 2px;
@@ -72,63 +83,111 @@
     text-decoration: none !important;
   }
   .pubd-menu-item:hover
-  {
+  {/*设置菜单项悬停变色*/
     background-color: #CEE7FF;
   }
   .pubd-menu-setting
-  {
+  {/*设置菜单项的上边框*/
     border-top: 1px solid #D7E0EA;
   }
-  
-  .pubd-menu-icon
-  {
-    /*display:inline-block;
-    width: 18px;
-    height: 18px;
-    background: transparent;
-    background-repeat: no-repeat;
-    transform: translateY(4px);*/
-    display: inline-block;
-    overflow: hidden;
-    text-indent: -999px;
-    white-space: nowrap;
-    vertical-align: middle;
-    background-image: url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png');
-    background-repeat: no-repeat;
+  .pubd-menu-item .pubd-icon
+  {/*菜单里的所有图标*/
     height: 16px;
     width: 16px;
     margin: 0 2px;
   }
-  
-  .pubd-menu-setting .pubd-menu-icon
-  {
-    /*background-image:url('http://source.pixiv.net/www/images/notification/setting.png');*/
-    background-position: 0 -1597px;
+  .pubd-menu-setting .pubd-icon
+  {/*设置菜单项的图标*/
+    background: url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png') no-repeat 0 -1597px;
   }
   
   .pubd-dialog
-  {
+  {/*对话框*/
     position: absolute;
+    left:300px;
+    top:100px;
     z-index: 1000;
-    width: 210px;
-    padding: 20px 10px 10px 10px;
-    background-color: #fff;
-    border: 1px solid #cfe0e9;
-    border-radius: 5px;
-    box-shadow: #666 0 0 3px;
-  }
-  .pubd-dialog .close
-  {
+    min-width: 210px;
+    padding: 30px 8px 8px 8px;
+    background-color: RGBA(191,214,236,0.8);
+    background-image: 
+      linear-gradient(135deg, RGBA(255,255,255,0) 10%,RGBA(255,255,255,0.8) 30%, RGBA(255,255,255,0) 50%),
+      linear-gradient(225deg, RGBA(255,255,255,0) 10%,RGBA(255,255,255,0.8) 30%, RGBA(255,255,255,0) 50%),
+      linear-gradient(to bottom, RGBA(237,242,247,0.3) 0%,RGBA(188,220,238,0.6) 20%,RGBA(239,246,252,0.8) 40%,RGBA(192,217,238,0.8) 41%, RGBA(195,219,243,0) 100%);
     background-repeat: no-repeat;
-    background-image: url("http://source.pixiv.net/www/images/sprite.png?20120528");
-    background-position: -1701px -204px;
-    background-color: transparent;
+    background-size: 80px 80px, 80px 80px, 100% 300px;
+    background-position: top left,top right,top left;
+    border: #147DF2 solid 1px;
+    border-radius: 5px;
+    box-shadow: white 0 0 3px inset,white 0 0 3px inset;
+    transition: box-shadow ease-in-out 0.1s;
+  }
+  .pubd-dialog:hover
+  {/*对话框悬停*/
+    box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 8px,#72BBFE 0 0 8px;
+  }
+  .pubd-dialog .dlg-close
+  {/*对话框关闭按钮*/
+    /*background: url("http://source.pixiv.net/www/images/sprite.png") no-repeat -1701px -204px;*/
+    background-color: RGBA(191,214,236,0.5);
+    background-image: 
+      linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(239,246,252,0.8) 40%, RGBA(200,210,222,0.8) 100%);
+    border: #147DF2 solid 1px;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
     position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 16px;
-    height: 16px;
+    top: 0;
+    right: 8px;
+    width: 50px;
+    height: 20px;
     cursor: pointer;
     opacity: 0.8;
+    overflow: hidden;
+    transition: background-image ease-in-out 0.1s,box-shadow ease-in-out 0.1s;
+  }
+  .pubd-dialog .dlg-close:hover
+  {/*对话框关闭按钮悬停*/
+    background-image: 
+      linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(158,197,215,0.8) 40%, RGBA(118,175,252,0.8) 100%);
+    box-shadow: #72BBFE 0 0 8px,#72BBFE 0 0 8px;
+  }
+  .pubd-dialog .dlg-close .dlg-close-text
+  {/*对话框关闭按钮上的文字*/
+    text-align: center;
+    line-height: 20px;
+    font-size: 10px;
+    font-family: "Microsoft Yahei";
+    font-weight: bold;
+    color: #fff;
+    text-shadow: -1px -1px 1px #147DF2,1px 1px 1px #147DF2,-1px 1px 1px #147DF2,1px -1px 1px #147DF2;
+    transform:scaleX(1.6);
+  }
+  .pubd-dialog .caption .pubd-icon
+  {/*对话框图标*/
+    position: absolute;
+    top: 6px;
+    left: 5px;
+    background:url('http://source.pixiv.net/www/images/notification/setting.png') no-repeat 0 -18px;
+    width: 18px;
+    height: 18px;
+  }
+  .pubd-dialog .caption
+  {/*对话框标题*/
+    position: absolute;
+    font-size: 13px;
+    line-height: 30px;
+    top: 0px;
+    left: 0px;
+    width: calc(100% - 25px);
+    height: 30px;
+    padding-left: 25px;
+    cursor: move;
+    /*background: RGBA(0,0,0,0.2); */
+  }
+  .pubd-dialog .dlg-content
+  {/*对话框内容*/
+    background-color: #F0F0F0;
+    border: #147DF2 solid 1px;
+    outline: white solid 1px;
   }
 }
