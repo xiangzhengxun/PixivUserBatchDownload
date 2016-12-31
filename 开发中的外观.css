@@ -113,10 +113,13 @@
     background-image: 
       linear-gradient(135deg, RGBA(255,255,255,0) 10%,RGBA(255,255,255,0.8) 30%, RGBA(255,255,255,0) 50%),
       linear-gradient(225deg, RGBA(255,255,255,0) 10%,RGBA(255,255,255,0.8) 30%, RGBA(255,255,255,0) 50%),
-      linear-gradient(to bottom, RGBA(237,242,247,0.3) 0%,RGBA(188,220,238,0.6) 20%,RGBA(239,246,252,0.8) 40%,RGBA(192,217,238,0.8) 41%, RGBA(195,219,243,0) 100%);
+      linear-gradient(70deg,RGBA(255,255,255,0) 20%,RGBA(255,255,255,0.7) 22%,RGBA(255,255,255,0.2) 24%,RGBA(255,255,255,0.7) 26%,RGBA(255,255,255,0) 28%,RGBA(255,255,255,0) 46%,RGBA(255,255,255,0.7) 48%,RGBA(255,255,255,0.2) 50%,RGBA(255,255,255,0.7) 52%,RGBA(255,255,255,0) 54%,RGBA(255,255,255,0) 72%,RGBA(255,255,255,0.7) 74%,RGBA(255,255,255,0.2) 76%,RGBA(255,255,255,0.7) 78%,RGBA(255,255,255,0) 80%),
+      linear-gradient(to bottom, RGBA(237,242,247,0.3) 0%,RGBA(188,220,238,0.6) 20%,RGBA(239,246,252,0.8) 40%,RGBA(192,217,238,0.8) 41%, RGBA(195,219,243,0) 100%)
+      ;
     background-repeat: no-repeat;
-    background-size: 80px 80px, 80px 80px, 100% 300px;
-    background-position: top left,top right,top left;
+    background-size: 80px 80px, 80px 80px,100vw 100vh, 100% 300px; /*100vw 100vh*/
+    background-position: top left, top right, top left,top left;
+    background-attachment: scroll,scroll,fixed,scroll; 
     border: #147DF2 solid 1px;
     border-radius: 5px;
     box-shadow: white 0 0 3px inset,white 0 0 3px inset;
@@ -131,33 +134,46 @@
     box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 8px,#72BBFE 0 0 8px;
     z-index: 1001;
   }
-  .pubd-dialog .dlg-close
-  {/*对话框关闭按钮*/
+  .pubd-dialog .dlg-cpt-btns
+  {/*对话框标题按钮组*/
+    position: absolute;
+    top: 0;
+    right: 8px;
+  }
+  .dlg-cpt-btns .dlg-cpt-btn
+  {/*对话框标题按钮*/
     /*background: url("http://source.pixiv.net/www/images/sprite.png") no-repeat -1701px -204px;*/
     background-color: RGBA(191,214,236,0.5);
     background-image: 
       linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(239,246,252,0.8) 40%, RGBA(200,210,222,0.8) 100%);
+    display: inline-block;
     border: #147DF2 solid 1px;
+    border-right-width: 0px;
     border-top: none;
-    border-radius: 0 0 5px 5px;
-    position: absolute;
-    top: 0;
-    right: 8px;
+    border-radius: 0;
     width: 50px;
     height: 20px;
     cursor: pointer;
-    opacity: 0.8;
     overflow: hidden;
     transition: background-image ease-in-out 0.1s,box-shadow ease-in-out 0.1s;
   }
-  .pubd-dialog .dlg-close:hover
-  {/*对话框关闭按钮悬停*/
+  .dlg-cpt-btns .dlg-cpt-btn:first-child
+  {/*对话框标题按钮第一个*/
+    border-bottom-left-radius:5px;
+  }
+  .dlg-cpt-btns .dlg-cpt-btn:last-child
+  {/*对话框标题按钮最后一个*/
+    border-bottom-right-radius:5px;
+    border-right-width: 1px;
+  }
+  .dlg-cpt-btns .dlg-cpt-btn:hover
+  {/*对话框按钮悬停*/
     background-image: 
       linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(158,197,215,0.8) 40%, RGBA(118,175,252,0.8) 100%);
     box-shadow: #72BBFE 0 0 8px,#72BBFE 0 0 8px;
   }
-  .pubd-dialog .dlg-close .dlg-close-text
-  {/*对话框关闭按钮上的文字*/
+  .dlg-cpt-btn .dlg-cpt-btn-text
+  {/*对话框按钮上的文字*/
     text-align: center;
     line-height: 20px;
     font-size: 12px;
@@ -166,6 +182,21 @@
     color: #fff;
     text-shadow: -1px -1px 1px #147DF2,1px 1px 1px #147DF2,-1px 1px 1px #147DF2,1px -1px 1px #147DF2;
     transform:scaleX(1.5);
+  }
+  .dlg-cpt-btns .dlg-btn-close
+  {/*对话框关闭按钮特殊颜色*/
+    background-image: 
+      linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(248,142,142,0.8) 40%, RGBA(237,112,112,0.8) 100%);
+  }
+  .dlg-cpt-btns .dlg-btn-close:hover
+  {/*对话框关闭按钮悬停特殊颜色*/
+    background-image: 
+      linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(236,38,38,0.8) 40%, RGBA(211,26,26,0.8) 100%);
+    box-shadow: #F40000 0 0 8px,#F40000 0 0 8px;
+  }
+  .dlg-cpt-btns .dlg-btn-close .dlg-cpt-btn-text
+  {/*对话框关闭按钮文字*/
+    text-shadow: -1px -1px 1px #a00,1px 1px 1px #a00,-1px 1px 1px #a00,1px -1px 1px #a00;
   }
   .pubd-dialog .caption .pubd-icon
   {/*对话框图标*/

@@ -15,13 +15,13 @@
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
-console.log("最初的位置");
+
 var pubd = {}; //储存设置
 pubd.touch = false; //是触屏
 pubd.loggedIn = false; //登陆了
 
-console.log("第一个位置");
-var pixiv = unsafeWindow.pixiv;
+if (typeof(unsafeWindow)!="undefined")
+	var pixiv = unsafeWindow.pixiv;
 if (pixiv && pixiv.user.loggedIn)
 {
 	pubd.loggedIn = true;
@@ -325,18 +325,16 @@ function buildGenneralDialog(touch,caption)
 		cpt.appendChild(span);
 		dlg.appendChild(cpt);
 
+		//添加标题栏按钮
+		var cptBtns = document.createElement("div");
+		cptBtns.className = "dlg-cpt-btns";
 		//添加关闭按钮
-		var cls = document.createElement("div");
-		cls.className = "dlg-close";
-		cls.onclick = function()
-		{
-			dlg.classList.add("display-none"); //这里不知道为什么不能用add
-		}
-		var clsTxt = document.createElement("div");
-		clsTxt.className = "dlg-close-text";
-		clsTxt.innerHTML = "X";
-		cls.appendChild(clsTxt);
-		dlg.appendChild(cls);
+		var cls = buildDlgCptBtn("X","dlg-btn-close",(function()
+			{
+				dlg.classList.add("display-none");
+			}));
+		cptBtns.appendChild(cls);
+		dlg.appendChild(cptBtns);
 
 		//添加内容
 		var content = document.createElement("div");
@@ -346,6 +344,27 @@ function buildGenneralDialog(touch,caption)
 		startDrag(cpt, cpt.parentNode);
 	}
 	return dlg;
+}
+//构建标题栏按钮
+function buildDlgCptBtn(text,classname,callback)
+{
+	var btn = document.createElement("a");
+	btn.className = "dlg-cpt-btn" + (classname?" "+classname:"");
+	if (typeof(callback) == "string")
+	{
+		btn.target = "_blank";
+		btn.href = callback;
+	}
+	else
+	{
+		if (callback) btn.onclick = callback;
+	}
+	var btnTxt = document.createElement("div");
+	btnTxt.className = "dlg-cpt-btn-text";
+	btnTxt.innerHTML = text;
+	btn.appendChild(btnTxt);
+
+	return btn;
 }
 //构建设置对话框
 function buildDlgConfig(touch)
@@ -358,6 +377,17 @@ function buildDlgConfig(touch)
 		var dlg = buildGenneralDialog(touch,"PUBD选项");
 		dlg.id = "pubd-config";
 		dlg.classList.add("pubd-config");
+
+		var dlgBtns = dlg.getElementsByClassName("dlg-cpt-btns")[0];
+		//添加帮助按钮
+		var hlp = buildDlgCptBtn("?","dlg-btn-help","https://github.com/Mapaler/PixivUserBatchDownload/tree/develop_v5");
+		//添加测试按钮
+		var dgb = buildDlgCptBtn("测试","dlg-btn-debug",(function()
+			{
+				alert("测试");
+			}));
+		dlgBtns.insertBefore(dgb,dlgBtns.firstChild);
+		dlgBtns.insertBefore(hlp,dlgBtns.firstChild);
 
 		var dlgc = dlg.getElementsByClassName("dlg-content")[0];
 
