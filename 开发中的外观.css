@@ -42,15 +42,16 @@
     text-indent: -999px;
     white-space: nowrap;
     vertical-align: middle;
+    background: transparent url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png') no-repeat 0 20px;
   }
   .pubd-start .pubd-icon
   {/*开始按钮图标*/
     position: absolute;
     top: 3px;
     left: 3px;
-    background: url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png') no-repeat 0 -797px;
     height: 14px;
     width: 14px;
+    background-position-y: -797px;
   }
   .pubd-menu
   {/*菜单*/
@@ -91,21 +92,25 @@
     border-top: 1px solid #D7E0EA;
   }
   .pubd-menu-item .pubd-icon
-  {/*菜单里的所有图标*/
+  {/*菜单项图标*/
     height: 16px;
     width: 16px;
     margin: 0 2px;
   }
   .pubd-menu-setting .pubd-icon
-  {/*设置菜单项的图标*/
-    background: url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png') no-repeat 0 -1597px;
+  {/*菜单项-选项的图标*/
+    background-position-y: -1597px;
+  }
+  .pubd-menu-close .pubd-icon
+  {/*菜单项-关闭的图标*/
+    background-position-y: -701px;
   }
   
   .pubd-dialog
   {/*对话框*/
     position: absolute;
-    left:400px;
-    top:200px;
+    left: 400px;
+    top: 200px;
     z-index: 1000;
     min-width: 210px;
     padding: 30px 8px 8px 8px;
@@ -142,7 +147,6 @@
   }
   .dlg-cpt-btns .dlg-cpt-btn
   {/*对话框标题按钮*/
-    /*background: url("http://source.pixiv.net/www/images/sprite.png") no-repeat -1701px -204px;*/
     background-color: RGBA(191,214,236,0.5);
     background-image: 
       linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(239,246,252,0.8) 40%, RGBA(200,210,222,0.8) 100%);
@@ -156,6 +160,7 @@
     cursor: pointer;
     overflow: hidden;
     transition: background-image ease-in-out 0.1s,box-shadow ease-in-out 0.1s;
+    text-decoration: none !important;
   }
   .dlg-cpt-btns .dlg-cpt-btn:first-child
   {/*对话框标题按钮第一个*/
@@ -204,10 +209,10 @@
   .pubd-dialog .caption
   {/*对话框标题*/
     position: absolute;
-    font-size: 13px;
-    line-height: 30px;
-    top: 0px;
-    left: 0px;
+    font-size: 14px;
+    line-height: 28px;
+    top: 0;
+    left: 0;
     width: calc(100% - 5px);
     height: 30px;
     padding-left: 5px;
@@ -225,18 +230,24 @@
     border: #147DF2 solid 1px;
     outline: white solid 1px;
   }
+  /*▼选项对话框相关*/
   .pubd-config .pubd-icon
   {/*选项对话框图标*/
-    top: 6px;
-    left: 5px;
-    background:url('http://source.pixiv.net/www/images/notification/setting.png') no-repeat 0 -18px;
+    background-image: url('http://source.pixiv.net/www/images/notification/setting.png');
+    background-position-y: -18px;
     width: 18px;
     height: 18px;
   }
-  .pubd-token
+  .pubd-config .pubd-token
   {/*token输入框*/
     width: 300px;
   }
+  .pubd-config .pubd-config-savebar
+  {/*保存按钮*/
+    text-align: right;
+  }
+  /*▲选项对话框相关*/
+  /*▼登陆对话框相关*/
   .pubd-login .dlg-content
   {/*登陆对话框内容*/
     background: transparent;
@@ -344,3 +355,4 @@
     font-size: 12px;
     overflow: hidden;
   }
+  /*▲登陆对话框内容*/
