@@ -202,14 +202,19 @@ var pubdMenu = (function () {
 			this.appendChild(itm);
 			return itm;
 		}
-		menu.add("一键下载","",function()
+		menu.add("RPC一键下载","",function()
 				{
 					alert("一键下载")
 				}
 			);
-		menu.add("高级下载",null,function()
+		menu.add("其他下载方式",null,function()
 				{
 					alert("高级下载窗口")
+				}
+			);
+		menu.add("批量画师下载",null,function()
+				{
+					alert("做成“声音”的设备样子")
 				}
 			);
 		menu.add("选项","pubd-menu-setting",function()
@@ -514,8 +519,10 @@ function buildDlgConfig(touch)
 	dl.appendChild(dt);
 	var dd=document.createElement("dd");
 	dd.className = "pubd-config-tab"
-	var ipt = document.createElement("input");
-	dd.appendChild(ipt);
+	var tabs = new Tabs();
+	tabs.add("第一选项卡");
+	tabs.add("第二选项卡");
+	dd.appendChild(tabs);
 	dl.appendChild(dd);
 
 	//保存按钮栏
