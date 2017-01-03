@@ -59,7 +59,7 @@
   }
   .pubd-menu
   {/*菜单*/
-    z-index: 10000;
+    z-index: 1000;
     position: absolute;
     left: 10px;
     margin: 0;
@@ -272,15 +272,15 @@
   {/*进度*/
     background-color: white;
     border: #B2B2B2 solid 1px;
-    border-radius: 3px;
     text-align: center;
     position: relative;
   }
   .pubd-progress,.pubd-progress .pubd-progress-bar,.pubd-progress .pubd-progress-text
-  {
+  {/*进度条三个部分的通用设置*/
     height: 20px;
     line-height: 20px;
     font-size: 15px;
+    border-radius: 3px;
   }
   .pubd-progress .pubd-progress-bar
   {/*进度条*/

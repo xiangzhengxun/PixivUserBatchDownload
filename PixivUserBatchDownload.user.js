@@ -504,14 +504,17 @@ var Progress = (function () {
 		txt.className = "pubd-progress-text";
 		progress.appendChild(txt);
 
-		progress.set = function(scale,pos)
+		progress.set = function(scale,pos,str)
 		{
 			if (!pos) pos = 0;
 			var  percentStr = toDecimal2((scale * 100),pos) + "%";
 			scale = scale>1?1:(scale<0?0:scale);
 			this.scaleNum = scale;
 			bar.style.width = percentStr;
-			txt.innerHTML = percentStr;
+			if (str)
+				txt.innerHTML = str;
+			else
+				txt.innerHTML = percentStr;
 		}
 		progress.scale = function()
 		{
@@ -521,54 +524,6 @@ var Progress = (function () {
 		return progress;
 	};
 })();
-
-/*
-//API获取用户画数
-GM_xmlhttpRequest({
-	url:location.href,
-	method:"get",
-	responseType:"text",
-	headers: {
-		"Referer": "http://spapi.pixiv.net/",
-		"Authorization":"Bearer WHDWCGnwWA2C8PRfQSdXJxjXp0G6ULRaRkkd6t5B6h8", //账户token，安卓默认为WHDWCGnwWA2C8PRfQSdXJxjXp0G6ULRaRkkd6t5B6h8
-		"User-Agent": "PixivIOSApp/5.6.0",
-	},
-	onload: function(response) {
-		var jo = JSON.parse(response.response)
-		console.log(jo);
-	},
-	onerror: function(response) {
-		var jo = JSON.parse(response.response)
-		console.log(jo);
-	}
-})
-
-
-
-//获取token
-GM_xmlhttpRequest({
-	url:"https://oauth.secure.pixiv.net/auth/token",
-	method:"post",
-	responseType:"text",
-	headers: {
-		'App-OS': 'ios',
-		'App-OS-Version': '9.3.3',
-		'App-Version': '6.0.9',
-		'User-Agent': 'PixivIOSApp/6.0.9 (iOS 9.3.3; iPhone8,1)',
-		'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
-		"Referer": "http://spapi.pixiv.net/",
-	},
-	data: "get_secure_url=1&client_id=bYGKuGVw91e0NMfPGp44euvGt59s&client_secret=HP3RmkgAmEGro0gn1x9ioawQE8WMfvLXDz3ZqxpK&grant_type=password&username=123&password=123&refresh_token=",
-	onload: function(response) {
-		var jo = JSON.parse(response.response)
-		console.log(jo);
-	},
-	onerror: function(response) {
-		var jo = JSON.parse(response.response)
-		console.log(jo);
-	}
-})
-*/
 
 //构建开始按钮
 function buildbtnStart(touch)
@@ -913,40 +868,19 @@ function buildDlgLogin(touch)
 	return dlg;
 }
 
-//开始构建UI
-function startBuild(touch)
-{
-	if (touch) //手机版
-	{
-		alert("暂不支持手机版");
-	}else
-	{
-		var btnStartInsertPlace = document.getElementsByClassName("user-relation")[0];
-
-		var btnStartli = document.createElement("li");
-		pubd.start = buildbtnStart(touch);
-		pubd.menu = buildbtnMenu(touch);
-		btnStartli.appendChild(pubd.start);
-		btnStartli.appendChild(pubd.menu);
-		btnStartInsertPlace.appendChild(btnStartli);
-
-		//var btnDlgInsertPlace = document.getElementsByClassName("layout-wrapper")[0] || document.body;
-		var btnDlgInsertPlace = document.body;
-		pubd.dialog.config = buildDlgConfig(touch);
-		btnDlgInsertPlace.appendChild(pubd.dialog.config);
-		pubd.dialog.login = buildDlgLogin(touch);
-		btnDlgInsertPlace.appendChild(pubd.dialog.login);
-		pubd.dialog.downthis = buildDlgDownThis(touch);
-		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
-	}
-}
-
 
 //构建当前画师下载对话框
-function buildDlgDownThis(touch)
+function buildDlgDownThis(touch,userid)
 {
 	var dlg = new Dialog("下载当前画师","pubd-downthis","pubd-downthis");
-	dlg.json = {works:null,}
+	if(userid)
+		dlg.userid = userid;
+	else
+		dlg.userid = pixiv.context.userId;
+	dlg.json = {
+		works:{done:false,},
+		favorite:null
+	};
 
 	var dlgc = dlg.content;
 
@@ -978,7 +912,7 @@ function buildDlgDownThis(touch)
 
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
-	dt.innerHTML = "获取进度"
+	dt.innerHTML = "信息获取进度"
 	var dd=document.createElement("dd");
 	var progress = new Progress("pubd-downthis-progress");
 	progress.set(0.67);
@@ -1002,8 +936,69 @@ function buildDlgDownThis(touch)
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
+	dlg.initialise = function(){
+		//autoAnalyse,autoDownload
+		analyse(0,this.userid);
+	};
+
+	function analyse(contentType,userid)
+	{
+		if(!contentType)contentType = 0;
+		if(!userid)userid = dlg.userid;
+		GM_xmlhttpRequest({
+			url: "https://public-api.secure.pixiv.net/v1/users/" + userid + "/works.json?image_sizes=large&include_stats=true&page=1&publicity=public&profile_image_sizes=px_170x170&per_page=20&include_sanity_level=true",
+			method:"get",
+			responseType:"text",
+			headers: {
+				"Referer": "http://spapi.pixiv.net/",
+				"Authorization":"Bearer " + GM_getValue("pubd-token"), //账户token，安卓默认为WHDWCGnwWA2C8PRfQSdXJxjXp0G6ULRaRkkd6t5B6h8
+				"User-Agent": "PixivIOSApp/6.0.9 (iOS 9.3.3; iPhone8,1)",
+			},
+			onload: function(response) {
+				var jo = JSON.parse(response.response)
+				console.log(jo);
+			},
+			onerror: function(response) {
+				var jo = JSON.parse(response.response)
+				console.log(jo);
+			}
+		})
+	}
+
 
 	return dlg;
 }
 
-startBuild(pubd.touch); //开始主程序
+//开始构建UI
+function startBuild(touch,loggedIn)
+{
+	if (touch) //手机版
+	{
+		alert("暂不支持手机版");
+	}else
+	{
+		var btnStartInsertPlace = document.getElementsByClassName("user-relation")[0];
+		var btnStartBox = document.createElement("li");
+		if (!loggedIn)
+		{
+			var btnStartInsertPlace = document.getElementsByClassName("introduction")[0];
+			var btnStartBox = document.createElement("div");
+		}
+		pubd.start = buildbtnStart(touch);
+		pubd.menu = buildbtnMenu(touch);
+		btnStartBox.appendChild(pubd.start);
+		btnStartBox.appendChild(pubd.menu);
+		btnStartInsertPlace.appendChild(btnStartBox);
+
+		//var btnDlgInsertPlace = document.getElementsByClassName("layout-wrapper")[0] || document.body;
+		var btnDlgInsertPlace = document.body;
+		pubd.dialog.config = buildDlgConfig(touch);
+		btnDlgInsertPlace.appendChild(pubd.dialog.config);
+		pubd.dialog.login = buildDlgLogin(touch);
+		btnDlgInsertPlace.appendChild(pubd.dialog.login);
+		pubd.dialog.downthis = buildDlgDownThis(touch);
+		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
+	}
+}
+
+startBuild(pubd.touch,pubd.loggedIn); //开始主程序
