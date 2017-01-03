@@ -1,6 +1,10 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
+  .display-none
+  {/*任何需要隐藏的*/
+    display:none;
+  }
   .pubd-start
   {/*开始按钮*/
     color: #1A4483;
@@ -61,35 +65,65 @@
     margin: 0;
     text-align: left;
     width: 152px;
-    background-color: #fff;
-    border: 1px solid #becad7;
-    outline: 1px solid #fff;
-  }
-  .display-none
-  {/*任何需要隐藏的*/
-    display:none;
+    background-color: #fafafa;
+    border: 1px solid #979797;
+    box-shadow: #666 2px 2px 3px;
   }
   .pubd-menu-item
-  {/*设置菜单项*/
-    display: block;
-    margin: 0;
+  {/*菜单项*/
+    position: relative;
+    border: transparent 1px solid;
+    margin: 2px;
+  }
+  .pubd-menu-item:hover
+  {/*菜单项悬停变色*/
+    /*background-color: #CEE7FF;*/
+    border: #AECFF7 1px solid;
+    border-radius: 3px;
+    background-image: 
+      linear-gradient(to bottom, RGBA(237,242,247,0.3) 0%,RGBA(188,220,238,0.2) 20%,RGBA(239,246,252,0.4) 40%,RGBA(192,217,238,0.4) 41%, RGBA(195,219,243,0.6) 100%)
+      ;
+    background-repeat: no-repeat;
+    box-shadow: white 0 0 1px inset;
+  }
+  .pubd-menu-includesub::after
+  {/*子菜单后面的箭头*/
+    content: "►";
+    font-size: 8px;
+    position: absolute;
+    top:5px;
+    right: 6px;
+  }
+  .pubd-menu-includesub:hover>.pubd-menu-submenu
+  {/*让子菜单鼠标悬停显示*/
+    display:block;
+  }
+  .pubd-menu-submenu
+  {/*子菜单*/
+    position: absolute;
+    top: 0;
+    left: 145px;
+  }
+  .pubd-menu-item-a
+  {/*菜单项链接*/
     padding-left: 2px;
     padding-right: 9px;
     line-height: 2;
-    color: #777;
-    border-left: none !important;
-    border-right: none !important;
     font-size: 12px;
     cursor: pointer;
+    display: block;
+    color: black !important;
     text-decoration: none !important;
   }
-  .pubd-menu-item:hover
-  {/*设置菜单项悬停变色*/
-    background-color: #CEE7FF;
+  .pubd-menu-line
+  {/*菜单项，线*/
+    border-top: 1px solid #e0e0e0;
+    border-bottom: 1px solid white;
+    height: 0;
+    margin: 0 4px;
   }
   .pubd-menu-setting
-  {/*设置菜单项的上边框*/
-    border-top: 1px solid #D7E0EA;
+  {/*菜单项“选项”*/
   }
   .pubd-menu-item .pubd-icon
   {/*菜单项图标*/
@@ -114,25 +148,25 @@
     z-index: 1000;
     min-width: 210px;
     padding: 30px 8px 8px 8px;
-    background-color: RGBA(191,214,236,0.8);
+    background-color: RGBA(191,214,236,0.7);
     background-image: 
-      linear-gradient(135deg, RGBA(255,255,255,0) 10%,RGBA(255,255,255,0.8) 30%, RGBA(255,255,255,0) 50%),
-      linear-gradient(225deg, RGBA(255,255,255,0) 10%,RGBA(255,255,255,0.8) 30%, RGBA(255,255,255,0) 50%),
+      linear-gradient(150deg, RGBA(255,255,255,0.6) 10%,RGBA(255,255,255,0.4) 30%, RGBA(255,255,255,0) 50%),
+      linear-gradient(210deg, RGBA(255,255,255,0.6) 10%,RGBA(255,255,255,0.4) 30%, RGBA(255,255,255,0) 50%),
       linear-gradient(70deg,RGBA(255,255,255,0) 20%,RGBA(255,255,255,0.7) 22%,RGBA(255,255,255,0.2) 24%,RGBA(255,255,255,0.7) 26%,RGBA(255,255,255,0) 28%,RGBA(255,255,255,0) 46%,RGBA(255,255,255,0.7) 48%,RGBA(255,255,255,0.2) 50%,RGBA(255,255,255,0.7) 52%,RGBA(255,255,255,0) 54%,RGBA(255,255,255,0) 72%,RGBA(255,255,255,0.7) 74%,RGBA(255,255,255,0.2) 76%,RGBA(255,255,255,0.7) 78%,RGBA(255,255,255,0) 80%),
       linear-gradient(to bottom, RGBA(237,242,247,0.3) 0%,RGBA(188,220,238,0.6) 20%,RGBA(239,246,252,0.8) 40%,RGBA(192,217,238,0.8) 41%, RGBA(195,219,243,0) 100%)
       ;
     background-repeat: no-repeat;
-    background-size: 80px 80px, 80px 80px,100vw 100vh, 100% 300px; /*100vw 100vh*/
+    background-size: 160px 80px, 160px 80px,100vw 100vh, 100% 300px; /*100vw 100vh*/
     background-position: top left, top right, top left,top left;
     background-attachment: scroll,scroll,fixed,scroll; 
     border: #147DF2 solid 1px;
     border-radius: 5px;
-    box-shadow: white 0 0 3px inset,white 0 0 3px inset;
-    transition: box-shadow ease-in-out 0.1s;
+    box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 4px;
+    /*transition: box-shadow ease-in-out 0.1s;*/
+    
   }
   .pubd-dialog:hover
   {/*对话框悬停*/
-    box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 8px,#72BBFE 0 0 8px;
   }
   .pubd-dlg-active
   {/*对话框激活*/
@@ -217,6 +251,7 @@
     height: 30px;
     padding-left: 5px;
     cursor: move;
+    text-shadow: white 0 0 5px,white 0 0 5px,white 0 0 5px,white 0 0 5px;
     /*background: RGBA(0,0,0,0.2); */
   }
   .pubd-dialog .caption span
@@ -226,9 +261,39 @@
   .pubd-dialog .dlg-content
   {/*对话框内容*/
     padding: 5px;
-    background-color: #F0F0F0;
     border: #147DF2 solid 1px;
     outline: white solid 1px;
+  }
+  .pubd-dialog .dlg-content,.pubd-frame .pubd-frame-caption
+  {/*对话框内容和框架标题都要设置相同的背景颜色*/
+    background-color: #F0F0F0;
+  }
+  .pubd-progress
+  {/*进度*/
+    background-color: white;
+    border: #B2B2B2 solid 1px;
+    border-radius: 3px;
+    text-align: center;
+    position: relative;
+  }
+  .pubd-progress,.pubd-progress .pubd-progress-bar,.pubd-progress .pubd-progress-text
+  {
+    height: 20px;
+    line-height: 20px;
+    font-size: 15px;
+  }
+  .pubd-progress .pubd-progress-bar
+  {/*进度条*/
+    width: 50%;
+    background-color: #0f0;
+    position: absolute;
+    top:0;
+    left:0;
+  }
+  .pubd-progress .pubd-progress-text
+  {/*进度文字*/
+    position: relative;
+    text-shadow: white 0 0 1px,white 0 0 1px,white 0 0 2px;
   }
   /*▼选项对话框相关*/
   .pubd-config .pubd-icon
@@ -356,3 +421,40 @@
     overflow: hidden;
   }
   /*▲登陆对话框内容*/
+  .pubd-frame
+  {/*窗口内框架*/
+    border: 1px solid #D5DFE5;
+    border-radius: 4px;
+    position: relative;
+    margin:10px 1px 1px 1px;
+    padding: 12px 5px 5px 5px;
+  }
+  .pubd-frame .pubd-frame-caption
+  {/*窗口内框架标题*/
+    top:-10px;
+    left: 8px;
+    position: absolute;
+    padding-left: 2px;
+    padding-right: 4px;
+  }
+  /*▼下载当前画师窗口内容*/
+  .pubd-downthis .pubd-down-content
+  {/*下载内容单选框*/
+    width: 50%;
+  }
+  .pubd-downthis .pubd-downthis-downbar
+  {
+    text-align: center;
+  }
+  .pubd-downthis .pubd-downthis-log
+  {/*下载日志*/
+    min-width: calc(100% - 10px);
+    min-height: 40px;
+  }
+  .pubd-downthis .pubd-startdown
+  {/*开始下载按钮*/
+    width: 100%;
+    height: 50px;
+    font-size: 30px;
+  }
+  /*▲下载当前画师窗口内容*/

@@ -28,6 +28,7 @@ var pubd = { //储存设置
 	dialog:{ //窗口些个
 		config:null, //设置窗口
 		login:null, //登陆窗口
+		downthis:null, //登陆窗口
 	},
 };
 
@@ -118,7 +119,7 @@ if(typeof(GM_deleteValue) == "undefined")
 if(typeof(GM_listValues) == "undefined")
 {
 	var GM_listValues = function(){
-		var keys = [];
+		var keys = new Array();
 		for (var ki=0, kilen=localStorage.length; ki<kilen; ki++)
 		{
 			keys.push(localStorage.key(ki));
@@ -158,15 +159,22 @@ function spawnNotification(theBody, theIcon, theTitle)
 /*
  * 自定义对象区
 */
-//创建菜单对象
+//创建菜单类
 var pubdMenu = (function () {
 	//生成菜单项
-	function buildMenuItem(title,classname,callback)
+	function buildMenuItem(title,classname,callback,submenu)
 	{
 		var item = document.createElement("li");
+		item.subitem = null; //子菜单
+		if (title == 0) //只添加一条线
+		{
+			item.className = "pubd-menu-line" + (classname?" "+classname:"");
+			return item;
+		}
+		item.className = "pubd-menu-item" + (classname?" "+classname:"");
 		//添加链接
 		var a = document.createElement("a");
-		a.className = "pubd-menu-item" + (classname?" "+classname:"");
+		a.className = "pubd-menu-item-a"
 		//添加图标
 		var icon = document.createElement("i");
 		icon.className = "pubd-icon";
@@ -182,56 +190,55 @@ var pubdMenu = (function () {
 			a.target = "_blank";
 			a.href = callback;
 		}
-		else
+		else if (typeof(callback) == "function")
 		{
-			if (callback) a.onclick = callback;
+			item.addEventListener("click",callback);
+			//a.onclick = callback;
+		}
+	
+		if (typeof(submenu) == "object")
+		{
+			item.classList.add("pubd-menu-includesub"); //表明该菜单项有子菜单
+			submenu.classList.add("pubd-menu-submenu"); //表明该菜单是子菜单
+			//a.addEventListener("mouseenter",function(){callback.show()});
+			//a.addEventListener("mouseleave",function(){callback.hide()});
+			item.appendChild(submenu);
+			item.subitem = submenu;
 		}
 
 		item.appendChild(a);
 		return item;
 	}
 
-	return function(touch) {
+	return function(touch,classname) {
 		var menu = document.createElement("ul");
-		menu.id = "pubd-menu";
-		menu.className = "pubd-menu display-none";
-		//添加菜单项
-		menu.add = function(title,classname,callback)
+		menu.className = "pubd-menu display-none" + (classname?" "+classname:"");
+		menu.item = new Array();
+		//显示该菜单
+		menu.show = function()
 		{
-			var itm = buildMenuItem(title,classname,callback);
+			menu.classList.remove("display-none");
+		}
+		menu.hide = function()
+		{
+			menu.classList.add("display-none");
+		}
+		//添加菜单项
+		menu.add = function(title,classname,callback,submenu)
+		{
+			var itm = buildMenuItem(title,classname,callback,submenu);
 			this.appendChild(itm);
+			this.item.push(itm)
 			return itm;
 		}
-		menu.add("RPC一键下载","",function()
-				{
-					alert("一键下载")
-				}
-			);
-		menu.add("其他下载方式",null,function()
-				{
-					alert("高级下载窗口")
-				}
-			);
-		menu.add("批量画师下载",null,function()
-				{
-					alert("做成“声音”的设备样子")
-				}
-			);
-		menu.add("选项","pubd-menu-setting",function()
-				{
-					pubd.menu.classList.add("display-none");
-					pubd.dialog.config.show();
-				}
-			);
-		menu.add("关闭","pubd-menu-close",function()
-				{
-					pubd.menu.classList.add("display-none");
-				}
-			);
+		//鼠标移出菜单时消失
+		menu.addEventListener("mouseleave",function(e){
+			this.hide();
+		});
 		return menu;
 	};
 })();
-//创建通用对话框对象
+//创建通用对话框类
 var Dialog = (function () {
 	//构建标题栏按钮
 	function buildDlgCptBtn(text,classname,callback)
@@ -299,12 +306,17 @@ var Dialog = (function () {
 		//窗口激活
 		dlg.active = function()
 		{
-			var dlgs = document.getElementsByClassName("pubd-dialog");
-			for (var dlgi=0;dlgi<dlgs.length;dlgi++)
-			{
-				dlgs[dlgi].classList.remove("pubd-dlg-active");//取消激活
+			if (!this.classList.contains("pubd-dlg-active"))
+			{//如果没有激活的话才执行
+				var dlgs = document.getElementsByClassName("pubd-dialog");
+				for (var dlgi=0;dlgi<dlgs.length;dlgi++)
+				{
+					dlgs[dlgi].classList.remove("pubd-dlg-active");//取消激活
+					dlgs[dlgi].style.zIndex = parseInt(window.getComputedStyle(dlgs[dlgi],null).getPropertyValue("z-index")) - 1;
+				}
+				this.style.zIndex = "";
+				this.classList.add("pubd-dlg-active");//添加激活
 			}
-			this.classList.add("pubd-dlg-active");//添加激活
 		}
 		//窗口初始化
 		dlg.initialise = function()
@@ -346,7 +358,7 @@ var Dialog = (function () {
 		return dlg;
 	};
 })();
-//创建选项卡
+//创建选项卡类
 var Tab = (function () {
 
 	return function(title) {
@@ -359,7 +371,7 @@ var Tab = (function () {
 		obj.title.innerHTML = title;
 		obj.name = function()
 		{
-			return this.title.innerHTML;
+			return this.title.textContent;
 		}
 		obj.rename = function(newName)
 		{
@@ -377,13 +389,13 @@ var Tab = (function () {
 		return obj;
 	};
 })();
-//创建选项卡
+//创建复数选项卡类
 var Tabs = (function () {
 
 	return function() {
 		var tabs = document.createElement("div");
 		tabs.className = "pubd-tabs";
-		tabs.item = []; //储存卡
+		tabs.item = new Array(); //储存卡
 		//添加卡名区域
 		var ult = document.createElement("ul");
 		ult.className = "tab-title";
@@ -402,8 +414,115 @@ var Tabs = (function () {
 		return tabs;
 	};
 })();
+//创建框架类
+var Frame = (function () {
 
-/* 
+	return function(title,classname) {
+		var frame = document.createElement("div");
+		frame.className = "pubd-frame" + (classname?" "+classname:"");
+	
+		var caption = document.createElement("div");
+		caption.className = "pubd-frame-caption";
+		caption.innerHTML = title;
+		frame.caption = caption;
+		frame.appendChild(caption);
+		var content = document.createElement("div");
+		content.className = "pubd-frame-content";
+		frame.content = content;
+		frame.appendChild(content);
+
+		frame.name = function()
+		{
+			return this.caption.textContent;
+		}
+		frame.rename = function(newName)
+		{
+			if (typeof(newName)=="string" && newName.length>0)
+			{
+				this.caption.innerHTML = newName;
+				return true;
+			}else
+				return false;
+		}
+
+		return frame;
+	};
+})();
+//创建带Label的Input类
+var LabelInput = (function () {
+
+	return function(text,classname,name,type,value,beforeText) {
+		var label = document.createElement("label");
+		label.innerHTML = text;
+		label.className = classname;
+
+		var ipt = document.createElement("input");
+		ipt.name = name;
+		ipt.id = ipt.name;
+		ipt.type = type;
+		ipt.value = value;
+
+		if (beforeText)
+			label.insertBefore(ipt,label.firstChild);
+		else
+			label.appendChild(ipt);
+		return label;
+	};
+})();
+//创建进度条类
+var Progress = (function () {
+	//强制保留pos位小数，如：2，会在2后面补上00.即2.00 
+	function toDecimal2(num,pos) { 
+		var f = parseFloat(num); 
+		if (isNaN(f)) { 
+			return false; 
+		} 
+		var f = Math.round(num*Math.pow(10,pos))/Math.pow(10,pos); 
+		var s = f.toString(); 
+		var rs = s.indexOf('.'); 
+		if (pos > 0 && rs < 0) { 
+			rs = s.length; 
+			s += '.'; 
+		} 
+		while (s.length <= rs + pos) { 
+			s += '0'; 
+		}
+		return s;
+	}
+
+	return function(classname) {
+		var progress = document.createElement("div");
+		progress.className = "pubd-progress" + (classname?" "+classname:"");
+
+		progress.scaleNum = 0;
+
+		var bar = document.createElement("div");
+		bar.className = "pubd-progress-bar";
+		progress.appendChild(bar);
+
+		var txt = document.createElement("span");
+		txt.className = "pubd-progress-text";
+		progress.appendChild(txt);
+
+		progress.set = function(scale,pos)
+		{
+			if (!pos) pos = 0;
+			var  percentStr = toDecimal2((scale * 100),pos) + "%";
+			scale = scale>1?1:(scale<0?0:scale);
+			this.scaleNum = scale;
+			bar.style.width = percentStr;
+			txt.innerHTML = percentStr;
+		}
+		progress.scale = function()
+		{
+			return this.scaleNum;
+		}
+
+		return progress;
+	};
+})();
+
+/*
 //API获取用户画数
 GM_xmlhttpRequest({
 	url:location.href,
@@ -472,12 +591,62 @@ function buildbtnStart(touch)
 		span.innerHTML = "使用PUBD扒图";
 		btnStart.appendChild(span);
 
-		btnStart.onclick = function()
-		{
-			pubd.menu.classList.toggle("display-none");
-		}
+		//鼠标移入和按下都起作用
+		//btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
+		btnStart.addEventListener("click",function(){pubd.menu.classList.toggle("display-none")});
 	}
 	return btnStart;
+}
+
+//构建菜单
+function buildbtnMenu(touch)
+{
+	if (touch) //手机版
+	{
+
+	}else
+	{
+		var menu2 = new pubdMenu(touch);
+		menu2.add("子菜单1","",function(){alert("子菜单1")});
+		menu2.add("子菜单2","",function(){alert("子菜单2")});
+		var menu1 = new pubdMenu(touch);
+		menu1.add("子菜单1","",function(){alert("子菜单1")});
+		menu1.add("子菜单2","",null,menu2);
+		var menu3 = new pubdMenu(touch);
+		menu3.add("子菜单1","",function(){alert("子菜单1")});
+		menu3.add("子菜单2","",function(){alert("子菜单2")});
+		menu3.add("子菜单2","",function(){alert("子菜单3")});
+		menu3.add("子菜单2","",function(){alert("子菜单4")});
+		var menu4 = new pubdMenu(touch);
+		menu4.add("子菜单1","",null,menu3);
+		menu4.add("子菜单2","",function(){alert("子菜单2")});
+		menu4.add("子菜单2","",function(){alert("子菜单5")});
+		menu4.add("子菜单2","",function(){alert("子菜单6")});
+
+		var menu = new pubdMenu(touch,"pubd-menu-main");
+		menu.id = "pubd-menu";
+		menu.add("下载该画师","",function()
+				{
+					pubd.dialog.downthis.show();
+					menu.hide();
+				}
+			);
+		menu.add("Debug2","",null,menu4);
+		menu.add("Debug1","",null,menu1);
+		menu.add("多个画师下载",null,function()
+				{
+					alert("做成“声音”的设备样子")
+				}
+			);
+		menu.add(0);
+		menu.add("选项","pubd-menu-setting",function()
+				{
+					pubd.dialog.config.show();
+					menu.hide();
+				}
+			);
+	}
+	return menu;
 }
 
 //构建设置对话框
@@ -485,7 +654,7 @@ function buildDlgConfig(touch)
 {
 	var dlg = new Dialog("PUBD选项","pubd-config","pubd-config");
 	dlg.cptBtns.add("反馈","dlg-btn-debug","https://github.com/Mapaler/PixivUserBatchDownload/issues");
-	dlg.cptBtns.add("帮助","dlg-btn-help","https://github.com/Mapaler/PixivUserBatchDownload/tree/develop_v5");
+	dlg.cptBtns.add("？","dlg-btn-help","https://github.com/Mapaler/PixivUserBatchDownload/tree/develop_v5");
 
 	var dlgc = dlg.content;
 
@@ -502,7 +671,7 @@ function buildDlgConfig(touch)
 	ipt_token.id = ipt_token.name;
 	ipt_token.placeholder = "免登陆默认Token"
 	dd.appendChild(ipt_token);
-	
+
 	var ipt = document.createElement("input");
 	ipt.type = "button";
 	ipt.className = "pubd-tologin";
@@ -575,7 +744,7 @@ function buildDlgLogin(touch)
 	logo_box.appendChild(logo);
 	var catchphrase = document.createElement("div");
 	catchphrase.className = "catchphrase";
-	catchphrase.innerHTML = "登陆获取你的账户通行证，解除浏览限制"
+	catchphrase.innerHTML = "登陆获取你的账户通行证，解除年龄限制"
 	logo_box.appendChild(catchphrase);
 	dlgc.appendChild(logo_box);
 	//实际登陆部分
@@ -605,7 +774,7 @@ function buildDlgLogin(touch)
 	pass.placeholder="密码";
 	input_field2.appendChild(pass);
 	input_field_group.appendChild(input_field2);
-	
+
 	var error_msg_list = document.createElement("ul"); //登陆错误信息
 	error_msg_list.className = "error-msg-list";
 	container_login.appendChild(error_msg_list);
@@ -720,8 +889,7 @@ function buildDlgLogin(touch)
 	dlg.error = error_msg_list;
 
 	dlg.cptBtns.close.addEventListener("mousedown",function(e){
-		GM_setValue("pubd-remember",remember);
-		console.log(pid,pass);
+		GM_setValue("pubd-remember",remember.checked);
 		if (remember.checked)
 		{
 			GM_setValue("pubd-account",pid.value);
@@ -757,7 +925,7 @@ function startBuild(touch)
 
 		var btnStartli = document.createElement("li");
 		pubd.start = buildbtnStart(touch);
-		pubd.menu = new pubdMenu(touch);
+		pubd.menu = buildbtnMenu(touch);
 		btnStartli.appendChild(pubd.start);
 		btnStartli.appendChild(pubd.menu);
 		btnStartInsertPlace.appendChild(btnStartli);
@@ -768,7 +936,74 @@ function startBuild(touch)
 		btnDlgInsertPlace.appendChild(pubd.dialog.config);
 		pubd.dialog.login = buildDlgLogin(touch);
 		btnDlgInsertPlace.appendChild(pubd.dialog.login);
+		pubd.dialog.downthis = buildDlgDownThis(touch);
+		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
 	}
+}
+
+
+//构建当前画师下载对话框
+function buildDlgDownThis(touch)
+{
+	var dlg = new Dialog("下载当前画师","pubd-downthis","pubd-downthis");
+	dlg.json = {works:null,}
+
+	var dlgc = dlg.content;
+
+	var dl=document.createElement("dl");
+	dlgc.appendChild(dl);
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = ""
+	var dd=document.createElement("dd");
+
+	var frm = new Frame("下载内容");
+	var radio1 = new LabelInput("他的作品","pubd-down-content","pubd-down-content","radio","0",true);
+	var radio2 = new LabelInput("他的收藏","pubd-down-content","pubd-down-content","radio","1",true);
+	frm.content.appendChild(radio1);
+	frm.content.appendChild(radio2);
+
+	dd.appendChild(frm);
+	dl.appendChild(dd);
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "操作日志"
+	var dd=document.createElement("dd");
+	var ipt = document.createElement("textarea");
+	ipt.readonly = "true";
+	ipt.className = "pubd-downthis-log";
+	dd.appendChild(ipt);
+	dl.appendChild(dd);
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "获取进度"
+	var dd=document.createElement("dd");
+	var progress = new Progress("pubd-downthis-progress");
+	progress.set(0.67);
+	dd.appendChild(progress);
+	dl.appendChild(dd);
+
+	//下载按钮栏
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+	dd.className = "pubd-downthis-downbar"
+
+	var ipt = document.createElement("input");
+	ipt.type = "button";
+	ipt.className = "pubd-startdown";
+	ipt.value = "开始下载";
+	ipt.onclick = function()
+	{
+		alert("开始下载");
+	}
+	dd.appendChild(ipt);
+	dl.appendChild(dd);
+
+
+	return dlg;
 }
 
 startBuild(pubd.touch); //开始主程序
