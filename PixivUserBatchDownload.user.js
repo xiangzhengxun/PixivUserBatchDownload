@@ -180,6 +180,63 @@ var UserInfo = function()
 	}
 	return obj;
 }
+//一个自定义掩码
+var CustomMask = function(name,logic,content)
+{
+	var obj = {
+		name:name?name:"",
+		logic:logic?logic:"",
+		content:content?content:"",
+	}
+	return obj;
+}
+//一个下载方案
+var DownScheme = (function () {
+
+	return function(name)
+	{
+		var obj = {
+			name:name?name:"默认方案",
+			rpcurl:"http://localhost:6800/jsonrpc",
+			savedir:"D:/PivixDownload/",
+			savepath:"%{work.user.id}/%{work.filename}.%{work.extention}",
+			masklist:[],
+			mask:{
+				add:function(name,logic,content){
+					var mask = new CustomMask(name,logic,content);
+					obj.masklist.push(mask);
+					return mask;
+				},
+				remove:function(index){
+					obj.masklist.splice(index, 1);
+				},
+			},
+		}
+		obj.masklist.push(new CustomMask("debug1","2","3"));
+		obj.masklist.push(new CustomMask("debug2","3","4"));
+		obj.masklist.push(new CustomMask("debug3","4","5"));
+		obj.load = function(json)
+		{
+			if (typeof(json) == "string")
+			{
+				try
+				{
+					var json = JSON.parse(json);
+				}catch(e)
+				{
+					return false;
+				}
+			}
+			if (json.name) this.name = json.name;
+			if (json.rpcurl) this.rpcurl = json.rpcurl;
+			if (json.savedir) this.savedir = json.savedir;
+			if (json.savepath) this.savepath = json.savepath;
+			if (json.masklist) this.masklist = json.masklist;
+			return true;
+		}
+		return obj;
+	};
+})();
 //创建菜单类
 var pubdMenu = (function () {
 	//生成菜单项
@@ -559,6 +616,10 @@ var Select = (function () {
 			var opt = new Option(text, value);
 			this.options.add(opt);
 		}
+		select.remove = function(index)
+		{
+			this.options.remove(index);
+		}
 
 		return select;
 	};
@@ -758,13 +819,44 @@ function buildDlgConfig(touch)
 	dd.appendChild(tabs);
 	dl.appendChild(dd);
 */
-
+	//配置方案储存
+	dlg.schemes = new Array();
+	dlg.reloadSchemes = function()
+	{
+		dlg.downScheme.options.length = 0;
+		dlg.schemes.forEach(function(item,index){
+			dlg.downScheme.add(item.name,index);
+		})
+		if (dlg.downScheme.options.length > 0)
+			dlg.downScheme.selectedIndex = 0;
+	}
+	dlg.loadScheme = function(scheme)
+	{
+		this.rpcurl.value = scheme.rpcurl;
+		this.savedir.value = scheme.savedir;
+		this.savepath.value = scheme.savepath;
+		this.masklist = this.loadMasklist(scheme.masklist);
+	}
+	dlg.loadMasklist = function(masklist)
+	{
+		this.masklist.length = 0;
+		masklist.forEach(function(item,index){
+			var text = item.name + " : " + item.logic + " : " + item.content;
+			dlg.masklist.add(text,index);
+		})
+	}
 	//配置方案选择
 	var dt=document.createElement("dt");
-	dt.innerHTML = "选择下载方案"
+	dt.innerHTML = "选择下载方案";
 	dl.appendChild(dt);
 	var dd=document.createElement("dd");
 	var slt = new Select("pubd-downscheme");
+	slt.onchange = function()
+	{
+		if (this.options.length<1 || this.selectedOptions.length<1){return;}
+		var scheme = dlg.schemes[this.selectedIndex];
+		dlg.loadScheme(scheme);
+	};
 	dlg.downScheme = slt;
 	dd.appendChild(slt);
 	
@@ -772,12 +864,35 @@ function buildDlgConfig(touch)
 	ipt.type = "button";
 	ipt.className = "pubd-downscheme-new";
 	ipt.value = "新建"
+	ipt.onclick = function()
+	{
+		var schemName = prompt("请输入方案名","我的方案");
+		var scheme = new DownScheme(schemName);
+		var length = dlg.schemes.push(scheme);
+		dlg.downScheme.add(scheme.name,length-1);
+		dlg.downScheme.selectedIndex = length-1;
+		dlg.loadScheme(scheme);
+		console.log(scheme);
+		//dlg.reloadSchemes();
+	}
 	dd.appendChild(ipt);
 
 	var ipt = document.createElement("input");
 	ipt.type = "button";
-	ipt.className = "pubd-downscheme-delete";
+	ipt.className = "pubd-downscheme-remove";
 	ipt.value = "删除"
+	ipt.onclick = function()
+	{
+		if (dlg.downScheme.options.length < 1){alert("已经没有方案了");return;}
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中方案");return;}
+		var index = dlg.downScheme.selectedIndex;
+		dlg.schemes.splice(index, 1);
+		dlg.downScheme.remove(index);
+		var index = dlg.downScheme.selectedIndex;
+		if (index<0) dlg.reloadSchemes();//没有选中的，重置
+		dlg.loadScheme(dlg.schemes[index]);
+		
+	}
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
@@ -889,7 +1004,7 @@ function buildDlgConfig(touch)
 	dd.appendChild(ipt);
 	var ipt = document.createElement("input");
 	ipt.type = "button";
-	ipt.className = "pubd-mask-delete";
+	ipt.className = "pubd-mask-remove";
 	ipt.value = "-"
 	dd.appendChild(ipt);
 	var ipt = document.createElement("input");
@@ -904,6 +1019,7 @@ function buildDlgConfig(touch)
 	var masklist = new Select("pubd-mask-list")
 	masklist.multiple = true;
 	masklist.size = 5;
+	dlg.masklist = masklist;
 	dd.appendChild(masklist);
 	dl.appendChild(dd);
 
@@ -1043,7 +1159,7 @@ function buildDlgLogin(touch)
 			},
 			data: loginPostStr,
 			onload: function(response) {
-				var jo = JSON.parse(response.response)
+				var jo = JSON.parse(response.response);
 				if (jo)
 				{
 					console.warn("登陆的Ajax返回",jo);

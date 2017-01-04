@@ -314,7 +314,7 @@
     width: 18px;
     height: 18px;
   }
-  .pubd-tologin,.pubd-downscheme-new,.pubd-downscheme-delete,.pubd-rpcchk,.pubd-reset,.pubd-save
+  .pubd-tologin,.pubd-downscheme-new,.pubd-downscheme-remove,.pubd-rpcchk,.pubd-reset,.pubd-save
   {/*选项面板按钮*/
     width: 80px;
     margin-left: 5px;
@@ -353,7 +353,7 @@
     width: calc(100% - 10px);
     margin: 3px 0;
   }
-  .pubd-config .pubd-mask-add,.pubd-config .pubd-mask-delete
+  .pubd-config .pubd-mask-add,.pubd-config .pubd-mask-remove
   {/*自定义掩码-加减*/
     padding: 0;
     text-align: center;
