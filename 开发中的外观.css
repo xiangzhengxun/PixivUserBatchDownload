@@ -284,7 +284,6 @@
   }
   .pubd-progress .pubd-progress-bar
   {/*进度条*/
-    width: 50%;
     background-color: #0f0;
     position: absolute;
     top:0;
@@ -295,7 +294,19 @@
     position: relative;
     text-shadow: white 0 0 1px,white 0 0 1px,white 0 0 2px;
   }
+  .pubd-select
+  {/*下拉框*/
+    width: 100%;
+  }
   /*▼选项对话框相关*/
+  .pubd-config
+  {/*选项对话框宽度*/
+    width: 400px;
+  }
+  .pubd-config input[type="text"],.pubd-config input[type="email"],.pubd-config input[type="password"],.pubd-config input[type="url"]
+  {/*选项对话框图标*/
+    padding: 0 4px;
+  }
   .pubd-config .pubd-icon
   {/*选项对话框图标*/
     background-image: url('http://source.pixiv.net/www/images/notification/setting.png');
@@ -303,13 +314,56 @@
     width: 18px;
     height: 18px;
   }
+  .pubd-tologin,.pubd-downscheme-new,.pubd-downscheme-delete,.pubd-rpcchk,.pubd-reset,.pubd-save
+  {/*选项面板按钮*/
+    width: 80px;
+    margin-left: 5px;
+  }
   .pubd-config .pubd-token
   {/*token输入框*/
-    width: 300px;
+    width: calc(100% - 95px);
+  }
+  .pubd-config .pubd-downscheme
+  {/*下载方案下拉框*/
+    width: calc(100% - 170px);
+  }
+  .pubd-config .pubd-rpcurl
+  {/*RPC地址*/
+    width: calc(100% - 95px);
+  }
+  .pubd-config .pubd-rpcchk-info
+  {/*RPC地址检测信息*/
+    float: right;
+  }
+  .pubd-config .pubd-savedir,.pubd-config .pubd-savepath
+  {/*下载目录与保存目录*/
+    width: calc(100% - 10px);
+  }
+  .pubd-config .pubd-mask-id
+  {/*自定义掩码-名*/
+    width: 100px;
+  }
+  .pubd-config .pubd-mask-content
+  {/*自定义掩码-内容*/
+    width: calc(100% - 185px);
+    margin-left: 5px;
+  }
+  .pubd-config .pubd-mask-logic
+  {/*自定义掩码-逻辑条件*/
+    width: calc(100% - 10px);
+    margin: 3px 0;
+  }
+  .pubd-config .pubd-mask-add,.pubd-config .pubd-mask-delete
+  {/*自定义掩码-加减*/
+    padding: 0;
+    text-align: center;
+    width: 25px;
+    margin-left: 5px;
   }
   .pubd-config .pubd-config-savebar
   {/*保存按钮*/
     text-align: right;
+    margin-top: 5px;
   }
   /*▲选项对话框相关*/
   /*▼登陆对话框相关*/
@@ -445,11 +499,14 @@
   .pubd-downthis .pubd-downthis-downbar
   {
     text-align: center;
+    margin-top: 5px;
   }
   .pubd-downthis .pubd-downthis-log
   {/*下载日志*/
-    min-width: calc(100% - 10px);
+    min-width: 100px;
     min-height: 40px;
+    width : 300px;
+    height : 100px;
   }
   .pubd-downthis .pubd-startdown
   {/*开始下载按钮*/
