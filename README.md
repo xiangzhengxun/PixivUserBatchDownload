@@ -14,20 +14,23 @@
  * [YAAW](https://github.com/binux/yaaw)，作者是中国人，但更新较少。
 
 ## License|许可协议
-用到了一部分[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)的代码，与YAAW是同一开发者。
+* Aria2操作类代码来自[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)，与YAAW是同一开发者。
 
-PixivUserBatchDownload Copyright(C) 2016 by Mapaler
+* Pixiv APP-API分析来自[PixivPy](https://github.com/upbit/pixivpy)。
 
-此程序是免费软件。你可以将它根据“GNU通用公共许可证第三版(GPLv3)”重新分发和/或修改。[LICENSE](https://github.com/Mapaler/PixivUserBatchDownload/blob/master/LICENSE)
+PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
+
+此程序是免费软件。你可以将它根据“GNU通用公共许可证第三版(GPLv3)”重新分发和/或修改。
 
 如果你想分发你修改后的程序，但是你不想要公布修改后的源代码，请与我联系。
 
 ## 配置Aria2
-[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.25.0-win-64bit-build1.zip”，然后解压到文件夹。
+[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.30.0-win-64bit-build1.zip”，然后解压到文件夹。
 
 1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。
 	
 	```bat
+	REM 第一行是用来自动建立会话文件的。因为如果设置了“save-session”保存会话文件，没有这个文件存在，Aria2就会无法启动。
 	if not exist aria2_Pixiv.session.txt cd .>aria2_Pixiv.session.txt
 	aria2c.exe --conf-path="aria2_Pixiv.ini"
 	```
