@@ -30,6 +30,7 @@ var pubd = { //储存设置
 		login:null, //登陆窗口
 		downthis:null, //下载当前窗口
 	},
+	auth:null,
 };
 
 var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
@@ -300,7 +301,7 @@ var HeadersObject = function (obj) {
 		'App-Version': '5.0.49',
 		'User-Agent': 'PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)',
 		'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
-		//"Referer": "https://app-api.pixiv.net/",
+		"Referer": "https://app-api.pixiv.net/",
 	}
 	if (obj)
 		headers = Object.assign(headers, obj); //合并obj
@@ -311,6 +312,8 @@ var Auth = (function () {
 
 	return function(username,password)
 	{
+		if (!username) username = "";
+		if (!password) password = "";
 		var auth = { //原始结构
 			"response":{
 				"access_token":"",
@@ -352,7 +355,7 @@ var Auth = (function () {
 			auth.post.data.password = password;
 		}
 
-		auth.login = function(onload_suceessCb,onload_errorCb,onerrorCb)
+		auth.login = function(onload_suceess_Cb,onload_haserror_Cb,onload_notjson_Cb,onerror_Cb)
 		{
 			GM_xmlhttpRequest({
 				url:"https://oauth.secure.pixiv.net/auth/token",
@@ -361,33 +364,35 @@ var Auth = (function () {
 				headers: new HeadersObject(),
 				data: auth.post.toPostString(),
 				onload: function(response) {
-					var jo = JSON.parse(response.response);
-					if (jo)
+					try
 					{
+						var jo = JSON.parse(response.response);
 						console.warn("登陆的Ajax返回",jo);
 						if (jo.has_error || jo.status=="failure")
 						{
-							dlg.error.replace(["错误代码：" + jo.errors.system.code,jo.errors.system.message]);
+							//dlg.error.replace(["错误代码：" + jo.errors.system.code,jo.errors.system.message]);
 						}else
 						{//登陆成功
 							if (jo.response != undefined)
 							{
-								dlg.error.replace("登陆成功");
-								pubd.dialog.config.getElementsByClassName("pubd-token")[0].value = jo.response.access_token;
+								//dlg.error.replace("登陆成功");
+								//pubd.dialog.config.getElementsByClassName("pubd-token")[0].value = jo.response.access_token;
 							}else
 							{
-								dlg.error.replace("理论上是登陆成功了，但出现了未知错误");
+								console.error("返回JSON成功了，但json格式不对。",jo);
 							}
 						}
-					}else
+					}catch(e)
 					{
-						console.warn(response);
-						dlg.error.replace("登录失败，返回不是JSON");
+						//console.warn(response);
+						onload_notjson_Cb(response);
+						//dlg.error.replace("登录失败，返回不是JSON");
 					}
 				},
 				onerror: function(response) {
-					console.warn(response);
-					dlg.error.replace("登录失败，AJAX访问失败");
+					//console.warn(response);
+					onerror_Cb(response);
+					//dlg.error.replace("登录失败，AJAX访问失败");
 				}
 			})
 		}
@@ -855,7 +860,7 @@ var Aria2 = (function () {
 
 		var headers = {"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",}
 		if (auth && auth.indexOf('token:') != 0) {
-			headers["Authorization"] = "Basic " + btoa(auth);
+			headers.Authorization = "Basic " + btoa(auth);
 		}
 		GM_xmlhttpRequest({
 			url: jsonrpc_path + "?tm=" + (new Date()).getTime().toString(),
@@ -879,8 +884,6 @@ var Aria2 = (function () {
 				callback(false);
 			}
 		})
-
-
 	};
 
 	return function (jsonrpc_path) {
@@ -1868,6 +1871,8 @@ function startBuild(touch,loggedIn)
 		btnDlgInsertPlace.appendChild(pubd.dialog.login);
 		pubd.dialog.downthis = buildDlgDownThis(touch);
 		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
+
+		pubd.auth = new Auth(GM_getValue("pubd-account"),GM_getValue("pubd-password"));
 	}
 }
 
