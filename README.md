@@ -25,14 +25,14 @@ PixivUserBatchDownload Copyright(C) 2016 by Mapaler
 ## 配置Aria2
 [下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.25.0-win-64bit-build1.zip”，然后解压到文件夹。
 
-1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_RPC_mode_for_Pixiv.bat)
+1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。
 	
 	```bat
 	if not exist aria2_Pixiv.session.txt cd .>aria2_Pixiv.session.txt
 	aria2c.exe --conf-path="aria2_Pixiv.ini"
 	```
 
-2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。[直接下载](https://github.com/Mapaler/PixivUserBatchDownload/raw/develop/First_File/aria2_Pixiv.ini)
+2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
 	
 	```ini
 	# Aria2默认保存路径可自行修改，v1.4.0开始此设置已内置到下载设置，留空时才使用这里的设置。

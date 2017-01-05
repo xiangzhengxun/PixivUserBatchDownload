@@ -28,7 +28,7 @@ var pubd = { //储存设置
 	dialog:{ //窗口些个
 		config:null, //设置窗口
 		login:null, //登陆窗口
-		downthis:null, //登陆窗口
+		downthis:null, //下载当前窗口
 	},
 };
 
@@ -155,6 +155,64 @@ function spawnNotification(theBody, theIcon, theTitle)
 		});
 	}
 }
+/*\
+|*|
+|*|  :: cookies.js ::
+|*|
+|*|  A complete cookies reader/writer framework with full unicode support.
+|*|
+|*|  https://developer.mozilla.org/en-US/docs/DOM/document.cookie
+|*|
+|*|  This framework is released under the GNU Public License, version 3 or later.
+|*|  http://www.gnu.org/licenses/gpl-3.0-standalone.html
+|*|
+|*|  Syntaxes:
+|*|
+|*|  * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])
+|*|  * docCookies.getItem(name)
+|*|  * docCookies.removeItem(name[, path], domain)
+|*|  * docCookies.hasItem(name)
+|*|  * docCookies.keys()
+|*|
+\*/
+
+var docCookies = {
+  getItem: function (sKey) {
+    return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+  },
+  setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+    if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) { return false; }
+    var sExpires = "";
+    if (vEnd) {
+      switch (vEnd.constructor) {
+        case Number:
+          sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+          break;
+        case String:
+          sExpires = "; expires=" + vEnd;
+          break;
+        case Date:
+          sExpires = "; expires=" + vEnd.toUTCString();
+          break;
+      }
+    }
+    document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
+    return true;
+  },
+  removeItem: function (sKey, sPath, sDomain) {
+    if (!sKey || !this.hasItem(sKey)) { return false; }
+    document.cookie = encodeURIComponent(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + ( sDomain ? "; domain=" + sDomain : "") + ( sPath ? "; path=" + sPath : "");
+    return true;
+  },
+  hasItem: function (sKey) {
+    return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+  },
+  keys: /* optional method: you can safely remove it! */ function () {
+    var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
+    for (var nIdx = 0; nIdx < aKeys.length; nIdx++) { aKeys[nIdx] = decodeURIComponent(aKeys[nIdx]); }
+    return aKeys;
+  }
+};
 
 /*
  * 自定义对象区
@@ -177,6 +235,18 @@ var UserInfo = function()
 			break:false,
 			runing:false,
 		},
+		illusts:{
+			done:false,
+			item:[],
+			break:false,
+			runing:false,
+		},
+		bookmarks:{
+			done:false,
+			item:[],
+			break:false,
+			runing:false,
+		},
 	}
 	return obj;
 }
@@ -190,6 +260,144 @@ var CustomMask = function(name,logic,content)
 	}
 	return obj;
 }
+
+//一个Post数据
+var PostDataObject = (function () {
+	
+	return function(obj)
+	{
+		var postdata = new Object;
+		if (obj)
+			postdata.data = Object.assign({}, obj); //合并obj
+		postdata.increase = function(obj)
+		{
+			postdata.data = Object.assign(postdata.data, obj); //合并obj
+		}
+		postdata.toPostString = function()
+		{
+			var arr = new Array;
+			for (var na in postdata.data)
+			{
+				var item = [ na , postdata.data[na] ];
+				arr.push(item);
+			}
+			
+			var str = arr.map(
+					function (item){
+						return item.join("=");
+					}
+				).join("&");
+			return str;
+		}
+		return postdata;
+	}
+})();
+//一个本程序使用的headers数据
+var HeadersObject = function (obj) {
+	var headers = {
+		'App-OS': 'android',
+		'App-OS-Version': '6.0',
+		'App-Version': '5.0.49',
+		'User-Agent': 'PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)',
+		'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
+		//"Referer": "https://app-api.pixiv.net/",
+	}
+	if (obj)
+		headers = Object.assign(headers, obj); //合并obj
+	return headers;
+}
+//一个认证方案
+var Auth = (function () {
+
+	return function(username,password)
+	{
+		var auth = { //原始结构
+			"response":{
+				"access_token":"",
+				"expires_in":0,
+				"token_type":"",
+				"scope":"",
+				"refresh_token":"",
+				"user":{
+					"profile_image_urls":{
+						"px_16x16":"",
+						"px_50x50":"",
+						"px_170x170":""
+					},
+					"id":"",
+					"name":"",
+					"account":"",
+					"mail_address":"",
+					"is_premium":false,
+					"x_restrict":0,
+					"is_mail_authorized":true
+				},
+				"device_token":""
+			}
+		}
+		auth.post = new PostDataObject({ //Post时发送的数据
+			client_id:"BVO2E8vAAikgUBW8FYpi6amXOjQj",
+			client_secret:"LI1WsFUDrrquaINOdarrJclCrkTtc3eojCOswlog",
+			grant_type:"password",
+			username:username,
+			password:password,
+			//device_token:"6e50367b155c2ba9faeaf2152ee4607c",
+			get_secure_url:"true",
+		})
+		var device_token = docCookies.getItem("device_token");
+		if (device_token) auth.post.increase({"device_token": device_token});
+		auth.newAccount = function(username,password)
+		{
+			auth.post.data.username = username;
+			auth.post.data.password = password;
+		}
+
+		auth.login = function(onload_suceessCb,onload_errorCb,onerrorCb)
+		{
+			GM_xmlhttpRequest({
+				url:"https://oauth.secure.pixiv.net/auth/token",
+				method:"post",
+				responseType:"text",
+				headers: new HeadersObject(),
+				data: auth.post.toPostString(),
+				onload: function(response) {
+					var jo = JSON.parse(response.response);
+					if (jo)
+					{
+						console.warn("登陆的Ajax返回",jo);
+						if (jo.has_error || jo.status=="failure")
+						{
+							dlg.error.replace(["错误代码：" + jo.errors.system.code,jo.errors.system.message]);
+						}else
+						{//登陆成功
+							if (jo.response != undefined)
+							{
+								dlg.error.replace("登陆成功");
+								pubd.dialog.config.getElementsByClassName("pubd-token")[0].value = jo.response.access_token;
+							}else
+							{
+								dlg.error.replace("理论上是登陆成功了，但出现了未知错误");
+							}
+						}
+					}else
+					{
+						console.warn(response);
+						dlg.error.replace("登录失败，返回不是JSON");
+					}
+				},
+				onerror: function(response) {
+					console.warn(response);
+					dlg.error.replace("登录失败，AJAX访问失败");
+				}
+			})
+		}
+		auth.loadFromResponse = function(response)
+		{
+			auth = Object.assign(auth, response);
+		}
+		return auth;
+	};
+})();
 //一个下载方案
 var DownScheme = (function () {
 
