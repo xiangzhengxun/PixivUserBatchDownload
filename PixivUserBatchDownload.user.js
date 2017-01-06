@@ -346,6 +346,7 @@ var Auth = (function () {
 				},
 				"device_token":"",
 			},
+			needlogin:false,
 			username:username,
 			password:password,
 			save_account:remember,
@@ -575,7 +576,7 @@ var Dialog = (function () {
 		else
 		{
 			if (callback)
-				btn.addEventListener("mousedown",callback);
+				btn.addEventListener("click",callback);
 		}
 		var btnTxt = document.createElement("div");
 		btnTxt.className = "dlg-cpt-btn-text";
@@ -1022,7 +1023,7 @@ function buildDlgConfig(touch)
 	var dlg = new Dialog("PUBD选项 v" + scriptVersion,"pubd-config","pubd-config");
 	dlg.cptBtns.add("反馈","dlg-btn-debug","https://github.com/Mapaler/PixivUserBatchDownload/issues");
 	dlg.cptBtns.add("？","dlg-btn-help","https://github.com/Mapaler/PixivUserBatchDownload/tree/develop_v5");
-
+	dlg.token_ani = null; //储存Token进度条动画句柄
 	var dlgc = dlg.content;
 
 	var dl=document.createElement("dl");
@@ -1033,26 +1034,56 @@ function buildDlgConfig(touch)
 	var dd=document.createElement("dd");
 	var checkbox = new LabelInput("开启登陆功能，获取完整体验（浏览限制与该账户相同）","pubd-needlogin","pubd-needlogin","checkbox","1",true);
 	dlg.needlogin = checkbox.input;
+	dlg.needlogin.onclick = function()
+	{
+		if (dlg.needlogin.checked)
+		{
+			dlg.token_info.classList.remove("height-none");
+			dlg.start_token_animate();
+		}else
+		{	
+			dlg.token_info.classList.add("height-none");
+			dlg.stop_token_animate();
+		}
+		pubd.dialog.login.cptBtns.close.click();
+	}
 	dd.appendChild(checkbox);
 	dl.appendChild(dd);
 	var dd=document.createElement("dd");
-	dd.className = "pubd-token-info";
+	dd.className = "pubd-token-info height-none";
 	dlg.token_info = dd;
-/*
-	var ipt_token = document.createElement("input");
-	ipt_token.type = "text";
-	ipt_token.className = "pubd-token";
-	ipt_token.name = "pubd-token";
-	ipt_token.id = ipt_token.name;
-	ipt_token.placeholder = "留空则不不登陆"
-	ipt_token.readOnly = true;
-	dd.appendChild(ipt_token);
-*/
-	var progress = new Progress("pubd-token-scope",true);
-	progress.set(0.5,2,"令牌过期时间");
-	dlg.token_scope = progress;
+	var progress = new Progress("pubd-token-expires",true);
+	dlg.token_expires = progress;
 	dd.appendChild(progress);
-
+	//开始动画
+	dlg.start_token_animate = function()
+	{
+		dlg.stop_token_animate();
+		dlg.token_ani = setInterval(function () {requestAnimationFrame(token_animate)}, 1000);
+	}
+	//停止动画
+	dlg.stop_token_animate = function()
+	{
+		clearInterval(dlg.token_ani);
+	}
+	//动画具体实现
+	function token_animate()
+	{
+		var nowdate = new Date();
+		var olddate = new Date(pubd.auth.login_date);
+		var expires_in = parseInt(pubd.auth.response.expires_in);
+		var differ = expires_in - (nowdate - olddate)/1000;
+		var scale = differ / expires_in;
+		if (differ>0)
+		{
+			progress.set(scale,2,"Token有效剩余" + parseInt(differ) + "秒");
+		}else
+		{
+			progress.set(0,2,"Token已失效，请重新登录");
+			clearInterval(dlg.token_ani);
+		}
+		//console.log("Token有效剩余" + differ + "秒"); //检测动画后台是否停止
+	}
 
 	var ipt = document.createElement("input");
 	ipt.type = "button";
@@ -1303,11 +1334,30 @@ function buildDlgConfig(touch)
 	ipt.onclick = function()
 	{
 		spawnNotification("设置已保存", scriptIcon, scriptName);
+		pubd.auth.needlogin = dlg.needlogin.checked;
+		pubd.auth.save();
 	}
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
+	//窗口关闭
+	dlg.close = function(){
+		dlg.stop_token_animate();
+	};
+	//关闭窗口按钮
+	dlg.cptBtns.close.addEventListener("click",dlg.close);
+	//窗口初始化
 	dlg.initialise = function(){
+		dlg.needlogin.checked = pubd.auth.needlogin;
+		if (pubd.auth.needlogin) //如果要登陆，就显示Token区域，和动画
+		{
+			dlg.token_info.classList.remove("height-none");
+			dlg.start_token_animate();
+		}
+		else
+		{
+			dlg.token_info.classList.add("height-none");
+		}
 		//ipt_token.value = pubd.auth.response.access_token;
 	};
 	return dlg;
@@ -1386,6 +1436,7 @@ function buildDlgLogin(touch)
 		pubd.auth.login(
 			function(jore){//onload_suceess_Cb
 				dlg.error.replace("登陆成功");
+				pubd.dialog.config.start_token_animate();
 				//pubd.dialog.config.token.value = jore.response.access_token;
 			},
 			function(jore){//onload_haserror_Cb //返回错误消息
@@ -1437,9 +1488,7 @@ function buildDlgLogin(touch)
 		pubd.auth.save();
 	};
 	//关闭窗口按钮
-	dlg.cptBtns.close.addEventListener("mousedown",function(e){
-		dlg.close();
-	});
+	dlg.cptBtns.close.addEventListener("click",dlg.close);
 	//窗口初始化
 	dlg.initialise = function(){
 		dlg.remember.checked = pubd.auth.save_account;
@@ -1868,14 +1917,11 @@ function startBuild(touch,loggedIn)
 		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
 
 		pubd.auth = new Auth();
-		console.log("旧的",pubd.auth);
-		console.log(JSON.parse(GM_getValue("pubd-auth")));
 		try{
 			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
 		}catch(e){
 			console.error("脚本初始化，读取登录信息失败",e);
 		}
-		console.log("新的",new Auth());
 		//console.log(pubd.auth);
 		/*
 		pubd.auth.newAccount("mapaler","dqjxjm0710");

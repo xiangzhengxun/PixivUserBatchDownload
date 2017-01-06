@@ -3,7 +3,12 @@
 @-moz-document domain("www.pixiv.net") {
   .display-none
   {/*任何需要隐藏的*/
-    display:none;
+    display:none !important;
+  }
+  .height-none
+  {
+    height: 0px !important;
+    overflow: hidden !important;
   }
   .pubd-start
   {/*开始按钮*/
@@ -145,7 +150,7 @@
     position: absolute;
     left: 400px;
     top: 200px;
-    z-index: 1000;
+    z-index: 9000;
     min-width: 210px;
     padding: 30px 8px 8px 8px;
     background-color: RGBA(191,214,236,0.7);
@@ -171,7 +176,7 @@
   .pubd-dlg-active
   {/*对话框激活*/
     box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 8px,#72BBFE 0 0 8px;
-    z-index: 1001;
+    z-index: 9001;
   }
   .pubd-dialog .dlg-cpt-btns
   {/*对话框标题按钮组*/
@@ -289,6 +294,7 @@
     position: absolute;
     top:0;
     left:0;
+    transition: width 0.5s ease-in-out;
   }
   .pubd-progress-right .pubd-progress-bar
   {/*进度条*/
@@ -328,8 +334,14 @@
     width: 80px;
     margin-left: 5px;
   }
-  .pubd-config .pubd-token-scope
-  {/*token输入框*/
+  .pubd-token-info
+  {/*token信息栏*/
+    transition: height 0.5s ease-in-out;
+    overflow: hidden;
+    height: 30px;
+  }
+  .pubd-config .pubd-token-expires
+  {/*token进度条*/
     width: calc(100% - 87px);
   }
   .pubd-config .pubd-downscheme
