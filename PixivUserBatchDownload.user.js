@@ -31,6 +31,7 @@ var pubd = { //储存设置
 		downthis:null, //下载当前窗口
 	},
 	auth:null,
+	downSchemes:[],
 };
 
 var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
@@ -1060,7 +1061,7 @@ function buildDlgConfig(touch)
 	dl.appendChild(dd);
 */
 	//配置方案储存
-	dlg.schemes = new Array();
+	dlg.schemes = pubd.downSchemes;
 	dlg.reloadSchemes = function()
 	{
 		dlg.downScheme.options.length = 0;
@@ -1275,10 +1276,7 @@ function buildDlgConfig(touch)
 	ipt.onclick = function()
 	{
 		spawnNotification("设置已重置", scriptIcon, scriptName);
-		GM_deleteValue("pubd-token",ipt_token.value);
-		GM_deleteValue("pubd-account");
-		GM_deleteValue("pubd-password");
-		GM_deleteValue("pubd-remember");
+		GM_deleteValue("pubd-auth"); //登陆相关信息
 	}
 	dd.appendChild(ipt);
 	var ipt = document.createElement("input");
@@ -1288,13 +1286,12 @@ function buildDlgConfig(touch)
 	ipt.onclick = function()
 	{
 		spawnNotification("设置已保存", scriptIcon, scriptName);
-		GM_setValue("pubd-token",ipt_token.value);
 	}
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
 	dlg.initialise = function(){
-		ipt_token.value = GM_getValue("pubd-token");
+		ipt_token.value = pubd.auth.response.access_token;
 	};
 	return dlg;
 }
