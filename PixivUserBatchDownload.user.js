@@ -134,6 +134,9 @@ if(typeof(GM_listValues) == "undefined")
 	}
 }
 
+/*
+ * 现成函数库
+*/
 //发送网页通知
 function spawnNotification(theBody, theIcon, theTitle)
 {
@@ -350,7 +353,7 @@ var Auth = (function () {
 		}
 		auth.newAccount = function(username,password,remember)
 		{
-			if(remember) auth.save_account = remember;
+			if(typeof(remember)=="boolean") auth.save_account = remember;
 			auth.username = username;
 			auth.password = password;
 		}
@@ -780,7 +783,7 @@ var LabelInput = (function () {
 		ipt.type = type;
 		ipt.value = value;
 
-		label.ipt = ipt;
+		label.input = ipt;
 		if (beforeText)
 			label.insertBefore(ipt,label.firstChild);
 		else
@@ -1025,14 +1028,16 @@ function buildDlgConfig(touch)
 	dlgc.appendChild(dl);
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
-	dt.innerHTML = "通行令牌(Access Token)，登陆获取"
+	dt.innerHTML = "通行令牌(Access Token)"
+	var dd=document.createElement("dd");
+	dl.appendChild(dd);
 	var dd=document.createElement("dd");
 	var ipt_token = document.createElement("input");
 	ipt_token.type = "text";
 	ipt_token.className = "pubd-token";
 	ipt_token.name = "pubd-token";
 	ipt_token.id = ipt_token.name;
-	ipt_token.placeholder = "免登陆默认Token"
+	ipt_token.placeholder = "留空则不不登陆"
 	ipt_token.readOnly = true;
 	dlg.token = ipt_token;
 	dd.appendChild(ipt_token);
@@ -1355,24 +1360,26 @@ function buildDlgLogin(touch)
 	var signup_form_nav = document.createElement("div");
 	signup_form_nav.className = "signup-form-nav";
 	container_login.appendChild(signup_form_nav);
+	var checkbox = new LabelInput("记住账号密码（警告：明文保存于本地）","pubd-remember","pubd-remember","checkbox","0",true);
+/*
 	var lblremember = document.createElement("label");
 	var remember = document.createElement("input"); //记住账号密码
 	remember.type = "checkbox";
 	remember.className = "pubd-remember";
 	remember.name = "pubd-remember";
 	remember.id = remember.name;
-	dlg.remember = remember;
 	lblremember.innerHTML += "记住账号密码（警告：明文保存于本地）";
 	lblremember.insertBefore(remember,lblremember.firstChild);
-	signup_form_nav.appendChild(lblremember);
-
+*/
+	dlg.remember = checkbox.input;
+	signup_form_nav.appendChild(checkbox);
 	dlgc.appendChild(container_login);
 
 	submit.onclick = function()
 	{
 		dlg.error.replace("登陆中···");
 
-		pubd.auth.newAccount(pid.value,pass.value,remember.checked);
+		pubd.auth.newAccount(pid.value,pass.value,dlg.remember.checked);
 
 		pubd.auth.login(
 			function(jore){//onload_suceess_Cb
@@ -1482,10 +1489,15 @@ function buildDlgLogin(touch)
 			this.add(text);
 	}
 	dlg.error = error_msg_list;
+	//窗口关闭
+	dlg.close = function(){
+		console.log("关闭",dlg.remember.checked);
+		pubd.auth.newAccount(pid.value,pass.value,dlg.remember.checked);
+		pubd.auth.save();
+	};
 	//关闭窗口按钮
 	dlg.cptBtns.close.addEventListener("mousedown",function(e){
-		pubd.auth.newAccount(pid.value,pass.value,remember.checked);
-		pubd.auth.save();
+		dlg.close();
 		/*
 		GM_setValue("pubd-remember",remember.checked);
 		if (remember.checked)
@@ -1499,10 +1511,10 @@ function buildDlgLogin(touch)
 		}
 		*/
 	});
-
+	//窗口初始化
 	dlg.initialise = function(){
-		remember.checked = pubd.auth.save_account;
-		console.log(pubd.auth);
+		console.log("加载",pubd.auth.save_account);
+		dlg.remember.checked = pubd.auth.save_account;
 		pid.value = pubd.auth.username||"";
 		pass.value = pubd.auth.password||"";
 		/*
@@ -1560,9 +1572,9 @@ function buildDlgDownThis(touch,userid)
 	var frm = new Frame("下载内容");
 	var radio1 = new LabelInput("他的作品","pubd-down-content","pubd-down-content","radio","0",true);
 	var radio2 = new LabelInput("他的收藏","pubd-down-content","pubd-down-content","radio","1",true);
-	dlg.dcType = [radio1.ipt,radio2.ipt];
-	radio1.ipt.onclick = function(){reAnalyse(this)};
-	radio2.ipt.onclick = function(){reAnalyse(this)};
+	dlg.dcType = [radio1.input,radio2.input];
+	radio1.input.onclick = function(){reAnalyse(this)};
+	radio2.input.onclick = function(){reAnalyse(this)};
 	function reAnalyse(radio)
 	{
 		if (radio.checked == true)
