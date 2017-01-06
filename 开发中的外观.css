@@ -149,7 +149,7 @@
   {/*对话框*/
     position: absolute;
     left: 400px;
-    top: 200px;
+    top: 120px;
     z-index: 9000;
     min-width: 210px;
     padding: 30px 8px 8px 8px;
@@ -275,6 +275,7 @@
   }
   .pubd-progress
   {/*进度*/
+    width: 100%;
     background-color: white;
     border: #B2B2B2 solid 1px;
     text-align: center;
