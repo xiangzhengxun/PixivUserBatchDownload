@@ -274,6 +274,7 @@
     border: #B2B2B2 solid 1px;
     text-align: center;
     position: relative;
+    display:inline-block;
   }
   .pubd-progress,.pubd-progress .pubd-progress-bar,.pubd-progress .pubd-progress-text
   {/*进度条三个部分的通用设置*/
@@ -288,6 +289,14 @@
     position: absolute;
     top:0;
     left:0;
+  }
+  .pubd-progress-right .pubd-progress-bar
+  {/*进度条*/
+    background-color: #0f0;
+    position: absolute;
+    left:unset;
+    top:0;
+    right:0;
   }
   .pubd-progress .pubd-progress-text
   {/*进度文字*/
@@ -319,13 +328,9 @@
     width: 80px;
     margin-left: 5px;
   }
-  .pubd-config .pubd-token
+  .pubd-config .pubd-token-scope
   {/*token输入框*/
-    width: calc(100% - 95px);
-    /*用背景色的移动来表示剩余时间*/
-    background-image: linear-gradient(to bottom, RGBA(255,255,255,0.6) 0%, RGBA(236,38,38,0.8) 40%, RGBA(211,26,26,0.8) 100%);
-    background-size: 50% 100%;
-    background-repeat: no-repeat;
+    width: calc(100% - 87px);
   }
   .pubd-config .pubd-downscheme
   {/*下载方案下拉框*/

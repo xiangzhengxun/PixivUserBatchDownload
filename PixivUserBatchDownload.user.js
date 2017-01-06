@@ -812,9 +812,10 @@ var Progress = (function () {
 		return s;
 	}
 
-	return function(classname) {
+	return function(classname,align_right) {
 		var progress = document.createElement("div");
 		progress.className = "pubd-progress" + (classname?" "+classname:"");
+		if (align_right) progress.classList.add("pubd-progress-right");
 
 		progress.scaleNum = 0;
 
@@ -1028,10 +1029,16 @@ function buildDlgConfig(touch)
 	dlgc.appendChild(dl);
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
-	dt.innerHTML = "通行令牌(Access Token)"
+	dt.innerHTML = "我的Pixiv账号";
 	var dd=document.createElement("dd");
+	var checkbox = new LabelInput("开启登陆功能，获取完整体验（浏览限制与该账户相同）","pubd-needlogin","pubd-needlogin","checkbox","1",true);
+	dlg.needlogin = checkbox.input;
+	dd.appendChild(checkbox);
 	dl.appendChild(dd);
 	var dd=document.createElement("dd");
+	dd.className = "pubd-token-info";
+	dlg.token_info = dd;
+/*
 	var ipt_token = document.createElement("input");
 	ipt_token.type = "text";
 	ipt_token.className = "pubd-token";
@@ -1039,13 +1046,18 @@ function buildDlgConfig(touch)
 	ipt_token.id = ipt_token.name;
 	ipt_token.placeholder = "留空则不不登陆"
 	ipt_token.readOnly = true;
-	dlg.token = ipt_token;
 	dd.appendChild(ipt_token);
+*/
+	var progress = new Progress("pubd-token-scope",true);
+	progress.set(0.5,2,"令牌过期时间");
+	dlg.token_scope = progress;
+	dd.appendChild(progress);
+
 
 	var ipt = document.createElement("input");
 	ipt.type = "button";
 	ipt.className = "pubd-tologin";
-	ipt.value = "登陆账户"
+	ipt.value = "账户登陆"
 	ipt.onclick = function()
 	{
 		pubd.dialog.login.show();
@@ -1296,7 +1308,7 @@ function buildDlgConfig(touch)
 	dl.appendChild(dd);
 
 	dlg.initialise = function(){
-		ipt_token.value = pubd.auth.response.access_token;
+		//ipt_token.value = pubd.auth.response.access_token;
 	};
 	return dlg;
 }
@@ -1360,17 +1372,7 @@ function buildDlgLogin(touch)
 	var signup_form_nav = document.createElement("div");
 	signup_form_nav.className = "signup-form-nav";
 	container_login.appendChild(signup_form_nav);
-	var checkbox = new LabelInput("记住账号密码（警告：明文保存于本地）","pubd-remember","pubd-remember","checkbox","0",true);
-/*
-	var lblremember = document.createElement("label");
-	var remember = document.createElement("input"); //记住账号密码
-	remember.type = "checkbox";
-	remember.className = "pubd-remember";
-	remember.name = "pubd-remember";
-	remember.id = remember.name;
-	lblremember.innerHTML += "记住账号密码（警告：明文保存于本地）";
-	lblremember.insertBefore(remember,lblremember.firstChild);
-*/
+	var checkbox = new LabelInput("记住账号密码（警告：明文保存于本地）","pubd-remember","pubd-remember","checkbox","1",true);
 	dlg.remember = checkbox.input;
 	signup_form_nav.appendChild(checkbox);
 	dlgc.appendChild(container_login);
@@ -1384,7 +1386,7 @@ function buildDlgLogin(touch)
 		pubd.auth.login(
 			function(jore){//onload_suceess_Cb
 				dlg.error.replace("登陆成功");
-				pubd.dialog.config.token.value = jore.response.access_token;
+				//pubd.dialog.config.token.value = jore.response.access_token;
 			},
 			function(jore){//onload_haserror_Cb //返回错误消息
 				dlg.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
@@ -1399,66 +1401,6 @@ function buildDlgLogin(touch)
 				dlg.error.replace("AJAX发送失败");
 			}
 		);
-
-		/*
-		var loginPost = [
-			["get_secure_url",1],
-			["client_id","bYGKuGVw91e0NMfPGp44euvGt59s"],
-			["client_secret","HP3RmkgAmEGro0gn1x9ioawQE8WMfvLXDz3ZqxpK"],
-			["grant_type","password"],
-			["username",pid.value],
-			["password",pass.value],
-			["refresh_token",""],
-		];
-		var loginPostStr = loginPost.map(
-				function (item){
-					return item.join("=");
-				}
-			).join("&");
-		GM_xmlhttpRequest({
-			url:"https://oauth.secure.pixiv.net/auth/token",
-			method:"post",
-			responseType:"text",
-			headers: {
-				'App-OS': 'ios',
-				'App-OS-Version': '9.3.3',
-				'App-Version': '6.0.9',
-				'User-Agent': 'PixivIOSApp/6.0.9 (iOS 9.3.3; iPhone8,1)',
-				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
-				"Referer": "https://spapi.pixiv.net/",
-			},
-			data: loginPostStr,
-			onload: function(response) {
-				var jo = JSON.parse(response.response);
-				if (jo)
-				{
-					console.warn("登陆的Ajax返回",jo);
-					if (jo.has_error || jo.status=="failure")
-					{
-						dlg.error.replace(["错误代码：" + jo.errors.system.code,jo.errors.system.message]);
-					}else
-					{//登陆成功
-						if (jo.response != undefined)
-						{
-							dlg.error.replace("登陆成功");
-							pubd.dialog.config.getElementsByClassName("pubd-token")[0].value = jo.response.access_token;
-						}else
-						{
-							dlg.error.replace("理论上是登陆成功了，但出现了未知错误");
-						}
-					}
-				}else
-				{
-					console.warn(response);
-					dlg.error.replace("登录失败，返回不是JSON");
-				}
-			},
-			onerror: function(response) {
-				console.warn(response);
-				dlg.error.replace("登录失败，AJAX访问失败");
-			}
-		})
-		*/
 	}
 	//添加错误功能
 	error_msg_list.clear = function()
@@ -1491,40 +1433,18 @@ function buildDlgLogin(touch)
 	dlg.error = error_msg_list;
 	//窗口关闭
 	dlg.close = function(){
-		console.log("关闭",dlg.remember.checked);
 		pubd.auth.newAccount(pid.value,pass.value,dlg.remember.checked);
 		pubd.auth.save();
 	};
 	//关闭窗口按钮
 	dlg.cptBtns.close.addEventListener("mousedown",function(e){
 		dlg.close();
-		/*
-		GM_setValue("pubd-remember",remember.checked);
-		if (remember.checked)
-		{
-			GM_setValue("pubd-account",pid.value);
-			GM_setValue("pubd-password",pass.value);
-		}else
-		{
-			GM_deleteValue("pubd-account");
-			GM_deleteValue("pubd-password");
-		}
-		*/
 	});
 	//窗口初始化
 	dlg.initialise = function(){
-		console.log("加载",pubd.auth.save_account);
 		dlg.remember.checked = pubd.auth.save_account;
 		pid.value = pubd.auth.username||"";
 		pass.value = pubd.auth.password||"";
-		/*
-		remember.checked = GM_getValue("pubd-remember");
-		if (remember.checked)
-		{
-			pid.value = GM_getValue("pubd-account");
-			pass.value = GM_getValue("pubd-password");
-		}
-		*/
 		error_msg_list.clear();
 	};
 	return dlg;
