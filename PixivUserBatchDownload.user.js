@@ -42,6 +42,10 @@ var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM
 */
 if (typeof(unsafeWindow)!="undefined")
 	var pixiv = unsafeWindow.pixiv;
+if (typeof(pixiv)=="undefined")
+{
+	console.error("当前网页没有找到pixiv对象");
+}
 if (pixiv && pixiv.user.loggedIn)
 {
 	pubd.loggedIn = true;
@@ -336,27 +340,18 @@ var Auth = (function () {
 					"x_restrict":0,
 					"is_mail_authorized":true
 				},
-				"device_token":""
+				"device_token":"",
 			},
-			login_date:null,
-			save_account:remember,
-		}
-		auth.post = new PostDataObject({ //Post时发送的数据
-			client_id:"BVO2E8vAAikgUBW8FYpi6amXOjQj",
-			client_secret:"LI1WsFUDrrquaINOdarrJclCrkTtc3eojCOswlog",
-			grant_type:"password",
 			username:username,
 			password:password,
-			//device_token:"6e50367b155c2ba9faeaf2152ee4607c",
-			get_secure_url:"true",
-		})
-		var device_token = docCookies.getItem("device_token");
-		if (device_token) auth.post.increase({"device_token": device_token});
+			save_account:remember,
+			login_date:null,
+		}
 		auth.newAccount = function(username,password,remember)
 		{
 			if(remember) auth.save_account = remember;
-			auth.post.data.username = username;
-			auth.post.data.password = password;
+			auth.username = username;
+			auth.password = password;
 		}
 		auth.loadFromResponse = function(response)
 		{
@@ -364,28 +359,39 @@ var Auth = (function () {
 		}
 		auth.save = function()
 		{
-			if(!auth.save_account)
+			var saveObj = JSON.parse(JSON.stringify(auth)); //深度拷贝
+			if(!saveObj.save_account)
 			{
-				auth.post.data.username = "";
-				auth.post.data.password = "";
+				saveObj.username = "";
+				saveObj.password = "";
 			}
-			var saveJson = JSON.stringify(auth);
-			GM_setValue("pubd-auth",saveJson);
+			GM_setValue("pubd-auth",JSON.stringify(saveObj));
 		}
 
 		auth.login = function(onload_suceess_Cb,onload_hasError_Cb, onload_improperJson_Cb,onload_notJson_Cb,onerror_Cb)
 		{
-			var dlg = pubd.dialog.login;
+			var postObj = new PostDataObject({ //Post时发送的数据
+				client_id:"BVO2E8vAAikgUBW8FYpi6amXOjQj",
+				client_secret:"LI1WsFUDrrquaINOdarrJclCrkTtc3eojCOswlog",
+				grant_type:"password",
+				username:auth.username,
+				password:auth.password,
+				//device_token:"6e50367b155c2ba9faeaf2152ee4607c",
+				get_secure_url:"true",
+			})
+			var device_token = docCookies.getItem("device_token");
+			if (device_token) postObj.increase({"device_token": device_token});
+
 			GM_xmlhttpRequest({
 				url:"https://oauth.secure.pixiv.net/auth/token",
 				method:"post",
 				responseType:"text",
 				headers: new HeadersObject(),
-				data: auth.post.toPostString(),
+				data: postObj.toPostString(),
 				onload: function(response) {
 					try
 					{
-						var jo = JSON.parse(response.response);
+						var jo = JSON.parse(response.responseText);
 						if (jo.has_error || jo.error || jo.status=="failure")
 						{
 							console.error("登录失败，返回错误消息",jo);
@@ -397,7 +403,7 @@ var Auth = (function () {
 							{
 								auth.loadFromResponse(jo);
 								auth.login_date = new Date();
-								console.info("登陆成功",jore);
+								console.info("登陆成功",jo);
 								onload_suceess_Cb(jo);
 								//pubd.dialog.config.getElementsByClassName("pubd-token")[0].value = jo.response.access_token;
 							}else
@@ -409,7 +415,7 @@ var Auth = (function () {
 						}
 					}catch(e)
 					{
-						console.error("登录失败，返回不是JSON",response);
+						console.error("登录失败，返回可能不是JSON",e,response);
 						onload_notJson_Cb(response);
 					}
 				},
@@ -456,6 +462,7 @@ var DownScheme = (function () {
 					var json = JSON.parse(json);
 				}catch(e)
 				{
+					console.error(e);
 					return false;
 				}
 			}
@@ -895,6 +902,7 @@ var Aria2 = (function () {
 					callback(JSONreq);
 				}catch(e)
 				{
+					console.error(e);
 					callback(false);
 				}
 			},
@@ -1024,6 +1032,7 @@ function buildDlgConfig(touch)
 	ipt_token.name = "pubd-token";
 	ipt_token.id = ipt_token.name;
 	ipt_token.placeholder = "免登陆默认Token"
+	ipt_token.readOnly = true;
 	dlg.token = ipt_token;
 	dd.appendChild(ipt_token);
 
@@ -1371,7 +1380,7 @@ function buildDlgLogin(touch)
 		pubd.auth.login(
 			function(jore){//onload_suceess_Cb
 				dlg.error.replace("登陆成功");
-				pubd.dialog.config.token.value = jo.response.access_token;
+				pubd.dialog.config.token.value = jore.response.access_token;
 			},
 			function(jore){//onload_haserror_Cb //返回错误消息
 				dlg.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
@@ -1496,8 +1505,9 @@ function buildDlgLogin(touch)
 
 	dlg.initialise = function(){
 		remember.checked = pubd.auth.save_account;
-		pid.value = pubd.auth.save_account;
-		pass.value = GM_getValue("pubd-password");
+		console.log(pubd.auth);
+		pid.value = pubd.auth.username||"";
+		pass.value = pubd.auth.password||"";
 		/*
 		remember.checked = GM_getValue("pubd-remember");
 		if (remember.checked)
@@ -1929,11 +1939,15 @@ function startBuild(touch,loggedIn)
 		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
 
 		pubd.auth = new Auth();
+		console.log("旧的",pubd.auth);
+		console.log(JSON.parse(GM_getValue("pubd-auth")));
 		try{
 			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
 		}catch(e){
-			console.error("脚本初始化，读取登录信息失败");
+			console.error("脚本初始化，读取登录信息失败",e);
 		}
+		console.log("新的",new Auth());
+		//console.log(pubd.auth);
 		/*
 		pubd.auth.newAccount("mapaler","dqjxjm0710");
 		pubd.auth.login(
