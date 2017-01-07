@@ -145,6 +145,14 @@
     background-position-y: -701px;
   }
   
+  dt
+  {/*列表标题*/
+    margin-top: 5px;
+  }
+  dt:first-child
+  {/*列表标题-第一个*/
+    margin-top: 0;
+  }
   .pubd-dialog
   {/*对话框*/
     position: absolute;
@@ -334,6 +342,10 @@
   {/*选项面板按钮*/
     width: 80px;
     margin-left: 5px;
+  }
+  .pubd-browsing-restriction
+  {/*访问P站设置的链接*/
+    float:right;
   }
   .pubd-token-info
   {/*token信息栏*/

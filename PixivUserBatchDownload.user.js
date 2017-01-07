@@ -1030,9 +1030,9 @@ function buildDlgConfig(touch)
 	dlgc.appendChild(dl);
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
-	dt.innerHTML = "我的Pixiv账号";
+	dt.innerHTML = "Pixiv访问权限，默认仅能访问公开作品";
 	var dd=document.createElement("dd");
-	var checkbox = new LabelInput("开启登陆功能，获取完整体验（浏览限制与该账户相同）","pubd-needlogin","pubd-needlogin","checkbox","1",true);
+	var checkbox = new LabelInput("开启登陆功能，解除浏览限制","pubd-needlogin","pubd-needlogin","checkbox","1",true);
 	dlg.needlogin = checkbox.input;
 	dlg.needlogin.onclick = function()
 	{
@@ -1048,6 +1048,13 @@ function buildDlgConfig(touch)
 		pubd.dialog.login.cptBtns.close.click();
 	}
 	dd.appendChild(checkbox);
+
+	var a_setting = document.createElement("a");
+	a_setting.className = "pubd-browsing-restriction";
+	a_setting.href = "http://www.pixiv.net/setting_user.php#over-18";
+	a_setting.target = "_blank";
+	a_setting.innerHTML = "设置我的账户浏览限制";
+	dd.appendChild(a_setting);
 	dl.appendChild(dd);
 	var dd=document.createElement("dd");
 	dd.className = "pubd-token-info height-none";
