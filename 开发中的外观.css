@@ -322,10 +322,28 @@
   {/*下拉框*/
     width: 100%;
   }
+  .pubd-frame
+  {/*窗口内框架*/
+    border: 1px solid #D5DFE5;
+    border-radius: 4px;
+    position: relative;
+    margin:10px 1px 1px 1px;
+    padding: 12px 5px 5px 5px;
+  }
+  .pubd-frame .pubd-frame-caption
+  {/*窗口内框架标题*/
+    top:-10px;
+    left: 8px;
+    position: absolute;
+    padding-left: 2px;
+    padding-right: 4px;
+  }
   /*▼选项对话框相关*/
   .pubd-config
   {/*选项对话框宽度*/
     width: 400px;
+    left: 380px;
+    top: 120px;
   }
   .pubd-config input[type="text"],.pubd-config input[type="email"],.pubd-config input[type="password"],.pubd-config input[type="url"]
   {/*选项对话框图标*/
@@ -401,6 +419,11 @@
   }
   /*▲选项对话框相关*/
   /*▼登陆对话框相关*/
+  .pubd-login
+  {/*登陆对话框*/
+    left:720px;
+    top: 150px;
+  }
   .pubd-login .dlg-content
   {/*登陆对话框内容*/
     background: transparent;
@@ -509,23 +532,11 @@
     overflow: hidden;
   }
   /*▲登陆对话框内容*/
-  .pubd-frame
-  {/*窗口内框架*/
-    border: 1px solid #D5DFE5;
-    border-radius: 4px;
-    position: relative;
-    margin:10px 1px 1px 1px;
-    padding: 12px 5px 5px 5px;
-  }
-  .pubd-frame .pubd-frame-caption
-  {/*窗口内框架标题*/
-    top:-10px;
-    left: 8px;
-    position: absolute;
-    padding-left: 2px;
-    padding-right: 4px;
-  }
   /*▼下载当前画师窗口内容*/
+  .pubd-downthis
+  {/*下载当前画师*/
+    top: 140px;
+  }
   .pubd-downthis .pubd-down-content
   {/*下载内容单选框*/
     width: 50%;
