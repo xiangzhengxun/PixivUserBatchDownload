@@ -231,18 +231,10 @@ var UserInfo = function()
 {
 	var obj = {
 		done:false,
-		info:null,
-		works:{
-			done:false,
-			item:[],
-			break:false,
-			runing:false,
-		},
-		favorite:{
-			done:false,
-			item:[],
-			break:false,
-			runing:false,
+		info:{
+			profile:null,
+			user:null,
+			profile:null,
 		},
 		illusts:{
 			done:false,
@@ -324,27 +316,27 @@ var Auth = (function () {
 		if (!password) password = "";
 		if (!remember) remember = false;
 		var auth = { //原始结构
-			"response":{
-				"access_token":"",
-				"expires_in":0,
-				"token_type":"",
-				"scope":"",
-				"refresh_token":"",
-				"user":{
-					"profile_image_urls":{
-						"px_16x16":"",
-						"px_50x50":"",
-						"px_170x170":""
+			response:{
+				access_token:"",
+				expires_in:0,
+				token_type:"",
+				scope:"",
+				refresh_token:"",
+				user:{
+					profile_image_urls:{
+						px_16x16:"",
+						px_50x50:"",
+						px_170x170:"",
 					},
-					"id":"",
-					"name":"",
-					"account":"",
-					"mail_address":"",
-					"is_premium":false,
-					"x_restrict":0,
-					"is_mail_authorized":true
+					id:"",
+					name:"",
+					account:"",
+					mail_address:"",
+					is_premium:false,
+					x_restrict:0,
+					is_mail_authorized:true,
 				},
-				"device_token":"",
+				device_token:"",
 			},
 			needlogin:false,
 			username:username,
@@ -373,7 +365,7 @@ var Auth = (function () {
 			GM_setValue("pubd-auth",JSON.stringify(saveObj));
 		}
 
-		auth.login = function(onload_suceess_Cb,onload_hasError_Cb, onload_improperJson_Cb,onload_notJson_Cb,onerror_Cb)
+		auth.login = function(onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb)
 		{
 			var postObj = new PostDataObject({ //Post时发送的数据
 				client_id:"BVO2E8vAAikgUBW8FYpi6amXOjQj",
@@ -387,6 +379,7 @@ var Auth = (function () {
 			var device_token = docCookies.getItem("device_token");
 			if (device_token) postObj.increase({"device_token": device_token});
 
+			//登陆是老的API
 			GM_xmlhttpRequest({
 				url:"https://oauth.secure.pixiv.net/auth/token",
 				method:"post",
@@ -397,26 +390,16 @@ var Auth = (function () {
 					try
 					{
 						var jo = JSON.parse(response.responseText);
-						if (jo.has_error || jo.error || jo.status=="failure")
+						if (jo.has_error || jo.errors)
 						{
 							console.error("登录失败，返回错误消息",jo);
 							onload_hasError_Cb(jo);
-							//dlg.error.replace(["错误代码：" + jo.errors.system.code,jo.errors.system.message]);
 						}else
 						{//登陆成功
-							if (jo.response != undefined)
-							{
-								auth.loadFromResponse(jo);
-								auth.login_date = new Date();
-								console.info("登陆成功",jo);
-								onload_suceess_Cb(jo);
-								//pubd.dialog.config.getElementsByClassName("pubd-token")[0].value = jo.response.access_token;
-							}else
-							{
-								//alert("返回JSON成功了，但json格式不对。");
-								onload_improperJson_Cb(jo);
-								console.error("登录失败，未知的JSON结构",jo);
-							}
+							auth.loadFromResponse(jo);
+							auth.login_date = new Date();
+							console.info("登陆成功",jo);
+							onload_suceess_Cb(jo);
 						}
 					}catch(e)
 					{
@@ -1065,8 +1048,11 @@ function buildDlgConfig(touch)
 	//开始动画
 	dlg.start_token_animate = function()
 	{
-		dlg.stop_token_animate();
-		dlg.token_ani = setInterval(function () {requestAnimationFrame(token_animate)}, 1000);
+		//if (!dlg.classList.contains("display-none"))
+		//{
+			dlg.stop_token_animate();
+			dlg.token_ani = setInterval(function () {requestAnimationFrame(token_animate)}, 1000);
+		//}
 	}
 	//停止动画
 	dlg.stop_token_animate = function()
@@ -1449,9 +1435,6 @@ function buildDlgLogin(touch)
 			function(jore){//onload_haserror_Cb //返回错误消息
 				dlg.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
 			},
-			function(jore){//onload_improperJson_Cb //未知的JSON结构
-				dlg.error.replace("未知的JSON结构");
-			},
 			function(re){//onload_notjson_Cb //返回不是JSON
 				dlg.error.replace("返回不是JSON");
 			},
@@ -1512,7 +1495,6 @@ function buildDlgDownThis(touch,userid)
 {
 	var dlg = new Dialog("下载当前画师","pubd-downthis","pubd-downthis");
 	dlg.user = new UserInfo();
-	dlg.break = [false,false]; //中断下载用
 
 	var dlgc = dlg.content;
 
@@ -1556,9 +1538,9 @@ function buildDlgDownThis(touch,userid)
 		if (radio.checked == true)
 		{
 			if (radio.value == 0)
-				dlg.user.favorite.break = true; //使另一个中断
+				dlg.user.bookmarks.break = true; //radio值为0，使收藏中断
 			else
-				dlg.user.works.break = true; //使另一个中断
+				dlg.user.illusts.break = true; //radio值为1，使作品中断
 
 			dlg.analyse(radio.value,dlg.uid.value);
 		}
@@ -1630,13 +1612,89 @@ function buildDlgDownThis(touch,userid)
 		this.logTextarea.scrollTop = this.logTextarea.scrollHeight;
 	};
 
+	function xhrGenneral(url,onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb)
+	{
+		var headersObj = new HeadersObject();
+		var auth = pubd.auth;
+		if (auth.needlogin)
+		{
+			var token_type = auth.response.token_type.substring(0,1).toUpperCase() + auth.response.token_type.substring(1);
+			headersObj.Authorization = token_type + " " + auth.response.access_token;
+		}else
+		{
+			console.info("非登录模式获取信息");
+		}
+		GM_xmlhttpRequest({
+			url:url,
+			method:"get",
+			responseType:"text",
+			headers: headersObj,
+			onload: function(response) {
+				try
+				{
+					var jo = JSON.parse(response.responseText);
+					if (jo.error)
+					{
+						console.error("错误：返回错误消息",jo);
+						//jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
+						//jo.error.user_message 是单行文本的错误信息
+						onload_hasError_Cb(jo);
+						console.error(jo.error.message);
+						//下面开始自动登陆
+						if (jo.error.message.indexOf("Error occurred at the OAuth process.")>=0)
+						{
+							dlg.log("Token过期或错误，需要重新登录");
+							if (pubd.auth.save_account)
+							{
+								dlg.log("检测到已保存账户密码，开始自动登陆");
+								var dlgLogin = pubd.dialog.login;
+								dlgLogin.show();
+								
+								pubd.auth.login(
+									function(jore){//onload_suceess_Cb
+										dlgLogin.error.replace("登陆成功");
+										//pubd.dialog.config.start_token_animate();
+										dlgLogin.cptBtns.close.click();
+										dlg.log("登陆成功");
+										//回调自身
+										xhrGenneral(url,onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb);
+									},
+									function(jore){//onload_haserror_Cb //返回错误消息
+										dlgLogin.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
+									},
+									function(re){//onload_notjson_Cb //返回不是JSON
+										dlgLogin.error.replace("返回不是JSON");
+									},
+									function(re){//onerror_Cb //AJAX发送失败
+										dlgLogin.error.replace("AJAX发送失败");
+									}
+								);
+							}
+						}
+					}else
+					{//登陆成功
+						console.info("JSON返回成功",jo);
+						onload_suceess_Cb(jo);
+					}
+				}catch(e)
+				{
+					console.error("错误：返回可能不是JSON",e,response);
+					onload_notJson_Cb(response);
+				}
+			},
+			onerror: function(response) {
+				console.error("错误：AJAX发送失败",response);
+				onerror_Cb(response);
+			}
+		})
+	}
+
 	//分析
-	dlg.analyse = function(contentType,userid,per_page)
+	dlg.analyse = function(contentType,userid)
 	{
 		if(!userid){dlg.log("错误：没有用户ID");return;}
-		//if(contentType == undefined)contentType = 0; else contentType=parseInt(contentType);
-		contentType = (contentType == undefined)?0:parseInt(contentType);
-		var works = contentType?dlg.user.favorite:dlg.user.works; //将需要分析的数据储存到works里
+		contentType = contentType==undefined?0:parseInt(contentType);
+		var works = contentType==0?dlg.user.illusts:dlg.user.bookmarks; //将需要分析的数据储存到works里
 
 		if(works.runing)
 		{
@@ -1646,69 +1704,51 @@ function buildDlgDownThis(touch,userid)
 		works.break = false;
 		works.runing = true;
 
-		if(!per_page)per_page = 20;
 		dlg.startdown.disabled = true;
 		dlg.progress.set(0);
 		dlg.logClear();
 
-		if (!dlg.user.done)
+		function startAnalyseUser(userid,contentType)
 		{
 			dlg.log("开始获取ID为 " + userid + " 的用户信息");
-			//访问用户信息
-			GM_xmlhttpRequest({
-				url: "https://public-api.secure.pixiv.net/v1/users/" + userid + ".json?include_stats=true",
-				method:"get",
-				responseType:"text",
-				headers: {
-					"Referer": "http://spapi.pixiv.net/",
-					"Authorization":"Bearer " + GM_getValue("pubd-token"),
-					"User-Agent": "PixivIOSApp/6.0.9 (iOS 9.3.3; iPhone8,1)",
-					"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+			xhrGenneral(
+				"https://app-api.pixiv.net/v1/user/detail?user_id=" + userid,
+				function(jore){//onload_suceess_Cb
+					dlg.user.done = true;
+					dlg.user.info = Object.assign(dlg.user.info, jore);
+					startAnalyseWorks(dlg.user,contentType); //开始获取第一页
 				},
-				onload: function(response) {
-					var jo = JSON.parse(response.response)
-					if (jo)
-					{
-						console.warn("查询用户信息的Ajax返回",jo);
-						if (jo.has_error || jo.status=="failure")
-						{
-							dlg.log("返回错误代码：" + jo.errors.system.code);
-							dlg.log(jo.errors.system.message);
-							if (jo.errors.system.message == "The access token provided is invalid.")
-							{
-								dlg.log("通行令牌已过期，请在选项里登陆后保存设置。");
-							}
-							works.runing = false;
-						}else //if(jo.status=="success")
-						{
-							if (jo.count < 1) {dlg.log("用户为0");return;}
-							var usrInfo = jo.response[0];
-							dlg.user.done = true;
-							dlg.user.info = usrInfo;
-							startAnalyseWorks(dlg.user,contentType,per_page); //开始获取第一页
-						}
-					}else
-					{
-						console.warn(response);
-						dlg.log("错误：获取到的不是JSON数据，返回内容已发送到控制台。");
-						works.runing = false;
-					}
+				function(jore){//onload_haserror_Cb //返回错误消息
+					dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+					works.runing = false;
 				},
-				onerror: function(response) {
-					console.warn(response);
-					dlg.log("错误：AJAX访问失败，返回内容已发送到控制台。");
+				function(re){//onload_notjson_Cb //返回不是JSON
+					dlg.log("错误：返回不是JSON");
+					works.runing = false;
+				},
+				function(re){//onerror_Cb //AJAX发送失败
+					dlg.log("错误：AJAX发送失败");
 					works.runing = false;
 				}
-			})
+			)
+		}
+
+		//根据用户信息是否存在，决定分析用户还是图像
+		if (!dlg.user.done)
+		{
+			startAnalyseUser(userid,contentType);
 		}else
 		{
 			dlg.log("ID：" + userid + " 用户信息已存在");
-			startAnalyseWorks(dlg.user,contentType,per_page); //开始获取第一页
+			startAnalyseWorks(dlg.user,contentType); //开始获取第一页
 		}
 
 		//开始分析作品的前置操作
-		function startAnalyseWorks(user,contentType,per_page,page)
+		function startAnalyseWorks(user,contentType)
 		{
+			dlg.log("开始分析作品");
+			return;
+			/*
 			var usrInfo = user.info;
 			var works = contentType?user.favorite:user.works; //将需要分析的数据储存到works里
 			var contentName = contentType?"收藏":"作品";
@@ -1726,6 +1766,7 @@ function buildDlgDownThis(touch,userid)
 			var current_page = parseInt(works.item.length / per_page)+1;
 			dlg.progress.set(works.item.length/(contentType?usrInfo.stats.favorites:usrInfo.stats.works)); //设置当前下载进度
 			analyseWorks(user,contentType,per_page,current_page); //开始获取第一页
+			*/
 		}
 		//分析作品递归函数
 		function analyseWorks(user,contentType,per_page,page)
@@ -1878,15 +1919,16 @@ function buildDlgDownThis(touch,userid)
 
 	//启动初始化
 	dlg.initialise = function(){
-		var dcType = (GM_getValue("pubd-down-content") == 1)?1:0;
-		if (dlg.user.favorite.runing) //如果有程序正在运行，则覆盖设置。
+		//var dcType = (GM_getValue("pubd-down-content") == 1)?1:0;
+		var dcType = 0;
+		if (dlg.user.bookmarks.runing) //如果有程序正在运行，则覆盖设置。
 			dcType = 1;
-		else if (dlg.user.works.runing)
+		else if (dlg.user.illusts.runing)
 			dcType = 0;
 		
 		dlg.dcType[dcType].checked = true;
 		if (GM_getValue("pubd-autoanalyse"))
-			this.analyse(dcType,dlg.uid.value);
+			dlg.analyse(dcType,dlg.uid.value);
 	};
 
 	return dlg;
@@ -1926,26 +1968,10 @@ function startBuild(touch,loggedIn)
 		pubd.auth = new Auth();
 		try{
 			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
+			pubd.auth.response.access_token = "";
 		}catch(e){
 			console.error("脚本初始化，读取登录信息失败",e);
 		}
-		//console.log(pubd.auth);
-		/*
-		pubd.auth.newAccount("mapaler","dqjxjm0710");
-		pubd.auth.login(
-			function(jore){//onload_suceess_Cb
-				pubd.auth.save();
-			},
-			function(jore){//onload_haserror_Cb //返回错误消息
-			},
-			function(jore){//onload_improperJson_Cb //未知的JSON结构
-			},
-			function(re){//onload_notjson_Cb //返回不是JSON
-			},
-			function(re){//onerror_Cb //AJAX发送失败
-			}
-		);
-		*/
 	}
 }
 
