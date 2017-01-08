@@ -51,13 +51,13 @@ if (pixiv && pixiv.user.loggedIn)
 {
 	pubd.loggedIn = true;
 }
-if (typeof(pixiv.AutoView)!="undefined") //location.host.indexOf("touch")>=0
-{
-	console.info("当前访问的是P站桌面版");
-}else
+if (location.host.indexOf("touch")>=0) //typeof(pixiv.AutoView)!="undefined"
 {
 	pubd.touch=true;
 	console.info("当前访问的是P站触屏手机版");
+}else
+{
+	console.info("当前访问的是P站桌面版");
 }
 
 /*
@@ -241,12 +241,14 @@ var UserInfo = function()
 			item:[],
 			break:false,
 			runing:false,
+			next_url:"",
 		},
 		bookmarks:{
 			done:false,
 			item:[],
 			break:false,
 			runing:false,
+			next_url:"",
 		},
 	}
 	return obj;
@@ -293,6 +295,7 @@ var PostDataObject = (function () {
 		return postdata;
 	}
 })();
+
 //一个本程序使用的headers数据
 var HeadersObject = function (obj) {
 	var headers = {
@@ -307,6 +310,7 @@ var HeadersObject = function (obj) {
 		headers = Object.assign(headers, obj); //合并obj
 	return headers;
 }
+
 //一个认证方案
 var Auth = (function () {
 
@@ -403,7 +407,7 @@ var Auth = (function () {
 						}
 					}catch(e)
 					{
-						console.error("登录失败，返回可能不是JSON",e,response);
+						console.error("登录失败，返回可能不是JSON，或程序异常",e,response);
 						onload_notJson_Cb(response);
 					}
 				},
@@ -416,6 +420,7 @@ var Auth = (function () {
 		return auth;
 	};
 })();
+
 //一个下载方案
 var DownScheme = (function () {
 
@@ -464,6 +469,7 @@ var DownScheme = (function () {
 		return obj;
 	};
 })();
+
 //创建菜单类
 var pubdMenu = (function () {
 	//生成菜单项
@@ -543,6 +549,7 @@ var pubdMenu = (function () {
 		return menu;
 	};
 })();
+
 //创建通用对话框类
 var Dialog = (function () {
 	//构建标题栏按钮
@@ -663,6 +670,7 @@ var Dialog = (function () {
 		return dlg;
 	};
 })();
+
 //创建选项卡类
 var Tab = (function () {
 
@@ -694,6 +702,7 @@ var Tab = (function () {
 		return obj;
 	};
 })();
+
 //创建复数选项卡类
 var Tabs = (function () {
 
@@ -719,6 +728,7 @@ var Tabs = (function () {
 		return tabs;
 	};
 })();
+
 //创建框架类
 var Frame = (function () {
 
@@ -753,6 +763,7 @@ var Frame = (function () {
 		return frame;
 	};
 })();
+
 //创建带Label的Input类
 var LabelInput = (function () {
 
@@ -775,6 +786,7 @@ var LabelInput = (function () {
 		return label;
 	};
 })();
+
 //创建进度条类
 var Progress = (function () {
 	//强制保留pos位小数，如：2，会在2后面补上00.即2.00 
@@ -813,7 +825,7 @@ var Progress = (function () {
 
 		progress.set = function(scale,pos,str)
 		{
-			if (!pos) pos = 0;
+			if (!pos) pos = 2;
 			var  percentStr = toDecimal2((scale * 100),pos) + "%";
 			scale = scale>1?1:(scale<0?0:scale);
 			this.scaleNum = scale;
@@ -831,6 +843,81 @@ var Progress = (function () {
 		return progress;
 	};
 })();
+
+//创建用户卡片类
+var UserCard = (function () {
+
+	return function(userid) {
+		var uinfo = document.createElement("div");
+		uinfo.userid = userid;
+		uinfo.className = "pubd-user-info";
+		var uhead = document.createElement("div");
+		uhead.className = "pubd-user-info-head";
+		uinfo.appendChild(uhead);
+		var uhead_img = document.createElement("img");
+		uinfo.uhead = uhead_img;
+		uhead.appendChild(uhead_img);
+		uinfo.uhead = uhead_img;
+
+		var infos = document.createElement("dl");
+		infos.className = "pubd-user-info-dl";
+		//ID
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-id-dt";
+		dt.innerHTML = "ID"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-id-dd";
+		dd.innerHTML = uinfo.userid;
+		uinfo.uid = dd;
+		infos.appendChild(dd);
+		//作品数
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-illusts-dt";
+		dt.innerHTML = "作品投稿数"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-illusts-dd";
+		uinfo.uillusts = dd;
+		infos.appendChild(dd);
+		//昵称
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-name-dt";
+		dt.innerHTML = "昵称"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-name-dd";
+		uinfo.uname = dd;
+		infos.appendChild(dd);
+		//收藏数
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-bookmarks-dt";
+		dt.innerHTML = "插画收藏数"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-bookmarks-dd";
+		uinfo.ubookmarks = dd;
+		infos.appendChild(dd);
+
+		uinfo.infos = infos;
+		uinfo.appendChild(infos);
+
+		uinfo.set = function(obj)
+		{
+			if (obj.id)
+			{
+				uinfo.userid = obj.id;
+				uinfo.uid.innerHTML = obj.id;
+			}
+			if (obj.head) uinfo.uhead.src = obj.head;
+			if (obj.name) uinfo.uname.innerHTML = obj.name;
+			if (obj.illusts) uinfo.uillusts.innerHTML = obj.illusts;
+			if (obj.bookmarks) uinfo.ubookmarks.innerHTML = obj.bookmarks;
+		}
+		return uinfo;
+	};
+})();
+
 //创建下拉框类
 var Select = (function () {
 	return function(classname,name) {
@@ -852,6 +939,7 @@ var Select = (function () {
 		return select;
 	};
 })();
+
 //创建Aria2类
 var Aria2 = (function () {
 	var jsonrpc_version = '2.0';
@@ -921,6 +1009,9 @@ var Aria2 = (function () {
 	}
 })();
 
+/*
+ * 自定义函数区
+*/
 //构建开始按钮
 function buildbtnStart(touch)
 {
@@ -1299,7 +1390,6 @@ function buildDlgConfig(touch)
 
 	var dd=document.createElement("dd");
 	var masklist = new Select("pubd-mask-list")
-	masklist.multiple = true;
 	masklist.size = 5;
 	dlg.masklist = masklist;
 	dd.appendChild(masklist);
@@ -1436,7 +1526,7 @@ function buildDlgLogin(touch)
 				dlg.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
 			},
 			function(re){//onload_notjson_Cb //返回不是JSON
-				dlg.error.replace("返回不是JSON");
+				dlg.error.replace("返回不是JSON，或程序异常");
 			},
 			function(re){//onerror_Cb //AJAX发送失败
 				dlg.error.replace("AJAX发送失败");
@@ -1503,23 +1593,13 @@ function buildDlgDownThis(touch,userid)
 
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
-	dt.innerHTML = "被获取用户ID"
+	dt.innerHTML = "" //用户头像等信息
 	var dd=document.createElement("dd");
-	var uid = document.createElement("input");
-	uid.type = "number";
-	uid.className = "pubd-userid";
-	uid.name = "pubd-userid";
-	uid.id = uid.name;
-	uid.min = "1";
-	uid.placeholder="需要获取的用户ID";
-	uid.readOnly = true;
 
-	if(userid)
-		uid.value = userid;
-	else
-		uid.value = pixiv.context.userId;
-	dlg.uid = uid;
-	dd.appendChild(uid);
+	var uinfo = new UserCard(userid?userid:pixiv.context.userId); //创建当前用户信息卡
+	
+	dlg.uinfo = uinfo;
+	dd.appendChild(uinfo);
 	dl.appendChild(dd);
 
 	var dt=document.createElement("dt");
@@ -1542,7 +1622,7 @@ function buildDlgDownThis(touch,userid)
 			else
 				dlg.user.illusts.break = true; //radio值为1，使作品中断
 
-			dlg.analyse(radio.value,dlg.uid.value);
+			dlg.analyse(radio.value,dlg.uinfo.userid);
 		}
 	}
 	frm.content.appendChild(radio1);
@@ -1635,11 +1715,10 @@ function buildDlgDownThis(touch,userid)
 					var jo = JSON.parse(response.responseText);
 					if (jo.error)
 					{
-						console.error("错误：返回错误消息",jo);
+						console.error("错误：返回错误消息",jo,response);
 						//jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
 						//jo.error.user_message 是单行文本的错误信息
 						onload_hasError_Cb(jo);
-						console.error(jo.error.message);
 						//下面开始自动登陆
 						if (jo.error.message.indexOf("Error occurred at the OAuth process.")>=0)
 						{
@@ -1663,7 +1742,7 @@ function buildDlgDownThis(touch,userid)
 										dlgLogin.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
 									},
 									function(re){//onload_notjson_Cb //返回不是JSON
-										dlgLogin.error.replace("返回不是JSON");
+										dlgLogin.error.replace("返回不是JSON，或程序异常");
 									},
 									function(re){//onerror_Cb //AJAX发送失败
 										dlgLogin.error.replace("AJAX发送失败");
@@ -1678,7 +1757,7 @@ function buildDlgDownThis(touch,userid)
 					}
 				}catch(e)
 				{
-					console.error("错误：返回可能不是JSON",e,response);
+					console.error("错误：返回可能不是JSON，或程序异常",e,response);
 					onload_notJson_Cb(response);
 				}
 			},
@@ -1714,8 +1793,15 @@ function buildDlgDownThis(touch,userid)
 			xhrGenneral(
 				"https://app-api.pixiv.net/v1/user/detail?user_id=" + userid,
 				function(jore){//onload_suceess_Cb
+					works.runing = true;
 					dlg.user.done = true;
 					dlg.user.info = Object.assign(dlg.user.info, jore);
+					dlg.uinfo.set({
+						head:jore.user.profile_image_urls.medium,
+						name:jore.user.name,
+						illusts:jore.profile.total_illusts + jore.profile.total_manga,
+						bookmarks:jore.profile.total_illust_bookmarks_public,
+					});
 					startAnalyseWorks(dlg.user,contentType); //开始获取第一页
 				},
 				function(jore){//onload_haserror_Cb //返回错误消息
@@ -1723,7 +1809,7 @@ function buildDlgDownThis(touch,userid)
 					works.runing = false;
 				},
 				function(re){//onload_notjson_Cb //返回不是JSON
-					dlg.log("错误：返回不是JSON");
+					dlg.log("错误：返回不是JSON，或程序异常");
 					works.runing = false;
 				},
 				function(re){//onerror_Cb //AJAX发送失败
@@ -1746,39 +1832,70 @@ function buildDlgDownThis(touch,userid)
 		//开始分析作品的前置操作
 		function startAnalyseWorks(user,contentType)
 		{
-			dlg.log("开始分析作品");
-			return;
-			/*
-			var usrInfo = user.info;
-			var works = contentType?user.favorite:user.works; //将需要分析的数据储存到works里
-			var contentName = contentType?"收藏":"作品";
-			dlg.log(" 昵称：" + usrInfo.name + "，账号：" + usrInfo.account);
-			dlg.log(" 共 " + usrInfo.stats.works + " 件作品，" + usrInfo.stats.favorites + " 件收藏");
-			if (works.done)
+			var uInfo = user.info;
+			var works,total,contentName,apiurl;
+			//获取作品,contentType == 0，获取收藏,contentType == 1
+			if (contentType==0)
 			{
-				dlg.log(contentName + " 共 " + works.item.length + " 件已获取完毕，可以开始下载。");
-				dlg.progress.set(1);
-				works.runing = false;
-				dlg.startdown.disabled = false;
-				return;
+				works = user.illusts;
+				total = uInfo.profile.total_illusts + uInfo.profile.total_manga;
+				contentName = "作品";
+				apiurl = "https://app-api.pixiv.net/v1/user/illusts?user_id=" + uInfo.user.id;
+			}else
+			{
+				works = user.bookmarks;
+				total = uInfo.profile.total_illust_bookmarks_public;
+				contentName = "收藏";
+				apiurl = "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=" + uInfo.user.id + "&restrict=public";
 			}
-			dlg.log(" 每页获取 " + per_page + " 件 " + contentName);
-			var current_page = parseInt(works.item.length / per_page)+1;
-			dlg.progress.set(works.item.length/(contentType?usrInfo.stats.favorites:usrInfo.stats.works)); //设置当前下载进度
-			analyseWorks(user,contentType,per_page,current_page); //开始获取第一页
-			*/
+			if (works.item.length>0)
+			{//断点续传
+				dlg.log(contentName + " 断点续传进度 " + works.item.length + "/" + total);
+				dlg.progress.set(works.item.length/total); //设置当前下载进度
+				apiurl = works.next_url;
+			}
+			analyseWorks(user,contentType,apiurl); //开始获取第一页
 		}
 		//分析作品递归函数
-		function analyseWorks(user,contentType,per_page,page)
+		function analyseWorks(user,contentType,apiurl)
 		{
-			//获取作品,contentType == 0，获取收藏,contentType == 1
-			var works = contentType?user.favorite:user.works; //将需要分析的数据储存到works里
-			var contentName = contentType?"收藏":"作品";
+			var uInfo = user.info;
+			var works,total,contentName;
+			if (contentType==0)
+			{
+				works = user.illusts;
+				total = uInfo.profile.total_illusts + uInfo.profile.total_manga;
+				contentName = "作品";
+			}else
+			{
+				works = user.bookmarks;
+				total = uInfo.profile.total_illust_bookmarks_public;
+				contentName = "收藏";
+			}
 			if (works.done)
 			{
+				console.log(works);
+				//返回所有动图
+				var ugoiras = works.item.filter(function(item){
+						return item.type == "ugoira";
+					})
+				if (ugoiras.some(function(item){
+					return item.ugoira_metadata == undefined;
+				})>0)
+				{
+					dlg.log("共存在 " + ugoiras.length + " 件动图");
+					analyseUgoira(works,ugoiras,function(){ //开始分析动图
+						analyseWorks(user,contentType,apiurl) //开始获取下一页
+					});
+					return;
+				}
+				//没有动图则继续
+				if (works.item.length<total)
+					dlg.log("可能因为权限原因，无法获取到所有 " + contentName);
 				dlg.log(contentName + " 共 " + works.item.length + " 件已获取完毕，可以开始下载。");
 				dlg.progress.set(1);
 				works.runing = false;
+				works.next_url = "";
 				dlg.startdown.disabled = false;
 				return;
 			}
@@ -1790,130 +1907,112 @@ function buildDlgDownThis(touch,userid)
 				return;
 			}
 
-			GM_xmlhttpRequest({
-				url: "https://public-api.secure.pixiv.net/v1/users/" + user.info.id + "/" + (contentType?"favorite_works":"works") + ".json?image_sizes=large&include_stats=true&publicity=public&profile_image_sizes=px_170x170&per_page="+per_page+"&include_sanity_level=true&page=" + page,
-				method:"get",
-				responseType:"text",
-				headers: {
-					"Referer": "http://spapi.pixiv.net/",
-					"Authorization":"Bearer " + GM_getValue("pubd-token"),
-					"User-Agent": "PixivIOSApp/6.0.9 (iOS 9.3.3; iPhone8,1)",
-					"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
-				},
-				onload: function(response) {
-					var jo = JSON.parse(response.response)
-					if (jo)
+			xhrGenneral(
+				apiurl,
+				function(jore){//onload_suceess_Cb
+					works.runing = true;
+					var illusts = jore.illusts;
+					for (var ii=0,ii_len=illusts.length;ii<ii_len;ii++)
 					{
-						console.warn(contentName + " 第 " + page + " 页查询的Ajax返回",jo);
-						if (jo.has_error || jo.status=="failure")
-						{
-							dlg.log("返回错误代码：" + jo.errors.system.code);
-							dlg.log(jo.errors.system.message);
-							if (jo.errors.system.message == "404")
-							{
-								dlg.log("可能因为用户权限原因，无法获取到所有" + contentName + " ，结束获取");
-								works.done = true;
-							}
-							works.runing = false;
-						}else //if(jo.status=="success")
-						{
-							dlg.log(contentName + " 第 " + page + "/" + jo.pagination.pages + " 页信息获取成功");
-							var jore = jo.response;
-							var pageitems = new Array();
-							for (var ri = 0,ril=jore.length;ri<ril;ri++)
-							{
-								var item = contentType?jore[ri].work:jore[ri];
-								pageitems.push(item);
-								works.item.push(item);
-							}
-							//返回是否存在动图
-							var ugoiras = pageitems.filter(function(item){
-									return item.type == "ugoira";
-								})
-							if (page >= jo.pagination.pages || !jo.pagination.next)
-								works.done = true;
-							if (ugoiras.length>0)
-							{
-								dlg.log(" 该页存在 " + ugoiras.length + " 件动图");
-								analyseUgoira(ugoiras,
-									function(){ //这一段与下方一样
-										dlg.progress.set(page/jo.pagination.pages,1);
-										analyseWorks(user,contentType,per_page,page+1);
-									}
-								); //调用动图获取
-							}else
-							{
-								dlg.progress.set(page/jo.pagination.pages,1);
-								analyseWorks(user,contentType,per_page,page+1); //递归调用自身
-							}
+						var work = illusts[ii];
+						var original;
+						if (work.page_count>1)
+						{/*漫画多图*/
+							original = work.meta_pages[0].image_urls.original;
+						}else
+						{/*单张图片或动图，含漫画单图*/
+							original = work.meta_single_page.original_image_url;
 						}
-					}else
-					{
-						console.warn(response);
-						dlg.log("获取到的不是JSON数据，返回内容已发送到控制台。");
-						works.runing = false;
+						//然后添加扩展名等
+						if (work.restrict>0)//非公共权限
+							dlg.log(contentName + " " + work.id + " 非公共权限，可能无法正常下载");
+						
+						works.item.push(work);
 					}
+					dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
+					dlg.progress.set(works.item.length/total); //设置当前下载进度
+					if (jore.next_url)
+					{//还有下一页
+						works.next_url = jore.next_url;
+					}else
+					{//没有下一页
+						works.done = true;
+					}
+					analyseWorks(user,contentType,jore.next_url); //开始获取下一页
 				},
-				onerror: function(response) {
-					console.warn(response);
-					dlg.log("AJAX访问失败，返回内容已发送到控制台。");
+				function(jore){//onload_haserror_Cb //返回错误消息
+					dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+					works.runing = false;
+				},
+				function(re){//onload_notjson_Cb //返回不是JSON
+					dlg.log("错误：返回不是JSON，或程序异常");
+					works.runing = false;
+				},
+				function(re){//onerror_Cb //AJAX发送失败
+					dlg.log("错误：AJAX发送失败");
 					works.runing = false;
 				}
-			})
+			)
 		}
 
-		function analyseUgoira(worksItems,callback)
+		function analyseUgoira(works,ugoirasItems,callback)
 		{
-			worksItems = worksItems.filter(function(item){
-					return (item.metadata == undefined && item.type == "ugoira");
+			var dealItems = ugoirasItems.filter(function(item){
+					return (item.ugoira_metadata == undefined && item.type == "ugoira");
 				})
-			if (worksItems.length<1)
+			if (dealItems.length<1)
 			{
-				dlg.log(" 动图获取完毕，开始后续分析");
+				dlg.log("动图获取完毕");
+				dlg.progress.set(1); //设置当前下载进度
 				callback();
 				return;
 			}
+			if (works.break)
+			{
+				dlg.log("检测到中断进程命令");
+				works.break = false;
+				works.runing = false;
+				return;
+			}
 
-			var work = worksItems[0]; //当前处理的图
+			var work = dealItems[0]; //当前处理的图
 
-			GM_xmlhttpRequest({
-				url: "https://public-api.secure.pixiv.net/v1/works/" + work.id + ".json",
-				method:"get",
-				responseType:"text",
-				headers: {
-					"Referer": "http://spapi.pixiv.net/",
-					"Authorization":"Bearer " + GM_getValue("pubd-token"),
-					"User-Agent": "PixivIOSApp/6.0.9 (iOS 9.3.3; iPhone8,1)",
-					"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+			xhrGenneral(
+				"https://app-api.pixiv.net/v1/ugoira/metadata?illust_id=" + work.id,
+				function(jore){//onload_suceess_Cb
+					works.runing = true;
+					var illusts = jore.illusts;
+					work = Object.assign(work,jore);
+					dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
+					dlg.progress.set(1-dealItems.length/ugoirasItems.length); //设置当前下载进度
+					analyseUgoira(works,ugoirasItems,callback); //开始获取下一项
 				},
-				onload: function(response) {
-					var jo = JSON.parse(response.response)
-					if (jo)
-					{
-						console.warn(work.id + " 动图查询的Ajax返回",jo);
-						if (jo.has_error || jo.status=="failure")
-						{
-							dlg.log("返回错误代码：" + jo.errors.system.code);
-							dlg.log(jo.errors.system.message);
-						}else //if(jo.status=="success")
-						{
-							work.metadata = jo.response[0].metadata; //获取到的数据储存到原来空缺的地方
-							dlg.log(" 动图 " + work.id + " 有 " + work.metadata.frames.length + " 帧");
-							//dlg.progress.set(dlg.progress.scale + 0.01); //如果需要增加进度条就需要增加参数，没必要
+				function(jore){//onload_haserror_Cb //返回错误消息
+					dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+					if (work.restrict>0)//非公共权限
+					{//添加一条空信息
+						work.ugoira_metadata = {
+							frames:[
 
-							analyseUgoira(worksItems,callback); //递归调用自身
-						}
-					}else
-					{
-						console.warn(response);
-						dlg.log("获取到的不是JSON数据，返回内容已发送到控制台。");
+							],
+							zip_urls:{
+								medium:"",
+							},
+						};
+						dlg.log("跳过本条，获取下一条");
+						analyseUgoira(works,ugoirasItems,callback); //开始获取下一项
 					}
+					works.runing = false;
 				},
-				onerror: function(response) {
-					console.warn(response);
-					dlg.log("AJAX访问失败，返回内容已发送到控制台。");
+				function(re){//onload_notjson_Cb //返回不是JSON
+					dlg.log("错误：返回不是JSON，或程序异常");
+					works.runing = false;
+				},
+				function(re){//onerror_Cb //AJAX发送失败
+					dlg.log("错误：AJAX发送失败");
+					works.runing = false;
 				}
-			})
+			)
 		}
 	}
 
@@ -1928,7 +2027,7 @@ function buildDlgDownThis(touch,userid)
 		
 		dlg.dcType[dcType].checked = true;
 		if (GM_getValue("pubd-autoanalyse"))
-			dlg.analyse(dcType,dlg.uid.value);
+			dlg.analyse(dcType,dlg.uinfo.userid);
 	};
 
 	return dlg;
@@ -1939,7 +2038,7 @@ function startBuild(touch,loggedIn)
 {
 	if (touch) //手机版
 	{
-		alert("暂不支持手机版");
+		alert("PUBD暂不支持手机版");
 	}else
 	{
 		var btnStartInsertPlace = document.getElementsByClassName("user-relation")[0];
@@ -1968,7 +2067,7 @@ function startBuild(touch,loggedIn)
 		pubd.auth = new Auth();
 		try{
 			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
-			pubd.auth.response.access_token = "";
+			//pubd.auth.response.access_token = "";
 		}catch(e){
 			console.error("脚本初始化，读取登录信息失败",e);
 		}

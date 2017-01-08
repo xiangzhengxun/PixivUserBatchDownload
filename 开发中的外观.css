@@ -303,7 +303,7 @@
     position: absolute;
     top:0;
     left:0;
-    transition: width 0.5s ease-in-out;
+    transition: width 0.2s ease-in-out;
   }
   .pubd-progress-right .pubd-progress-bar
   {/*进度条*/
@@ -337,6 +337,88 @@
     position: absolute;
     padding-left: 2px;
     padding-right: 4px;
+  }
+  .pubd-user-info
+  {/*一个用户信息框*/
+    width: 350px;
+    height: 50px;
+    background-color: white;
+    border: 1px #888 solid;
+    border-radius: 5px;
+    padding: 5px;
+  }
+  .pubd-user-info .pubd-user-info-head
+  {/*用户信息框头像*/
+    width:50px;
+    height:50px;
+    line-height: 50px;
+    display: inline-block;
+    top:0;
+    margin: 0;
+    padding: 0;
+    vertical-align:top;
+  }
+  .pubd-user-info .pubd-user-info-head img
+  {/*用户信息框头像图片*/
+    max-width:50px;
+    max-height:50px;
+  }
+  .pubd-user-info-dl
+  {/*用户信息框文字列表区域*/
+    height:50px;
+    line-height: 25px;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    width : calc(100% - 50px);
+  }
+  .pubd-user-info-dl dt
+  {/*用户信息框文字标题*/
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    left:0;
+    position:relative;
+    width : 40px;
+    height: 25px;
+    line-height: 25px;
+    vertical-align:top;
+    text-align: right;
+  }
+  .pubd-user-info-dl dt::after
+  {/*用户信息框文字标题-冒号*/
+    content: "：";
+  }
+  .pubd-user-info-dl dd
+  {/*用户信息框文字内容*/
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    left:0;
+    position:relative;
+    width : calc(50% - 40px);
+    height: 25px;
+    line-height: 25px;
+    vertical-align:top;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pubd-user-info-dl .pubd-user-info-id-dt,.pubd-user-info-dl .pubd-user-info-name-dt
+  {/*用户信息前两个标题*/
+    width : 40px;
+  }
+  .pubd-user-info-dl .pubd-user-info-illusts-dt,.pubd-user-info-dl .pubd-user-info-bookmarks-dt
+  {/*用户信息后两个标题*/
+    width : 75px;
+  }
+  .pubd-user-info-dl .pubd-user-info-id-dd,.pubd-user-info-dl .pubd-user-info-name-dd
+  {/*用户信息前两个内容*/
+    width : calc(100% - 160px);
+  }
+  .pubd-user-info-dl .pubd-user-info-illusts-dd,.pubd-user-info-dl .pubd-user-info-bookmarks-dd
+  {/*用户信息后两个内容*/
+    width : 45px;
   }
   /*▼选项对话框相关*/
   .pubd-config
@@ -550,7 +632,7 @@
   {/*下载日志*/
     min-width: 100px;
     min-height: 40px;
-    width : 300px;
+    width : calc(100% - 10px);
     height : 100px;
   }
   .pubd-downthis .pubd-startdown
