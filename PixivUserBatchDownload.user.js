@@ -1220,7 +1220,7 @@ function buildDlgConfig(touch)
 			dlg.downScheme.add(item.name,index);
 		})
 		if (dlg.downScheme.options.length > 0)
-			dlg.downScheme.selectedIndex = 0;
+			selectScheme(0);
 	}
 	dlg.loadScheme = function(scheme)
 	{
@@ -1237,6 +1237,14 @@ function buildDlgConfig(touch)
 			dlg.masklist.add(text,index);
 		})
 	}
+	//选择一个方案，同时读取设置
+	function selectScheme(index)
+	{
+		if (dlg.downScheme.options.length<1 || dlg.downScheme.selectedOptions.length<1){return;}
+		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+		dlg.loadScheme(scheme);
+		dlg.downScheme.selectedIndex = index;
+	}
 	//配置方案选择
 	var dt=document.createElement("dt");
 	dt.innerHTML = "选择下载方案";
@@ -1245,9 +1253,7 @@ function buildDlgConfig(touch)
 	var slt = new Select("pubd-downscheme");
 	slt.onchange = function()
 	{
-		if (this.options.length<1 || this.selectedOptions.length<1){return;}
-		var scheme = dlg.schemes[this.selectedIndex];
-		dlg.loadScheme(scheme);
+		selectScheme(this.selectedIndex);
 	};
 	dlg.downScheme = slt;
 	dd.appendChild(slt);
@@ -1478,6 +1484,7 @@ function buildDlgConfig(touch)
 			dlg.token_info.classList.add("height-none");
 		}
 		dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
+		dlg.reloadSchemes();
 		dlg.autoanalyse.checked = GM_getValue("pubd-autoanalyse");
 		dlg.autodownload.checked = GM_getValue("pubd-autodownload");
 		//ipt_token.value = pubd.auth.response.access_token;
@@ -2102,11 +2109,14 @@ function NewDownSchemeArrayFromJson(jsonarr)
 		}
 	}
 	var sarr = new Array();
-	for (var si = 0;si<jsonarr.length;si++)
+	if (jsonarr!=undefined && typeof(jsonarr)=="object")
 	{
-		var scheme = new DownScheme(schemName);
-		scheme.loadFromJson(jsonarr[si]);
-		sarr.push(scheme);
+		for (var si = 0;si<jsonarr.length;si++)
+		{
+			var scheme = new DownScheme();
+			scheme.loadFromJson(jsonarr[si]);
+			sarr.push(scheme);
+		}
 	}
 	return sarr;
 }
