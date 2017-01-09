@@ -101,7 +101,7 @@
   }
   .pubd-menu-includesub:hover>.pubd-menu-submenu
   {/*让子菜单鼠标悬停显示*/
-    display:block;
+    display:block !important;;
   }
   .pubd-menu-submenu
   {/*子菜单*/
@@ -623,10 +623,19 @@
   {/*下载内容单选框*/
     width: 50%;
   }
-  .pubd-downthis .pubd-downthis-downbar
-  {
-    text-align: center;
-    margin-top: 5px;
+  .pubd-downthis dt
+  {/*中断按钮*/
+    position: relative;
+  }
+  .pubd-downthis .pubd-breakdown
+  {/*中断按钮*/
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding: 0;
+    height: 22px;
+    line-height: 12px;
+    font-size:12px;
   }
   .pubd-downthis .pubd-downthis-log
   {/*下载日志*/

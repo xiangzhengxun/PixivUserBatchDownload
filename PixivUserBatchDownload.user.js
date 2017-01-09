@@ -253,16 +253,6 @@ var UserInfo = function()
 	}
 	return obj;
 }
-//一个自定义掩码
-var CustomMask = function(name,logic,content)
-{
-	var obj = {
-		name:name?name:"",
-		logic:logic?logic:"",
-		content:content?content:"",
-	}
-	return obj;
-}
 
 //一个Post数据
 var PostDataObject = (function () {
@@ -423,6 +413,16 @@ var Auth = (function () {
 
 //一个下载方案
 var DownScheme = (function () {
+	//一个自定义掩码
+	var CustomMask = function(name,logic,content)
+	{
+		var obj = {
+			name:name?name:"",
+			logic:logic?logic:"",
+			content:content?content:"",
+		}
+		return obj;
+	}
 
 	return function(name)
 	{
@@ -443,10 +443,10 @@ var DownScheme = (function () {
 				},
 			},
 		}
-		obj.masklist.push(new CustomMask("debug1","2","3"));
-		obj.masklist.push(new CustomMask("debug2","3","4"));
-		obj.masklist.push(new CustomMask("debug3","4","5"));
-		obj.load = function(json)
+		obj.mask.add("debug1","2","3");
+		obj.mask.add("debug2","3","4");
+		obj.mask.add("debug3","4","5");
+		obj.loadFromJson = function(json)
 		{
 			if (typeof(json) == "string")
 			{
@@ -459,11 +459,14 @@ var DownScheme = (function () {
 					return false;
 				}
 			}
+			obj = Object.assign(obj, json);
+			/*
 			if (json.name) this.name = json.name;
 			if (json.rpcurl) this.rpcurl = json.rpcurl;
 			if (json.savedir) this.savedir = json.savedir;
 			if (json.savepath) this.savepath = json.savepath;
-			if (json.masklist) this.masklist = json.masklist;
+			*/
+			if (json.masklist) obj.masklist = JSON.parse(JSON.stringify(json.masklist));
 			return true;
 		}
 		return obj;
@@ -1076,8 +1079,8 @@ function buildbtnMenu(touch)
 		menu.add("Debug2","",null,menu4);
 		menu.add("Debug1","",null,menu1);
 		menu.add("多个画师下载",null,function()
-				{
-					alert("做成“声音”的设备样子")
+				{//做成“声音”的设备样子
+					alert("这个功能")
 				}
 			);
 		menu.add(0);
@@ -1180,6 +1183,22 @@ function buildDlgConfig(touch)
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
+	//“下载该画师”窗口选项
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+
+	var frm = new Frame("“下载该画师”窗口","pubd-frmdownthis");
+	var chk_autoanalyse = new LabelInput("打开窗口时自动获取","pubd-autoanalyse","pubd-autoanalyse","checkbox","1",true);
+	dlg.autoanalyse = chk_autoanalyse.input;
+	var chk_autodownload = new LabelInput("获取完成后自动下载","pubd-autodownload","pubd-autodownload","checkbox","1",true);
+	dlg.autodownload = chk_autodownload.input;
+
+	frm.content.appendChild(chk_autoanalyse);
+	frm.content.appendChild(chk_autodownload);
+	dd.appendChild(frm);
+	dl.appendChild(dd);
+
 /*
 	//选项卡栏
 	var dt=document.createElement("dt");
@@ -1193,7 +1212,7 @@ function buildDlgConfig(touch)
 	dl.appendChild(dd);
 */
 	//配置方案储存
-	dlg.schemes = pubd.downSchemes;
+	dlg.schemes = JSON.parse(JSON.stringify(pubd.downSchemes));
 	dlg.reloadSchemes = function()
 	{
 		dlg.downScheme.options.length = 0;
@@ -1406,8 +1425,7 @@ function buildDlgConfig(touch)
 	ipt.value = "重置"
 	ipt.onclick = function()
 	{
-		spawnNotification("设置已重置", scriptIcon, scriptName);
-		GM_deleteValue("pubd-auth"); //登陆相关信息
+		dlg.reset();
 	}
 	dd.appendChild(ipt);
 	var ipt = document.createElement("input");
@@ -1416,13 +1434,31 @@ function buildDlgConfig(touch)
 	ipt.value = "保存设置"
 	ipt.onclick = function()
 	{
-		spawnNotification("设置已保存", scriptIcon, scriptName);
-		pubd.auth.needlogin = dlg.needlogin.checked;
-		pubd.auth.save();
+		dlg.save();
 	}
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
+	//保存设置函数
+	dlg.save = function()
+	{
+		spawnNotification("设置已保存", scriptIcon, scriptName);
+		pubd.auth.needlogin = dlg.needlogin.checked;
+		pubd.auth.save();
+		GM_setValue("pubd-autoanalyse",dlg.autoanalyse.checked); //自动分析
+		GM_setValue("pubd-autodownload",dlg.autodownload.checked); //自动下载
+		var schemesStr = JSON.stringify(dlg.schemes);
+		GM_setValue("pubd-downschemes",schemesStr); //下载方案
+		pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
+	}
+	//重置设置函数
+	dlg.reset = function()
+	{
+		spawnNotification("设置已重置", scriptIcon, scriptName);
+		GM_deleteValue("pubd-auth"); //登陆相关信息
+		GM_deleteValue("pubd-autoanalyse");
+		GM_deleteValue("pubd-autodownload");
+	}
 	//窗口关闭
 	dlg.close = function(){
 		dlg.stop_token_animate();
@@ -1441,6 +1477,9 @@ function buildDlgConfig(touch)
 		{
 			dlg.token_info.classList.add("height-none");
 		}
+		dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
+		dlg.autoanalyse.checked = GM_getValue("pubd-autoanalyse");
+		dlg.autodownload.checked = GM_getValue("pubd-autodownload");
 		//ipt_token.value = pubd.auth.response.access_token;
 	};
 	return dlg;
@@ -1643,6 +1682,17 @@ function buildDlgDownThis(touch,userid)
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
 	dt.innerHTML = "进程日志"
+	
+	var btnBreak = document.createElement("input");
+	btnBreak.type = "button";
+	btnBreak.className = "pubd-breakdown";
+	btnBreak.value = "中断操作";
+	btnBreak.onclick = function()
+	{
+		dlg.user.illusts.break = true; //使作品中断
+		dlg.user.bookmarks.break = true; //使收藏中断
+	}
+	dt.appendChild(btnBreak);
 	var dd=document.createElement("dd");
 	var ipt = document.createElement("textarea");
 	ipt.readOnly = true;
@@ -1897,6 +1947,10 @@ function buildDlgDownThis(touch,userid)
 				works.runing = false;
 				works.next_url = "";
 				dlg.startdown.disabled = false;
+				if (GM_getValue("pubd-autodownload"))
+				{
+					dlg.startdown.click();
+				}
 				return;
 			}
 			if (works.break)
@@ -2032,7 +2086,30 @@ function buildDlgDownThis(touch,userid)
 
 	return dlg;
 }
-
+//为了区分设置窗口和保存的设置，产生一个新的下载方案数组
+function NewDownSchemeArrayFromJson(jsonarr)
+{
+	
+	if (typeof(jsonarr) == "string")
+	{
+		try
+		{
+			var jsonarr = JSON.parse(jsonarr);
+		}catch(e)
+		{
+			console.error("创新新的一个下载方案数组时失败",e);
+			return false;
+		}
+	}
+	var sarr = new Array();
+	for (var si = 0;si<jsonarr.length;si++)
+	{
+		var scheme = new DownScheme(schemName);
+		scheme.loadFromJson(jsonarr[si]);
+		sarr.push(scheme);
+	}
+	return sarr;
+}
 //开始构建UI
 function startBuild(touch,loggedIn)
 {
@@ -2041,6 +2118,15 @@ function startBuild(touch,loggedIn)
 		alert("PUBD暂不支持手机版");
 	}else
 	{
+		pubd.auth = new Auth();
+		try{
+			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
+			//pubd.auth.response.access_token = "";
+		}catch(e){
+			console.error("脚本初始化时，读取登录信息失败",e);
+		}
+		pubd.downSchemes = NewDownSchemeArrayFromJson(GM_getValue("pubd-downschemes"));
+
 		var btnStartInsertPlace = document.getElementsByClassName("user-relation")[0];
 		if (!btnStartInsertPlace) btnStartInsertPlace = document.getElementsByClassName("badges")[0]; //自己的页面
 		var btnStartBox = document.createElement("li");
@@ -2064,13 +2150,6 @@ function startBuild(touch,loggedIn)
 		pubd.dialog.downthis = buildDlgDownThis(touch);
 		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
 
-		pubd.auth = new Auth();
-		try{
-			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
-			//pubd.auth.response.access_token = "";
-		}catch(e){
-			console.error("脚本初始化，读取登录信息失败",e);
-		}
 	}
 }
 
