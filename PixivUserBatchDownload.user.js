@@ -444,34 +444,34 @@ var DownScheme = (function () {
 					obj.masklist.splice(index, 1);
 				},
 			},
+			loadFromJson:function(json)
+			{
+				if (typeof(json) == "string")
+				{
+					try
+					{
+						var json = JSON.parse(json);
+					}catch(e)
+					{
+						console.error(e);
+						return false;
+					}
+				}
+				/*
+				obj = Object.assign(obj, json);
+				delete json.mask;
+				*/
+				if (json.name) this.name = json.name;
+				if (json.rpcurl) this.rpcurl = json.rpcurl;
+				if (json.savedir) this.savedir = json.savedir;
+				if (json.savepath) this.savepath = json.savepath;
+				if (json.masklist) obj.masklist = JSON.parse(JSON.stringify(json.masklist));
+				return true;
+			},
 		}
 		obj.mask.add("debug1","2","3");
 		obj.mask.add("debug2","3","4");
 		obj.mask.add("debug3","4","5");
-		obj.loadFromJson = function(json)
-		{
-			if (typeof(json) == "string")
-			{
-				try
-				{
-					var json = JSON.parse(json);
-				}catch(e)
-				{
-					console.error(e);
-					return false;
-				}
-			}
-			/*
-			obj = Object.assign(obj, json);
-			delete json.mask;
-			*/
-			if (json.name) this.name = json.name;
-			if (json.rpcurl) this.rpcurl = json.rpcurl;
-			if (json.savedir) this.savedir = json.savedir;
-			if (json.savepath) this.savepath = json.savepath;
-			if (json.masklist) obj.masklist = JSON.parse(JSON.stringify(json.masklist));
-			return true;
-		}
 		return obj;
 	};
 })();
@@ -1148,6 +1148,7 @@ function buildDlgConfig(touch)
 		//if (!dlg.classList.contains("display-none"))
 		//{
 			dlg.stop_token_animate();
+			requestAnimationFrame(token_animate);
 			dlg.token_ani = setInterval(function () {requestAnimationFrame(token_animate)}, 1000);
 		//}
 	}
