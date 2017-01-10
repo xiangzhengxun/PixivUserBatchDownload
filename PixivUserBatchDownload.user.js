@@ -38,6 +38,8 @@ var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? 
 var scriptVersion = typeof(GM_info)!="undefined" ? GM_info.script.version : "LocalDebug"; //本程序的版本
 var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
 
+var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(?:-([0-9a-zA-Z]+))?(?:(?:_p|_ugoira)\\d+)?)(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
+
 /*
  * 获取初始状态
 */
@@ -459,13 +461,14 @@ var DownScheme = (function () {
 					return false;
 				}
 			}
-			obj = Object.assign(obj, json);
 			/*
+			obj = Object.assign(obj, json);
+			delete json.mask;
+			*/
 			if (json.name) this.name = json.name;
 			if (json.rpcurl) this.rpcurl = json.rpcurl;
 			if (json.savedir) this.savedir = json.savedir;
 			if (json.savepath) this.savepath = json.savepath;
-			*/
 			if (json.masklist) obj.masklist = JSON.parse(JSON.stringify(json.masklist));
 			return true;
 		}
@@ -1212,38 +1215,71 @@ function buildDlgConfig(touch)
 	dl.appendChild(dd);
 */
 	//配置方案储存
-	dlg.schemes = JSON.parse(JSON.stringify(pubd.downSchemes));
+	dlg.schemes = null;
 	dlg.reloadSchemes = function()
-	{
+	{//重新读取所有下载方案
 		dlg.downScheme.options.length = 0;
 		dlg.schemes.forEach(function(item,index){
 			dlg.downScheme.add(item.name,index);
 		})
 		if (dlg.downScheme.options.length > 0)
-			selectScheme(0);
+			dlg.selectScheme(0);
 	}
 	dlg.loadScheme = function(scheme)
-	{
-		this.rpcurl.value = scheme.rpcurl;
-		this.savedir.value = scheme.savedir;
-		this.savepath.value = scheme.savepath;
-		this.masklist = this.loadMasklist(scheme.masklist);
+	{//读取一个下载方案
+		if (scheme == undefined)
+		{
+			dlg.rpcurl.value = "";
+			dlg.savedir.value = "";
+			dlg.savepath.value = "";
+			dlg.loadMasklistFromArray([]);
+		}else
+		{
+			dlg.rpcurl.value = scheme.rpcurl;
+			dlg.savedir.value = scheme.savedir;
+			dlg.savepath.value = scheme.savepath;
+			dlg.loadMasklistFromArray(scheme.masklist);
+		}
 	}
-	dlg.loadMasklist = function(masklist)
-	{
-		this.masklist.length = 0;
+	dlg.addMask = function(name,logic,content,value)
+	{//向掩码列表添加一个新的掩码
+		if (value == undefined)
+			value = dlg.masklist.options.length;
+		var text = name + " : " + logic + " : " + content;
+		var opt = new Option(text, value);
+		dlg.masklist.options.add(opt);
+	}
+	dlg.loadMask = function(mask)
+	{//读取一个掩码到三个文本框，只是用来查看
+		dlg.mask_name.value = mask.name;
+		dlg.mask_logic.value = mask.logic;
+		dlg.mask_content.value = mask.content;
+	}
+	dlg.loadMasklistFromArray = function(masklist)
+	{//从掩码数组重置掩码列表
+		dlg.masklist.length = 0;
 		masklist.forEach(function(item,index){
-			var text = item.name + " : " + item.logic + " : " + item.content;
-			dlg.masklist.add(text,index);
+			dlg.addMask(item.name,item.logic,item.content,index);
 		})
 	}
 	//选择一个方案，同时读取设置
-	function selectScheme(index)
+	dlg.selectScheme = function(index)
 	{
+		if (index == undefined) index=0;
 		if (dlg.downScheme.options.length<1 || dlg.downScheme.selectedOptions.length<1){return;}
-		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+		var scheme = dlg.schemes[index];
 		dlg.loadScheme(scheme);
 		dlg.downScheme.selectedIndex = index;
+	}
+	//选择一个掩码，同时读取设置
+	dlg.selectMask = function(index)
+	{
+		if (dlg.downScheme.options.length<1 || dlg.downScheme.selectedOptions.length<1){return;}
+		if (dlg.masklist.options.length<1 || dlg.masklist.selectedOptions.length<1){return;}		
+		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+		var mask = scheme.masklist[index];
+		dlg.loadMask(mask);
+		dlg.masklist.selectedIndex = index;
 	}
 	//配置方案选择
 	var dt=document.createElement("dt");
@@ -1253,7 +1289,7 @@ function buildDlgConfig(touch)
 	var slt = new Select("pubd-downscheme");
 	slt.onchange = function()
 	{
-		selectScheme(this.selectedIndex);
+		dlg.selectScheme(this.selectedIndex);
 	};
 	dlg.downScheme = slt;
 	dd.appendChild(slt);
@@ -1288,8 +1324,7 @@ function buildDlgConfig(touch)
 		dlg.downScheme.remove(index);
 		var index = dlg.downScheme.selectedIndex;
 		if (index<0) dlg.reloadSchemes();//没有选中的，重置
-		dlg.loadScheme(dlg.schemes[index]);
-		
+		else dlg.loadScheme(dlg.schemes[index]);
 	}
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
@@ -1315,6 +1350,9 @@ function buildDlgConfig(touch)
 	{
 		dlg.rpcchk.innerHTML = "";
 		dlg.rpcchk.runing = false;
+		if (dlg.downScheme.selectedOptions.length < 1){return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].rpcurl = rpcurl.value;
 	}
 	dlg.rpcurl = rpcurl;
 	dd.appendChild(rpcurl);
@@ -1351,11 +1389,17 @@ function buildDlgConfig(touch)
 	dt.innerHTML = "下载目录"
 	var dd=document.createElement("dd");
 	var savedir = document.createElement("input");
-	savedir.type = "text";
+	savedir.type = "url";
 	savedir.className = "pubd-savedir";
 	savedir.name = "pubd-savedir";
 	savedir.id = savedir.name;
 	savedir.placeholder = "文件下载到的目录"
+	savedir.onchange =  function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].savedir = savedir.value;
+	}
 	dlg.savedir = savedir;
 	dd.appendChild(savedir);
 	dl.appendChild(dd);
@@ -1371,6 +1415,12 @@ function buildDlgConfig(touch)
 	savepath.name = "pubd-savedir";
 	savepath.id = savepath.name;
 	savepath.placeholder = "分组保存的文件夹和文件名"
+	savepath.onchange =  function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].savepath = savepath.value;
+	}
 	dlg.savepath = savepath;
 	dd.appendChild(savepath);
 	dl.appendChild(dd);
@@ -1381,43 +1431,82 @@ function buildDlgConfig(touch)
 	dt.innerHTML = "自定义掩码"
 	var dd=document.createElement("dd");
 	dl.appendChild(dd);
+	//▼掩码名
 	var ipt = document.createElement("input");
 	ipt.type = "text";
-	ipt.className = "pubd-mask-id";
-	ipt.name = "pubd-mask-id";
+	ipt.className = "pubd-mask-name";
+	ipt.name = "pubd-mask-name";
 	ipt.id = ipt.name;
-	ipt.placeholder = "自定义掩码名"
+	ipt.placeholder = "自定义掩码名";
+	dlg.mask_name = ipt;
 	dd.appendChild(ipt);
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "pubd-mask-content";
-	ipt.name = "pubd-mask-content";
-	ipt.id = ipt.name;
-	ipt.placeholder = "掩码内容"
-	dd.appendChild(ipt);
-	var ipt = document.createElement("input");
-	ipt.type = "button";
-	ipt.className = "pubd-mask-add";
-	ipt.value = "+"
-	dd.appendChild(ipt);
-	var ipt = document.createElement("input");
-	ipt.type = "button";
-	ipt.className = "pubd-mask-remove";
-	ipt.value = "-"
-	dd.appendChild(ipt);
+	//▲掩码名
+	//▼执行条件
 	var ipt = document.createElement("input");
 	ipt.type = "text";
 	ipt.className = "pubd-mask-logic";
 	ipt.name = "pubd-mask-logic";
 	ipt.id = ipt.name;
-	ipt.placeholder = "执行条件"
+	ipt.placeholder = "执行条件";
+	dlg.mask_logic = ipt;
 	dd.appendChild(ipt);
+	//▲执行条件
+	var ipt = document.createElement("input");
+	ipt.type = "button";
+	ipt.className = "pubd-mask-add";
+	ipt.value = "+";
+	ipt.onclick = function()
+	{//增加自定义掩码
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中下载方案");return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].mask.add(dlg.mask_name.value,dlg.mask_logic.value,dlg.mask_content.value);
+		dlg.addMask(dlg.mask_name.value,dlg.mask_logic.value,dlg.mask_content.value);
+		dlg.mask_name.value = dlg.mask_logic.value = dlg.mask_content.value = "";
+	}
+	dd.appendChild(ipt);
+	var mask_remove = document.createElement("input");
+	mask_remove.type = "button";
+	mask_remove.className = "pubd-mask-remove";
+	mask_remove.value = "-";
+	mask_remove.onclick = function()
+	{//删除自定义掩码
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中下载方案");return;}
+		if (dlg.masklist.options.length < 1){alert("已经没有掩码了");return;}
+		if (dlg.masklist.selectedOptions.length < 1){alert("没有选中掩码");return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		var maskIndex = dlg.masklist.selectedIndex;
+		dlg.schemes[schemeIndex].mask.remove(maskIndex);
+		dlg.masklist.remove(maskIndex);
+		for (var mi=maskIndex;mi<dlg.masklist.options.length;mi++)
+		{
+			dlg.masklist.options[mi].value = mi;
+		}
+	}
+	dd.appendChild(mask_remove);
 
+	//▼掩码内容
+	var ipt = document.createElement("input");
+	ipt.type = "text";
+	ipt.className = "pubd-mask-content";
+	ipt.name = "pubd-mask-content";
+	ipt.id = ipt.name;
+	ipt.placeholder = "掩码内容";
+	dlg.mask_content = ipt;
+	dd.appendChild(ipt);
+	//▲掩码内容
+	dl.appendChild(dd);
+	
+	//▼掩码列表
 	var dd=document.createElement("dd");
 	var masklist = new Select("pubd-mask-list")
 	masklist.size = 5;
+	masklist.onchange = function()
+	{//读取选中的掩码
+		dlg.selectMask(this.selectedIndex);
+	}
 	dlg.masklist = masklist;
 	dd.appendChild(masklist);
+	//▲掩码列表
 	dl.appendChild(dd);
 
 	//保存按钮栏
@@ -1455,6 +1544,7 @@ function buildDlgConfig(touch)
 		GM_setValue("pubd-autodownload",dlg.autodownload.checked); //自动下载
 		var schemesStr = JSON.stringify(dlg.schemes);
 		GM_setValue("pubd-downschemes",schemesStr); //下载方案
+		GM_setValue("pubd-defaultscheme",dlg.downScheme.selectedIndex); //默认方案
 		pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
 	}
 	//重置设置函数
@@ -1462,8 +1552,10 @@ function buildDlgConfig(touch)
 	{
 		spawnNotification("设置已重置", scriptIcon, scriptName);
 		GM_deleteValue("pubd-auth"); //登陆相关信息
-		GM_deleteValue("pubd-autoanalyse");
-		GM_deleteValue("pubd-autodownload");
+		GM_deleteValue("pubd-autoanalyse"); //自动分析
+		GM_deleteValue("pubd-autodownload"); //自动下载
+		GM_deleteValue("pubd-downschemes"); //下载方案
+		GM_deleteValue("pubd-defaultscheme");//默认方案
 	}
 	//窗口关闭
 	dlg.close = function(){
@@ -1483,10 +1575,12 @@ function buildDlgConfig(touch)
 		{
 			dlg.token_info.classList.add("height-none");
 		}
-		dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
-		dlg.reloadSchemes();
 		dlg.autoanalyse.checked = GM_getValue("pubd-autoanalyse");
 		dlg.autodownload.checked = GM_getValue("pubd-autodownload");
+
+		dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
+		dlg.reloadSchemes();
+		dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
 		//ipt_token.value = pubd.auth.response.access_token;
 	};
 	return dlg;
@@ -1566,7 +1660,6 @@ function buildDlgLogin(touch)
 			function(jore){//onload_suceess_Cb
 				dlg.error.replace("登陆成功");
 				pubd.dialog.config.start_token_animate();
-				//pubd.dialog.config.token.value = jore.response.access_token;
 			},
 			function(jore){//onload_haserror_Cb //返回错误消息
 				dlg.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
@@ -1709,6 +1802,27 @@ function buildDlgDownThis(touch,userid)
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
+	//下载方案
+	dlg.schemes = null;
+	
+	dlg.reloadSchemes = function()
+	{//重新读取所有下载方案
+		dlg.downScheme.options.length = 0;
+		dlg.schemes.forEach(function(item,index){
+			dlg.downScheme.add(item.name,index);
+		})
+		if (dlg.downScheme.options.length > 0)
+			dlg.selectScheme(0);
+	}
+	
+	//选择一个方案，同时读取设置
+	dlg.selectScheme = function(index)
+	{
+		if (index == undefined) index=0;
+		if (dlg.downScheme.options.length<1 || dlg.downScheme.selectedOptions.length<1){return;}
+		dlg.downScheme.selectedIndex = index;
+	}
+
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
 	dt.innerHTML = "选择下载方案"
@@ -1730,7 +1844,7 @@ function buildDlgDownThis(touch,userid)
 	startdown.value = "开始下载";
 	startdown.onclick = function()
 	{
-		alert("开始下载");
+		dlg.startdownload();
 	}
 	startdown.disabled = true;
 	dlg.startdown = startdown;
@@ -1931,7 +2045,6 @@ function buildDlgDownThis(touch,userid)
 			}
 			if (works.done)
 			{
-				console.log(works);
 				//返回所有动图
 				var ugoiras = works.item.filter(function(item){
 						return item.type == "ugoira";
@@ -1955,8 +2068,8 @@ function buildDlgDownThis(touch,userid)
 				works.next_url = "";
 				dlg.startdown.disabled = false;
 				if (GM_getValue("pubd-autodownload"))
-				{
-					dlg.startdown.click();
+				{//自动开始
+					dlg.startdownload();
 				}
 				return;
 			}
@@ -1984,10 +2097,19 @@ function buildDlgDownThis(touch,userid)
 						{/*单张图片或动图，含漫画单图*/
 							original = work.meta_single_page.original_image_url;
 						}
+						var regSrc = new RegExp(illustPattern, "ig");
+						var regRes = regSrc.exec(original);
+						if (regRes)
+						{
+							work.filename = regRes[8];
+							work.token = regRes[10];
+							work.extention = regRes[11];
+						}
+
 						//然后添加扩展名等
 						if (work.restrict>0)//非公共权限
 							dlg.log(contentName + " " + work.id + " 非公共权限，可能无法正常下载");
-						
+
 						works.item.push(work);
 					}
 					dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
@@ -2076,7 +2198,16 @@ function buildDlgDownThis(touch,userid)
 			)
 		}
 	}
-
+	//开始下载按钮
+	dlg.startdownload = function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中方案");return;}
+		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+		var contentType = dlg.dcType[1].checked?1:0;
+		var userInfo = dlg.user.info;
+		var illustsItems = contentType==0?dlg.user.illusts.item:dlg.user.bookmarks.item; //将需要分析的数据储存到works里
+		downloadWork(scheme,userInfo,illustsItems);//调用公用下载窗口
+	}
 	//启动初始化
 	dlg.initialise = function(){
 		//var dcType = (GM_getValue("pubd-down-content") == 1)?1:0;
@@ -2089,6 +2220,10 @@ function buildDlgDownThis(touch,userid)
 		dlg.dcType[dcType].checked = true;
 		if (GM_getValue("pubd-autoanalyse"))
 			dlg.analyse(dcType,dlg.uinfo.userid);
+		
+		dlg.schemes = pubd.downSchemes;
+		dlg.reloadSchemes();
+		dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
 	};
 
 	return dlg;
@@ -2119,6 +2254,77 @@ function NewDownSchemeArrayFromJson(jsonarr)
 		}
 	}
 	return sarr;
+}
+//下载具体内容
+function downloadWork(scheme,userInfo,illustsItems)
+{
+					try
+					{
+	var masklist = scheme.masklist;
+	var works_len = illustsItems.length;
+	var aria2 = new Aria2(scheme.rpcurl);
+
+	for (var ii = 0; ii < works_len; ii++) {
+		var illust = illustsItems[ii];
+		var page_count = illust.page_count;
+		if (illust.type == "ugoira") //动图
+			page_count = illust.ugoira_metadata.frames.length;
+		for (var pi = 0; pi < page_count; pi++)
+		{
+			console.log(illust);
+			/*
+			var ext = ill.extention[pi];
+			for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
+			{
+				if (PUBD_desktop)
+				{
+					dataset.desktop_line += showMask(getConfig("PUBD_desktop_line"), ill, pi);
+					dataset.desktop_line += "\r\n";
+				}
+				var srtObj = {
+					"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
+					"referer": showMask(getConfig("PUBD_referer"), ill, pi),
+				}
+				if(getConfig("PUBD_save_dir").length>0)
+				{
+					srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
+				}
+				aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
+
+				if (PUBD_desktop && !desktopDir && ill.type != 1) //当desktopDir为空，且不为多图则执行。获取desktop应该存放的地点
+				{
+					var dirTmp = srtObj.dir || option.result.dir || "";
+					//获取一个文件的完整路径
+					var fullSavePath = dirTmp + ((dirTmp.lastIndexOf("\\") == (dirTmp.length - 1) || dirTmp.lastIndexOf("/") == (dirTmp.length - 1)) ? "" : "/") + srtObj.out;
+					//只保留最后一个斜杠前的
+					desktopDir = fullSavePath.replace(/^(.+)[\\/]+[^\\/]+/ig, "$1");
+				}
+				//快速模式重新更改扩展名
+				if (download_mod == 1)
+				{
+					switch (dmi)
+					{
+						case 0:
+							ill.extention[pi] = ext == "jpg" ? "png" : "jpg";
+							break;
+						case 1:
+							ill.extention[pi] = ext != "gif" ? "gif" : "png";
+							break;
+						case 2:
+							ill.extention[pi] = ext; //操作完还原
+							break;
+						default:
+					}
+					ill.original_src[pi] = ill.original_src[0].replace(/\.\w+$/, "." + ill.extention[pi]);
+				}
+			}
+			*/
+		}
+	}
+					}catch(e)
+					{
+						console.error(e);
+					}
 }
 //开始构建UI
 function startBuild(touch,loggedIn)

@@ -473,17 +473,17 @@
   {/*下载目录与保存目录*/
     width: calc(100% - 10px);
   }
-  .pubd-config .pubd-mask-id
+  .pubd-config .pubd-mask-name
   {/*自定义掩码-名*/
     width: 100px;
   }
-  .pubd-config .pubd-mask-content
-  {/*自定义掩码-内容*/
+  .pubd-config .pubd-mask-logic
+  {/*自定义掩码-逻辑条件*/
     width: calc(100% - 185px);
     margin-left: 5px;
   }
-  .pubd-config .pubd-mask-logic
-  {/*自定义掩码-逻辑条件*/
+  .pubd-config .pubd-mask-content
+  {/*自定义掩码-内容*/
     width: calc(100% - 10px);
     margin: 3px 0;
   }
