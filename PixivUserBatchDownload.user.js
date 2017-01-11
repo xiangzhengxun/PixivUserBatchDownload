@@ -944,7 +944,6 @@ var Aria2 = (function () {
 
 	function request(jsonrpc_path, method, params, callback, priority) {
 		if (callback==undefined) callback = function(){return;}
-		var xhr = new XMLHttpRequest();
 		var auth = get_auth(jsonrpc_path);
 		jsonrpc_path = jsonrpc_path.replace(/^((?![^:@]+:[^:@\/]*@)[^:\/?#.]+:)?(\/\/)?(?:(?:[^:@]*(?::[^:@]*)?)?@)?(.*)/, '$1$2$3'); // auth string not allowed in url for firefox
 
@@ -967,19 +966,18 @@ var Aria2 = (function () {
 			data:JSON.stringify(request_obj),
 			headers: headers,
 			onload: function(response) {
-				console.log(response);
 				try
 				{
 					var JSONreq = JSON.parse(response.response);
 					callback(JSONreq);
 				}catch(e)
 				{
-					console.error(e);
+					console.error("Aria2发送信息错误",e,response);
 					callback(false);
 				}
 			},
 			onerror: function(response) {
-				console.log(response);
+				console.error(response);
 				callback(false);
 			}
 		})
@@ -987,12 +985,12 @@ var Aria2 = (function () {
 
 	return function (jsonrpc_path) {
 		this.jsonrpc_path = jsonrpc_path;
-		this.addUri = function (uri, options) {
-			request(this.jsonrpc_path, 'aria2.addUri', [[uri, ], options]);
+		this.addUri = function (uri, options, callback) {
+			request(this.jsonrpc_path, 'aria2.addUri', [[uri, ], options], callback);
 		};
-		this.addTorrent = function (base64txt, options)
+		this.addTorrent = function (base64txt, options, callback)
 		{
-			request(this.jsonrpc_path, 'aria2.addTorrent', [base64txt, [], options]);
+			request(this.jsonrpc_path, 'aria2.addTorrent', [base64txt, [], options], callback);
 		};
 		this.getVersion = function (callback) {
 			request(this.jsonrpc_path, 'aria2.getVersion', [], callback, true);
@@ -1913,7 +1911,7 @@ function buildDlgDownThis(touch,userid)
 						}
 					}else
 					{//登陆成功
-						console.info("JSON返回成功",jo);
+						//console.info("JSON返回成功",jo);
 						onload_suceess_Cb(jo);
 					}
 				}catch(e)
@@ -2263,6 +2261,7 @@ function downloadWork(scheme,userInfo,illustsItems)
 	var works_len = illustsItems.length;
 	var aria2 = new Aria2(scheme.rpcurl);
 
+	spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
 	illustsItems.reduce(function (previous, current, index, array)
 	{
 		var page_count = current.page_count;
@@ -2281,10 +2280,11 @@ function downloadWork(scheme,userInfo,illustsItems)
 			{
 				srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, current, pi), true);
 			}
-			console.log(url,srtObj);
+			//console.log(url,srtObj);
 			aria2.addUri(url, srtObj);
 		}
 	},false)
+
 					}catch(e)
 					{
 						console.error(e);
