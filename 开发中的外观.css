@@ -284,11 +284,12 @@
   .pubd-progress
   {/*进度*/
     width: 100%;
-    background-color: white;
-    border: #B2B2B2 solid 1px;
     text-align: center;
     position: relative;
     display:inline-block;
+    background-color: #CDCDCD;
+    border: #8C8C8C solid 1px;
+    box-shadow: 0 0 1px #fff inset, 0px 5px 4px #FFF inset,0px -3px 2px #DDD inset, 0px 0px 4px #000 inset;
   }
   .pubd-progress,.pubd-progress .pubd-progress-bar,.pubd-progress .pubd-progress-text
   {/*进度条三个部分的通用设置*/
@@ -297,17 +298,37 @@
     font-size: 15px;
     border-radius: 3px;
   }
+@keyframes progressMoveOverlay
+{
+  from {background-position-x:calc(0% - 100px),0,0,0;}
+  50% {background-position-x:calc(100% + 100px),0,0,0;}
+  to {background-position-x:calc(100% + 100px),0,0,0;}
+}
   .pubd-progress .pubd-progress-bar
   {/*进度条*/
-    background-color: #0f0;
     position: absolute;
     top:0;
     left:0;
     transition: width 0.2s ease-in-out;
+    background-color: #00D328;
+    background-image:
+      linear-gradient(to right, transparent 0%,RGBA(255,255,255,0.6) 50%, transparent 100%),
+      linear-gradient(to bottom, RGBA(255,255,255,0.8) 0%,RGBA(255,255,255,0.6) 6px,transparent 6px),
+      linear-gradient(to top, RGBA(255,255,255,0.6) 0%,transparent 6px),
+      linear-gradient(to right, transparent 1px, RGBA(100,100,100,0.1) 1px, RGBA(100,100,100,0.3) 5px, RGBA(100,100,100,0.1) 13px, transparent 20px,transparent calc(100% - 20px), RGBA(100,100,100,0.1) calc(100% - 13px),RGBA(100,100,100,0.3) calc(100% - 5px),RGBA(100,100,100,0.1) calc(100% - 1px), transparent calc(100% - 1px))
+      ;
+    background-positon:
+      center center,top left,top left,top left
+      ;
+    background-repeat: no-repeat;
+    background-size:
+      60px 100%,100% 100%,100% 100%,100% 100%;
+      ;
+    background-position-x: 110%,0,0,0;
+    animation: progressMoveOverlay 3s linear infinite;
   }
   .pubd-progress-right .pubd-progress-bar
   {/*进度条*/
-    background-color: #0f0;
     position: absolute;
     left:unset;
     top:0;
