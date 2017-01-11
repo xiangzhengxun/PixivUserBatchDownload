@@ -457,6 +457,11 @@
   {/*token进度条*/
     width: calc(100% - 87px);
   }
+  .pubd-config .pubd-frmdownthis label
+  {/*下载该画师窗口s设置*/
+    width: 50%;
+  }
+  
   .pubd-config .pubd-downscheme
   {/*下载方案下拉框*/
     width: calc(100% - 170px);
