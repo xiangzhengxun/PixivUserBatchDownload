@@ -5,6 +5,8 @@ PUBD的理念是让人在阅览P站的过程中看见喜欢的画师便可以立
 
 PUBD的功能主要是可以下载画师所有作品，并且可以自定义下载路径、文件名。
 
+![程序运行图](http://ww4.sinaimg.cn/large/6c84b2d6gw1fbnrf6o7nuj20px0g50w8.jpg)
+
 ## 程序环境
 PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离了用户界面到单独的用户样式文件。
 
