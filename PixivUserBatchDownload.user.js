@@ -14,6 +14,10 @@
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
+// @grant       GM_getValue
+// @grant       GM_setValue
+// @grant       GM_deleteValue
+// @grant       GM_listValues
 // ==/UserScript==
 
 /*
@@ -1066,11 +1070,11 @@ function buildbtnMenu(touch)
 					menu.hide();
 				}
 			);
-		menu.add("Debug2","",null,menu4);
-		menu.add("Debug1","",null,menu1);
+		menu.add("占位用","",null,menu1);
+		menu.add("没功能","",null,menu4);
 		menu.add("多个画师下载",null,function()
 				{//做成“声音”的设备样子
-					alert("这个功能")
+					alert("这个功能也没有开发")
 				}
 			);
 		menu.add(0);

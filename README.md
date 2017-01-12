@@ -1,20 +1,25 @@
-﻿# PixivUserBatchDownload v5.0开发中
+﻿# PixivUserBatchDownload v5
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具。
 
-##软件需求
+本程序的理念是让人在阅览P站的过程中看见喜欢的画师便可以立即一键下载。
+
+本程序主体部分基于用户脚本与用户样式运行，完整功能的框架的结构如下<br>
+![结构图](http://ww1.sinaimg.cn/large/6c84b2d6gw1fbnmzq72bdj20jj0ff3za.jpg)
+
+## 软件需求
 1. 用户脚本扩展，用于实现脚本的功能。
  * [![](https://www.mozilla.org/media/img/firefox/favicon.dc6635050bf5.ico)FireFox](http://www.firefox.com)安装[![](https://github.com/greasemonkey/greasemonkey/raw/master/skin/icon32.png)GreaseMonkey](http://www.greasespot.net/)扩展。
  * ![](http://www.chromium.org/_/rsrc/1438879449147/config/customLogo.gif)Chromium系安装[![](https://addons.cdn.mozilla.net/user-media/addon_icons/683/683490-64.png?modified=1463757971)Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=zh-CN)扩展。
 2. 用户样式扩展，用于调整脚本的外观。
  * 安装[![](https://addons.cdn.mozilla.net/user-media/addon_icons/2/2108-64.png?modified=1453837884)Stylish](https://userstyles.org/)扩展（两浏览器都有）。
 3. 下载软件，接受脚本添加的下载信息。
- * [Aria2](https://aria2.github.io/) ，推荐使用PRC(Remote Procedure Call Protocol)模式启动。
+ * [Aria2](https://aria2.github.io/) ，需使用PRC(Remote Procedure Call Protocol)模式启动。
 4. 管理下载
  * [![](https://github.com/ziahamza/webui-aria2/raw/master/favicon.ico)webui-aria2](https://github.com/ziahamza/webui-aria2)，建议时不时看看有没有更新，webui-aria2经常会增加中文翻译。
  * [YAAW](https://github.com/binux/yaaw)，作者是中国人，但更新较少。
 
 ## License|许可协议
-* Aria2操作类代码来自[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)，与YAAW是同一开发者。
+* Aria2操作对象代码来自[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)。（与YAAW是同一开发者）
 
 * Pixiv APP-API分析来自[PixivPy](https://github.com/upbit/pixivpy)。
 
@@ -22,12 +27,13 @@ PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 
 此程序是免费软件。你可以将它根据“GNU通用公共许可证第三版(GPLv3)”重新分发和/或修改。
 
-如果你想分发你修改后的程序，但是你不想要公布修改后的源代码，请与我联系。
+## 使用说明
+请访问[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)
 
 ## 配置Aria2
-[下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.30.0-win-64bit-build1.zip”，然后解压到文件夹。
+1. [下载最新的Aria2](https://github.com/tatsuhiro-t/aria2/releases)，比如我下载的是64位Windows版“aria2-1.30.0-win-64bit-build1.zip”，然后解压到文件夹。
 
-1. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。
+2. 在aria2c路径下新建文本文件“RPC模式启动aria2_P站下载服务端”，内容如下，并将扩展名更改为bat。
 	
 	```bat
 	REM 第一行是用来自动建立会话文件的。因为如果设置了“save-session”保存会话文件，没有这个文件存在，Aria2就会无法启动。
@@ -35,7 +41,7 @@ PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 	aria2c.exe --conf-path="aria2_Pixiv.ini"
 	```
 
-2. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
+3. 然后继续建立“aria2_Pixiv.ini”，内容如下。虽然也可以把这些参数写在命令行，但是写在设置文件里更清楚。
 	
 	```ini
 	# Aria2默认保存路径可自行修改，v1.4.0开始此设置已内置到下载设置，留空时才使用这里的设置。
@@ -56,20 +62,24 @@ PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 	# 启动时读取会话内容
 	input-file=aria2_Pixiv.session.txt
 
-	# 开启RPC相关选项
+	# 开启RPC
 	enable-rpc=true
-	rpc-allow-origin-all=true
+	# RPC监听所有请求
 	rpc-listen-all=true
+	# RPC允许所有来源请求，如果非局域网访问一定要True
+	rpc-allow-origin-all=true
+	# RPC保存上传的数据（种子之类的）
 	rpc-save-upload-metadata=true
-	rpc-secure=false
 	```
-	设置中若含中文/日文字符需要保存为UTF-8编码。
+	设置中若含中文/日文字符需要保存编码为“UTF-8不包含签名(no BOM)”。
 
-然后运行bat文件即可开启Aria2的RPC模式。
-
-![文件示例](http://ww4.sinaimg.cn/large/6c84b2d6gw1f30n8ywl7bj20mp0fpaff.jpg)
-
-[下载最新的webui-aria2（有中文）](https://github.com/ziahamza/webui-aria2/archive/master.zip)，然后解压到文件夹，打开“index.html”，默认设置下会自动连接上刚才配置的本地的Aria2 RPC模式。然后你便可以像普通下载软件一样对Aria2进行管理了。
+4. 三个文件具体的关系如下图<br>
+	![文件示例](http://ww4.sinaimg.cn/large/6c84b2d6gw1f30n8ywl7bj20mp0fpaff.jpg)
+	
+5. 然后运行bat文件即可开启Aria2的RPC模式。
+	
+6. [下载最新的webui-aria2（有中文）](https://github.com/ziahamza/webui-aria2/archive/master.zip)，然后解压到文件夹。（会用Git的建议直接Git克隆项目，将来更新比较方便）
+7. 打开“index.html”，默认设置下会自动连接上刚才配置的本地的Aria2 RPC模式。然后你便可以像普通下载软件一样对Aria2进行管理了。
 
 ![webui-aria2界面](http://ww2.sinaimg.cn/large/6c84b2d6gw1f1o5q4ljyqj20vv0nvgq4.jpg)
 
