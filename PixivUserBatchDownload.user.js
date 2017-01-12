@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0 开发版
+// @version		5.0.0 Alpha1
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -1450,6 +1450,8 @@ function buildDlgConfig(touch)
 	ipt.onclick = function()
 	{//增加自定义掩码
 		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中下载方案");return;}
+		if (dlg.mask_name.value.length < 1){alert("掩码名称为空");return;}
+		if (dlg.mask_logic.value.length < 1){alert("执行条件为空");return;}
 		var schemeIndex = dlg.downScheme.selectedIndex;
 		dlg.schemes[schemeIndex].mask.add(dlg.mask_name.value,dlg.mask_logic.value,dlg.mask_content.value);
 		dlg.addMask(dlg.mask_name.value,dlg.mask_logic.value,dlg.mask_content.value);
