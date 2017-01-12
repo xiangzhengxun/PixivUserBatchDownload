@@ -1,1554 +1,2395 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name		PixivUserBatchDownload
-// @name:zh-CN  P站画师个人作品批量下载工具
-// @namespace   http://www.mapaler.com/
-// @description Batch download pixiv user's images in one key.
-// @description:zh-CN   一键批量下载P站画师的全部作品
-// @include	 http://www.pixiv.net/*
-// @exclude		http://www.pixiv.net/*mode=manga&illust_id*
-// @exclude		http://www.pixiv.net/*mode=big&illust_id*
-// @exclude		http://www.pixiv.net/*mode=manga_big*
-// @exclude		http://www.pixiv.net/*search.php*
-// @version	 2.6.0
-// @grant	   none
-// @copyright   2016+, Mapaler <mapaler@163.com>
+// @name:zh-CN	P站画师个人作品批量下载工具
+// @namespace	http://www.mapaler.com/
+// @description	Batch download pixiv user's images in one key.
+// @description:zh-CN	一键批量下载P站画师的全部作品
+// @include		*://www.pixiv.net/*
+// @include		*://touch.pixiv.net/*
+// @exclude		*://www.pixiv.net/*mode=manga&illust_id*
+// @exclude		*://www.pixiv.net/*mode=big&illust_id*
+// @exclude		*://www.pixiv.net/*mode=manga_big*
+// @exclude		*://www.pixiv.net/*search.php*
+// @version		5.0 开发版
+// @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
+// @grant       GM_xmlhttpRequest
+// @grant       GM_getValue
+// @grant       GM_setValue
+// @grant       GM_deleteValue
+// @grant       GM_listValues
 // ==/UserScript==
 
-(function() {
-var pICD = 20; //pageIllustCountDefault默认每页作品数量
-var Version = 3; //当前设置版本，用于提醒是否需要
-if (!getConfig("PUBD_reset", -1))ResetConfig(); //新用户重置设置
-if (getConfig("PUBD_reset", 1) < Version)
-{ //老用户提醒更改设置
-	alert("2.1.0版本可自定义下载网址了，可以按需修改。");
-	ResetConfig(true);
+/*
+ * 公共变量区
+*/
+var pubd = { //储存设置
+	configVersion: 0, //当前设置版本，用于提醒是否需要重置
+	touch:false, //是触屏
+	loggedIn:false, //登陆了
+	start:null, //开始按钮
+	menu:null, //菜单
+	dialog:{ //窗口些个
+		config:null, //设置窗口
+		login:null, //登陆窗口
+		downthis:null, //下载当前窗口
+	},
+	auth:null,
+	downSchemes:[],
+};
+
+var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
+var scriptVersion = typeof(GM_info)!="undefined" ? GM_info.script.version : "LocalDebug"; //本程序的版本
+var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
+
+//var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(?:-([0-9a-zA-Z]+))?(?:(?:_p|_ugoira))?)\\d+?(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
+var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
+
+/*
+ * 获取初始状态
+*/
+if (typeof(unsafeWindow)!="undefined")
+	var pixiv = unsafeWindow.pixiv;
+if (typeof(pixiv)=="undefined")
+{
+	console.error("当前网页没有找到pixiv对象");
+}
+if (pixiv && pixiv.user.loggedIn)
+{
+	pubd.loggedIn = true;
+}
+if (location.host.indexOf("touch")>=0) //typeof(pixiv.AutoView)!="undefined"
+{
+	pubd.touch=true;
+	console.info("当前访问的是P站触屏手机版");
+}else
+{
+	console.info("当前访问的是P站桌面版");
 }
 
-
-var download_mod = getConfig("PUBD_download_mode",1); //下载模式
-var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(-[0-9a-zA-Z]+)?(?:_p\\d+|_ugoira\\d+x\\d+)?)(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
-//var userImagePattern = "https?://([^/]+)/.+/(\w+)/(\\d+)\\.([\\w\\d]+)"; //P站用户头像图片地址正则匹配式
-
-var getPicNum = 0; //Ajax获取了文件的数量
-var downOver; //检测下载是否完成的循环函数
-
-var dataset =
+/*
+ * Debug 用 仿GM函数区
+*/
+//访GM_xmlhttpRequest函数v1.2
+if(typeof(GM_xmlhttpRequest) == "undefined")
 {
-	user_id: 0, //作者ID
-	user_pixiv_id: "", //作者账户，可以从作者头像文件获取。
-	user_name: "", //作者昵称
-	user_head: "", //作者头像url。将来可考虑生成ico保存到文件夹
-	illust_count: 0, //作品总数
-	illust_file_count: 0, //作品文件总数（含多图）
-	illust:[
-	]
+	var GM_xmlhttpRequest = function(GM_param){
+
+		var xhr = new XMLHttpRequest();	//创建XMLHttpRequest对象
+		if(GM_param.responseType) xhr.responseType = GM_param.responseType;
+		xhr.onreadystatechange = function()  //设置回调函数
+		{
+			if (xhr.readyState == 4 && xhr.status == 200 && GM_param.onload)
+				GM_param.onload(xhr);
+			if (xhr.readyState == 4 && xhr.status != 200 && GM_param.onerror)
+				GM_param.onerror(xhr);
+		}
+		xhr.open(GM_param.method, GM_param.url, true);
+
+		for (var header in GM_param.headers){
+			xhr.setRequestHeader(header, GM_param.headers[header]);
+		}
+
+		xhr.send(GM_param.data ? GM_param.data : null);
+	}
 }
-function illust()
+//仿GM_getValue函数v1.0
+if(typeof(GM_getValue) == "undefined")
 {
-	var obj =
+	var GM_getValue = function(name, type){
+		var value = localStorage.getItem(name);
+		if (value == undefined) return value;
+		if ((/^(?:true|false)$/i.test(value) && type == undefined) || type == "boolean")
+		{
+			if (/^true$/i.test(value))
+				return true;
+			else if (/^false$/i.test(value))
+				return false;
+			else
+				return Boolean(value);
+		}
+		else if((/^\-?[\d\.]+$/i.test(value) && type == undefined) || type == "number")
+			return Number(value);
+		else
+			return value;
+	}
+}
+//仿GM_setValue函数v1.0
+if(typeof(GM_setValue) == "undefined")
+{
+	var GM_setValue = function(name, value){
+		localStorage.setItem(name, value);
+	}
+}
+//仿GM_deleteValue函数v1.0
+if(typeof(GM_deleteValue) == "undefined")
+{
+	var GM_deleteValue = function(name){
+		localStorage.removeItem(name);
+	}
+}
+//仿GM_listValues函数v1.0
+if(typeof(GM_listValues) == "undefined")
+{
+	var GM_listValues = function(){
+		var keys = new Array();
+		for (var ki=0, kilen=localStorage.length; ki<kilen; ki++)
+		{
+			keys.push(localStorage.key(ki));
+		}
+		return keys;
+	}
+}
+
+/*
+ * 现成函数库
+*/
+//发送网页通知
+function spawnNotification(theBody, theIcon, theTitle)
+{
+	var options = {
+		body: theBody,
+		icon: theIcon
+	}
+	if (!("Notification" in window))
 	{
-		illust_id: 0, //作品ID
-		illust_page: 0, //在作者的第几页
-		illust_index: 0, //全部作品中序号
-		illust_index_inverted: 0, //全部作品中序号_倒序
-		illust_index_in_page: 0, //该页上序号
-		illust_index_in_page_inverted: 0, //该页上序号_倒序
-		title: "", //作品标题
-		type: 0, //类型，单页、漫画、动画
-		//type_name: "", //类型用文字表示
-		filename: [""], //文件名
-		hash: "", //加密字符串
-		//page: [0], //第几页（漫画）
-		extention: [""], //扩展名
-		original_src: [""], //原始图片链接
-		page_count: 0, //共几页（漫画）
-		year: 0,
-		month: 0,
-		day: 0,
-		hour: 0,
-		minute: 0,
-		second: 0,
+		alert(theBody);
+	}
+	else if (Notification.permission === "granted") {
+		Notification.requestPermission(function (permission) {
+		// If the user is okay, let's create a notification
+		var n = new Notification(theTitle, options);
+		});
+	}
+	// Otherwise, we need to ask the user for permission
+	else if (Notification.permission !== 'denied') {
+		Notification.requestPermission(function (permission) {
+		// If the user is okay, let's create a notification
+		if (permission === "granted") {
+			var n = new Notification(theTitle, options);
+		}
+		});
+	}
+}
+/*\
+|*|
+|*|  :: cookies.js ::
+|*|
+|*|  A complete cookies reader/writer framework with full unicode support.
+|*|
+|*|  https://developer.mozilla.org/en-US/docs/DOM/document.cookie
+|*|
+|*|  This framework is released under the GNU Public License, version 3 or later.
+|*|  http://www.gnu.org/licenses/gpl-3.0-standalone.html
+|*|
+|*|  Syntaxes:
+|*|
+|*|  * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])
+|*|  * docCookies.getItem(name)
+|*|  * docCookies.removeItem(name[, path], domain)
+|*|  * docCookies.hasItem(name)
+|*|  * docCookies.keys()
+|*|
+\*/
 
-		thumbnail_src: "", //缩略图地址
-		domain: "", //域名
-		url: "", //作品页面
-		time: "", //显示时间
-		size: "", //显示大小
-		width: 0, //宽
-		height: 0, //高
-		tools: [""], //使用工具
-		caption: "", //说明
-		tags: [""], //标签
-		//添加作品的顺序
-		addIndexFromPage: function (index, page, illcount)
-		{
-			if (index == undefined)
-				index = this.illust_index_in_page;
-			else
-				this.illust_index_in_page = index;
-			if (page == undefined)
-				page = this.illust_page;
-			else
-				this.illust_page = page;
-			if (illcount == undefined)
-				illcount = dataset.illust_count;
-			this.illust_index = (this.illust_page - 1) * pICD + this.illust_index_in_page;
-			this.illust_index_inverted = illcount - this.illust_index + 1;
-			if ((illcount - this.illust_index) >= pICD)
-				this.illust_index_in_page_inverted = pICD - index + 1;
-			else
-				this.illust_index_in_page_inverted = illcount % pICD - index + 1;
+var docCookies = {
+  getItem: function (sKey) {
+    return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+  },
+  setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+    if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) { return false; }
+    var sExpires = "";
+    if (vEnd) {
+      switch (vEnd.constructor) {
+        case Number:
+          sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+          break;
+        case String:
+          sExpires = "; expires=" + vEnd;
+          break;
+        case Date:
+          sExpires = "; expires=" + vEnd.toUTCString();
+          break;
+      }
+    }
+    document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
+    return true;
+  },
+  removeItem: function (sKey, sPath, sDomain) {
+    if (!sKey || !this.hasItem(sKey)) { return false; }
+    document.cookie = encodeURIComponent(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + ( sDomain ? "; domain=" + sDomain : "") + ( sPath ? "; path=" + sPath : "");
+    return true;
+  },
+  hasItem: function (sKey) {
+    return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+  },
+  keys: /* optional method: you can safely remove it! */ function () {
+    var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
+    for (var nIdx = 0; nIdx < aKeys.length; nIdx++) { aKeys[nIdx] = decodeURIComponent(aKeys[nIdx]); }
+    return aKeys;
+  }
+};
+
+/*
+ * 自定义对象区
+*/
+//一个用户的信息
+var UserInfo = function()
+{
+	var obj = {
+		done:false,
+		info:{
+			profile:null,
+			user:null,
+			profile:null,
 		},
-		//从图片地址添加作品
-		addDataFromImgSrc: function (src)
-		{
-			if (src == undefined)
-				src = this.thumbnail_src;
-			var regSrc = new RegExp(illustPattern, "ig");
-			var aImg = regSrc.exec(src);
-			this.page_count = 1;
-			this.domain = aImg[1];
-			this.year = aImg[2];
-			this.month = aImg[3];
-			this.day = aImg[4];
-			this.hour = aImg[5];
-			this.minute = aImg[6];
-			this.second = aImg[7];
-			this.filename[0] = aImg[8];
-			this.illust_id = aImg[9];
-			this.hash = aImg[10];
-			this.extention[0] = aImg[11];
-			this.original_src[0] = "http://" + this.domain + "/img-original/img/" +
-				this.year + "/" + this.month + "/" + this.day + "/" +
-				this.hour + "/" + this.minute + "/" + this.second + "/" +
-				this.filename[0] + "." + this.extention[0];
-			switch(this.type)
-			{
-				case 0: //单图
-					this.page_count = 1;
-					getPicNum++;
-					break;
-				case 1: //多图
-					var mangaUrl = this.url.replace(/mode=[^&]+/, "mode=manga");
-					getSource(mangaUrl, dealMangaFast, this);
-					break;
-				case 2: //动图
-					this.page_count = 1;
-					this.filename[0] += "_ugoira1920x1080";
-					this.extention[0] = "zip";
-					this.original_src[0] = "http://" + this.domain + "/img-original/img/" +
-						this.year + "/" + this.month + "/" + this.day + "/" +
-						this.hour + "/" + this.minute + "/" + this.second + "/" +
-						this.filename[0] + "." + this.extention[0];
-					getPicNum++;
-					break;
-				case 3: //漫画单图
-					this.page_count = 1;
-					getPicNum++;
-					break;
-				default:
-			}
+		illusts:{
+			done:false,
+			item:[],
+			break:false,
+			runing:false,
+			next_url:"",
 		},
-		//ajax读取原始页面数据
-		ajaxLoad: function (url)
-		{
-			if (url == undefined)
-				url = this.url;
-			else
-				this.url = url;
-			if (this.illust_id < 1)
-			{
-				var regSrc = /illust_id=(\d+)/ig;
-				var iid = regSrc.exec(url);
-				if (iid.length >= 2) this.illust_id = iid[1];
-			}
-			getSource(url, dealIllust, this);
+		bookmarks:{
+			done:false,
+			item:[],
+			break:false,
+			runing:false,
+			next_url:"",
 		},
 	}
 	return obj;
 }
 
-var menuInsertPlace = document.getElementsByClassName("user-relation")[0];
-if (menuInsertPlace == undefined) return;
-var li1 = document.createElement("li");
-var li2 = document.createElement("li");
-menuInsertPlace.appendChild(li1);
-menuInsertPlace.appendChild(li2);
-li1.className = "ui-selectbox-container";
-li2.className = "infoProgress";
-
-var menu_ul = buildMenu();
-
-var btnStart = document.createElement("button");
-btnStart.className = "_button following";
-btnStart.innerHTML = "获取全部作品";
-
-btnStart.onclick = function (e)
-{
-	if (menu_ul.parentNode == li1)
-		li1.removeChild(menu_ul);
-	else
-		li1.appendChild(menu_ul);
-}
-li1.appendChild(btnStart);
-
-//生成设置窗口DOM
-var setInsertPlace = document.getElementsByClassName("column-header")[0] || document.body;
-var setWindow = buildSetting();
-//生成导出窗口DOM
-var exportInsertPlace = setInsertPlace;
-var exportWindow = buildExport();
-//生成直接链接窗口DOM
-var directLinkInsertPlace = setInsertPlace;
-var directLinkWindow = buildDirectLink();
-
-//开始程序
-function startProgram(mode)
-{
-	download_mod = getConfig("PUBD_download_mode",1); //重新判断下载模式
-	if(getPicNum<1)
+//一个Post数据
+var PostDataObject = (function () {
+	
+	return function(obj)
 	{
-		dealUserPage1();
-	}
-	clearInterval(downOver);
-	downOver = setInterval(function () { startProgramCheck(mode) }, 500);
-}
-
-function dealUserPage1(userId)
-{
-	if (userId == undefined)
-		userId = pixiv.context.userId;
-	dataset.user_id = userId;
-
-	var locationSearch = (document.location.search.length > 0 ? document.location.search.replace(/mode=\w+/ig, "").replace(/illust_id=\d+/ig, "").replace(/id=\d+/ig, "") : "?");
-	var linkPre = document.location.origin + "/member_illust.php" + locationSearch + "&id=" + userId;
-	var link = getPageSrc(linkPre, 1);
-
-	getSource(link, dealUser, linkPre, userId)
-}
-//开始分析本作者
-function dealUser(response, linkPre, userId)
-{
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
-
-	var count_badge = PageDOM.getElementsByClassName("count-badge")[0];
-	if (!count_badge)
-	{
-		alert("未发现作品数DOM");
-		clearInterval(downOver);
-		return;
-	}
-
-	var regPC = /(\d+)/ig;
-	var photoCount = regPC.exec(count_badge.textContent);
-
-	if (photoCount.length >= 2) {
-		dataset.illust_count = parseInt(photoCount[1]);
-		if (dataset.illust_count < 1)
+		var postdata = new Object;
+		if (obj)
+			postdata.data = Object.assign({}, obj); //合并obj
+		postdata.increase = function(obj)
 		{
-			alert("作品数为0");
-			clearInterval(downOver);
-			return;
+			postdata.data = Object.assign(postdata.data, obj); //合并obj
 		}
-		dataset.illust_file_count = dataset.illust_count;
-		var pageCount = Math.ceil(dataset.illust_count / 20);
-	}
-	else
-	{
-		alert("未发现作品数字符串");
-		clearInterval(downOver);
-		return;
-	}
-
-	var user_link = PageDOM.getElementsByClassName("user-link")[0];
-	var user_dom = user_link.getElementsByClassName("user")[0];
-	dataset.user_name = user_dom.textContent;
-
-	var userImage = PageDOM.getElementsByClassName("user-image")[0];
-	dataset.user_head = userImage?userImage.src:"";
-	var tabFeed = PageDOM.getElementsByClassName("tab-feed")[0];
-	var regUserFeed = /.+\/([\w\-]+)$/ig; //用户账户正则匹配式，您只可以输入小字母a-z, 数字, 英文破折号(-), 以及英文下划线( _ )
-	var regrlt = regUserFeed.exec(tabFeed?tabFeed.getAttribute("href"):"");
-	if (regrlt.length>1) dataset.user_pixiv_id = regrlt[1];
-
-	dealPage(response, 1);
-	//列表页循环
-	for (pi = 2; pi <= pageCount; pi++)
-	//for (pi = 0; pi < 1; pi++)
-	{
-		var link = getPageSrc(linkPre, pi);
-		getSource(link, dealPage, pi);
-	}
-
-}
-
-//获取页面网址
-function getPageSrc(linkPre, page)
-{
-	return linkPre + "&p=" + page;
-}
-
-//直接通过XMLHttpRequest对象获取远程网页源代码
-function getSource(url,callback,index, index2)
-{
-	var xhr = new XMLHttpRequest();	//创建XMLHttpRequest对象
-	xhr.onreadystatechange = function()  //设置回调函数
-	{
-		if (xhr.readyState == 4 && xhr.status == 200)
-			callback(xhr.responseText, index, index2);
-	}
-	xhr.open("GET", url, true);
-	xhr.send(null);
-	return xhr.responseText;
-}
-//处理列表页面的回调函数
-function dealPage(response, pageIndex)
-{
-	/*
-	老式构建网页dom方法
-	var PageDOM = document.createElement("div"); //创建一个容器
-	PageDOM.innerHTML = response; //插入代码
-	*/
-
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
-
-	var _image_items = PageDOM.getElementsByClassName("_image-items");
-	if (_image_items.length >= 0)
-	{
-		var image_items = _image_items[0].getElementsByClassName("image-item");
-		//作品循环
-		for (ii = 0; ii < image_items.length; ii++)
-		//for (ii = 6; ii <= 6; ii++)
+		postdata.toPostString = function()
 		{
-			var _thumbnail = image_items[ii].getElementsByClassName("_thumbnail")[0];
-			var title = image_items[ii].getElementsByClassName("title")[0];
-			var link = image_items[ii].getElementsByTagName("a");
-
-			var ill = new illust;
-			if (link[0].href.length < 1)
+			var arr = new Array;
+			for (var na in postdata.data)
 			{
-				console.warn("你的浏览器无法获取DOMParser内a标签的href。目前只有Chrome这么做。")
-				ill.url = document.location.origin + link[0].getAttribute("href");
+				var item = [ na , postdata.data[na] ];
+				arr.push(item);
 			}
-			else
-			{
-				ill.url = link[0].href;
-			}
-			ill.title = title.textContent;
-			ill.addIndexFromPage(ii + 1, pageIndex, dataset.illust_count);
-			ill.thumbnail_src = _thumbnail.src;
-
-			if (image_items[ii].getElementsByClassName("ugoku-illust").length > 0)
-				ill.type = 2;
-			else if (image_items[ii].getElementsByClassName("multiple").length > 0)
-				ill.type = 1;
-			else if (image_items[ii].getElementsByClassName("manga").length > 0)
-				ill.type = 3;
-			else
-				ill.type = 0;
-
-			if (download_mod == 1)
-			{
-				ill.addDataFromImgSrc(ill.thumbnail_src);
-			}
-			else
-			{
-				ill.ajaxLoad();
-			}
-			dataset.illust.push(ill);
-		}
-	}
-}
-
-//处理作品的回调函数
-function dealIllust(response, ill)
-{
-	//var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig; //P站图片命名规则
-	var regSrc = new RegExp(illustPattern, "ig");
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
-	//work_info
-	var work_info = PageDOM.getElementsByClassName("work-info")[0];
-	var works_display = PageDOM.getElementsByClassName("works_display")[0];
-	//var title = work_info.getElementsByClassName("title")[0];
-	//ill.title = title.textContent;
-	var caption = work_info.getElementsByClassName("caption")[0];
-	if (caption) ill.caption = caption.textContent;
-	//metas
-	var metas = work_info.getElementsByClassName("meta")[0];
-	var meta = metas.getElementsByTagName("li");
-	ill.time = meta[0].textContent;
-	ill.size = meta[1].textContent;
-	var tools = metas.getElementsByClassName("tools")[0]
-	if (tools)
-	{
-		var toolsli = tools.getElementsByTagName("li");
-		for (ti = 0; ti < toolsli.length; ti++)
-		{
-			ill.tools[ti] = toolsli[ti].textContent;
-
-		}
-	}
-	//TAG
-	var tagsDom = PageDOM.getElementsByClassName("work-tags")[0].getElementsByClassName("tags-container")[0].getElementsByClassName("tags");
-	if (tagsDom.length > 0)
-	{
-		var tags = tagsDom[0].getElementsByClassName("tag");
-		for (ti = 0; ti < tags.length; ti++)
-		{
-			ill.tags[ti] = tags[ti].getElementsByClassName("text")[0].textContent;
-		}
-	}
-
-
-	var script = PageDOM.getElementById("wrapper").getElementsByTagName("script")[0];
-	//建立内部临时变量，避免影响到原始页面
-	var pixiv = new Object; pixiv.context = new Object;
-	//执行获取到的代码
-	eval(script.innerHTML);
-	ill.illust_id = pixiv.context.illustId;
-	ill.width = pixiv.context.illustSize[0];
-	ill.height = pixiv.context.illustSize[1];
-	ill.title = pixiv.context.illustTitle;
-	//dataset.user_name = pixiv.context.userName;
-	//添加静图
-	if (PageDOM.getElementsByClassName("original-image")[0]) {//静图
-		var originalImage = PageDOM.getElementsByClassName("original-image")[0].getAttribute("data-src");
-		ill.page_count = 1;
-		ill.type = 0;
-		ill.original_src[0] = originalImage;
-		var aImg = regSrc.exec(originalImage);
-		if (aImg.length >= 1)
-		{
-			ill.domain = aImg[1];
-			ill.year = aImg[2];
-			ill.month = aImg[3];
-			ill.day = aImg[4];
-			ill.hour = aImg[5];
-			ill.minute = aImg[6];
-			ill.second = aImg[7];
-			ill.filename[0] = aImg[8];
-			ill.hash = aImg[10];
-			ill.extention[0] = aImg[11];
-			getPicNum++;
-		}else
-		{
-			alert("获取单图原始图片路径信息失败，可能需要更新正则匹配模式。");
-
-		}
-	}
-	//添加动图
-	else if (PageDOM.getElementsByClassName("_ugoku-illust-player-container").length > 0)
-	{
-		var zipUrl = pixiv.context.ugokuIllustFullscreenData.src;
-		ill.page_count = pixiv.context.ugokuIllustFullscreenData.frames.length;
-		ill.type = 2;
-		ill.original_src[0] = zipUrl;
-		var aImg = regSrc.exec(zipUrl);
-		if (aImg.length >= 1) {
-			ill.domain = aImg[1];
-			ill.year = aImg[2];
-			ill.month = aImg[3];
-			ill.day = aImg[4];
-			ill.hour = aImg[5];
-			ill.minute = aImg[6];
-			ill.second = aImg[7];
-			ill.filename[0] = aImg[8];
-			ill.hash = aImg[10];
-			ill.extention[0] = aImg[11];
-			getPicNum++;
-		} else {
-			alert("获取动图原始图片路径信息失败，可能需要更新正则匹配模式。");
-		}
-	}
-	//添加多图
-	else if (PageDOM.getElementsByClassName("multiple").length > 0)
-	{
-		ill.type = 1;
-		var aImg = regSrc.exec(ill.thumbnail_src);
-		if (aImg.length >= 1) {
-			ill.domain = aImg[1];
-			ill.year = aImg[2];
-			ill.month = aImg[3];
-			ill.day = aImg[4];
-			ill.hour = aImg[5];
-			ill.minute = aImg[6];
-			ill.second = aImg[7];
-			ill.filename[0] = aImg[8];
-			ill.hash = aImg[10];
-			ill.extention[0] = aImg[11];
-		}
-
-		var regPageCont = /.+\s+(\d+)[pP]/ig;
-		var rs = regPageCont.exec(ill.size);
-		if (rs.length >= 2)
-		{
-			ill.page_count = parseInt(rs[1]);
-			console.info("%s为多图，存在%d张", ill.illust_id, ill.page_count);
-			dataset.illust_file_count += ill.page_count - 1; //图片总数里增加多图的张数
 			
-			var manga_big = ill.url.replace(/mode=[^&]+/, "mode=manga_big");
-			var manga_big_url = manga_big + "&page=" + 0;
-			getSource(manga_big_url, dealManga, ill);
-			
-			/*以前以为能够多图扩展名不一样
-			for (var pi = 0; pi < ill.page_count; pi++) {
-				var manga_big_url = manga_big + "&page=" + pi;
-				getSource(manga_big_url, dealManga, ill, pi);
+			var str = arr.map(
+					function (item){
+						return item.join("=");
+					}
+				).join("&");
+			return str;
+		}
+		return postdata;
+	}
+})();
+
+//一个本程序使用的headers数据
+var HeadersObject = function (obj) {
+	var headers = {
+		'App-OS': 'android',
+		'App-OS-Version': '6.0',
+		'App-Version': '5.0.49',
+		'User-Agent': 'PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)',
+		'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
+		"Referer": "https://app-api.pixiv.net/",
+	}
+	if (obj)
+		headers = Object.assign(headers, obj); //合并obj
+	return headers;
+}
+
+//一个认证方案
+var Auth = (function () {
+
+	return function(username,password,remember)
+	{
+		if (!username) username = "";
+		if (!password) password = "";
+		if (!remember) remember = false;
+		var auth = { //原始结构
+			response:{
+				access_token:"",
+				expires_in:0,
+				token_type:"",
+				scope:"",
+				refresh_token:"",
+				user:{
+					profile_image_urls:{
+						px_16x16:"",
+						px_50x50:"",
+						px_170x170:"",
+					},
+					id:"",
+					name:"",
+					account:"",
+					mail_address:"",
+					is_premium:false,
+					x_restrict:0,
+					is_mail_authorized:true,
+				},
+				device_token:"",
+			},
+			needlogin:false,
+			username:username,
+			password:password,
+			save_account:remember,
+			login_date:null,
+		}
+		auth.newAccount = function(username,password,remember)
+		{
+			if(typeof(remember)=="boolean") auth.save_account = remember;
+			auth.username = username;
+			auth.password = password;
+		}
+		auth.loadFromResponse = function(response)
+		{
+			auth = Object.assign(auth, response);
+		}
+		auth.save = function()
+		{
+			var saveObj = JSON.parse(JSON.stringify(auth)); //深度拷贝
+			if(!saveObj.save_account)
+			{
+				saveObj.username = "";
+				saveObj.password = "";
 			}
-			*/
+			GM_setValue("pubd-auth",JSON.stringify(saveObj));
+		}
+
+		auth.login = function(onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb)
+		{
+			var postObj = new PostDataObject({ //Post时发送的数据
+				client_id:"BVO2E8vAAikgUBW8FYpi6amXOjQj",
+				client_secret:"LI1WsFUDrrquaINOdarrJclCrkTtc3eojCOswlog",
+				grant_type:"password",
+				username:auth.username,
+				password:auth.password,
+				//device_token:"6e50367b155c2ba9faeaf2152ee4607c",
+				get_secure_url:"true",
+			})
+			var device_token = docCookies.getItem("device_token");
+			if (device_token) postObj.increase({"device_token": device_token});
+
+			//登陆是老的API
+			GM_xmlhttpRequest({
+				url:"https://oauth.secure.pixiv.net/auth/token",
+				method:"post",
+				responseType:"text",
+				headers: new HeadersObject(),
+				data: postObj.toPostString(),
+				onload: function(response) {
+					try
+					{
+						var jo = JSON.parse(response.responseText);
+						if (jo.has_error || jo.errors)
+						{
+							console.error("登录失败，返回错误消息",jo);
+							onload_hasError_Cb(jo);
+						}else
+						{//登陆成功
+							auth.loadFromResponse(jo);
+							auth.login_date = new Date();
+							console.info("登陆成功",jo);
+							onload_suceess_Cb(jo);
+						}
+					}catch(e)
+					{
+						console.error("登录失败，返回可能不是JSON，或程序异常",e,response);
+						onload_notJson_Cb(response);
+					}
+				},
+				onerror: function(response) {
+					console.error("登录失败，AJAX发送失败",response);
+					onerror_Cb(response);
+				}
+			})
+		}
+		return auth;
+	};
+})();
+
+//一个下载方案
+var DownScheme = (function () {
+	//一个自定义掩码
+	return function(name)
+	{
+		var obj = {
+			name:name?name:"默认方案",
+			rpcurl:"http://localhost:6800/jsonrpc",
+			savedir:"D:/PivixDownload/",
+			savepath:"%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
+			masklist:[],
+			mask:{
+				add:function(name,logic,content){
+					var mask = {
+						name:name,
+						logic:logic,
+						content:content,
+					};
+					obj.masklist.push(mask);
+					return mask;
+				},
+				remove:function(index){
+					obj.masklist.splice(index, 1);
+				},
+			},
+			loadFromJson:function(json)
+			{
+				if (typeof(json) == "string")
+				{
+					try
+					{
+						var json = JSON.parse(json);
+					}catch(e)
+					{
+						console.error(e);
+						return false;
+					}
+				}
+				if (json.name) this.name = json.name;
+				if (json.rpcurl) this.rpcurl = json.rpcurl;
+				if (json.savedir) this.savedir = json.savedir;
+				if (json.savepath) this.savepath = json.savepath;
+				if (json.masklist) this.masklist = JSON.parse(JSON.stringify(json.masklist));
+				return true;
+			},
+		}
+		return obj;
+	};
+})();
+
+//创建菜单类
+var pubdMenu = (function () {
+	//生成菜单项
+	function buildMenuItem(title,classname,callback,submenu)
+	{
+		var item = document.createElement("li");
+		item.subitem = null; //子菜单
+		if (title == 0) //只添加一条线
+		{
+			item.className = "pubd-menu-line" + (classname?" "+classname:"");
+			return item;
+		}
+		item.className = "pubd-menu-item" + (classname?" "+classname:"");
+		//添加链接
+		var a = document.createElement("a");
+		a.className = "pubd-menu-item-a"
+		//添加图标
+		var icon = document.createElement("i");
+		icon.className = "pubd-icon";
+		a.appendChild(icon);
+		//添加文字
+		var span = document.createElement("span");
+		span.className = "text";
+		span.innerHTML = title;
+		a.appendChild(span);
+
+		if (typeof(callback) == "string")
+		{
+			a.target = "_blank";
+			a.href = callback;
+		}
+		else if (typeof(callback) == "function")
+		{
+			item.addEventListener("click",callback);
+			//a.onclick = callback;
+		}
+	
+		if (typeof(submenu) == "object")
+		{
+			item.classList.add("pubd-menu-includesub"); //表明该菜单项有子菜单
+			submenu.classList.add("pubd-menu-submenu"); //表明该菜单是子菜单
+			//a.addEventListener("mouseenter",function(){callback.show()});
+			//a.addEventListener("mouseleave",function(){callback.hide()});
+			item.appendChild(submenu);
+			item.subitem = submenu;
+		}
+
+		item.appendChild(a);
+		return item;
+	}
+
+	return function(touch,classname) {
+		var menu = document.createElement("ul");
+		menu.className = "pubd-menu display-none" + (classname?" "+classname:"");
+		menu.item = new Array();
+		//显示该菜单
+		menu.show = function()
+		{
+			menu.classList.remove("display-none");
+		}
+		menu.hide = function()
+		{
+			menu.classList.add("display-none");
+		}
+		//添加菜单项
+		menu.add = function(title,classname,callback,submenu)
+		{
+			var itm = buildMenuItem(title,classname,callback,submenu);
+			this.appendChild(itm);
+			this.item.push(itm)
+			return itm;
+		}
+		//鼠标移出菜单时消失
+		menu.addEventListener("mouseleave",function(e){
+			this.hide();
+		});
+		return menu;
+	};
+})();
+
+//创建通用对话框类
+var Dialog = (function () {
+	//构建标题栏按钮
+	function buildDlgCptBtn(text,classname,callback)
+	{
+		if (!callback)classname="";
+		var btn = document.createElement("a");
+		btn.className = "dlg-cpt-btn" + (classname?" "+classname:"");
+		if (typeof(callback) == "string")
+		{
+			btn.target = "_blank";
+			btn.href = callback;
 		}
 		else
 		{
-			alert("获取多图总张数失败");
+			if (callback)
+				btn.addEventListener("click",callback);
 		}
-	}
-	//添加漫画
-	else if (works_display.getElementsByClassName("manga").length > 0)
-	{
-		//因为Ajax无法设置Referer，而Mode=big无Referer会跳转回作品信息页面，因此这里只能用现有信息来猜
-		var thumbnailImage = works_display.getElementsByClassName("_layout-thumbnail")[0].getElementsByTagName("img")[0];
-		ill.page_count = 1;
-		ill.type = 3;
-		console.info("%s此图为漫画单图，下面开始获取扩展名。", ill.illust_id);
+		var btnTxt = document.createElement("div");
+		btnTxt.className = "dlg-cpt-btn-text";
+		btnTxt.innerHTML = text;
+		btn.appendChild(btnTxt);
 
-		addFrm(ill);
+		return btn;
 	}
-	else
-	{
-		alert("未知的作品类型。作品ID：" + ill.illust_id);
-	}
-}
-//
-function addFrm(ill)
-{
-	var ifrm = document.createElement("iframe");
-	ifrm.name = "medium_" + ill.illust_id;
-	ifrm.src = ill.url;
-	ifrm.style.display = "none";
-	if (ifrm.attachEvent)
-	{
-		ifrm.attachEvent('onload', function () { addBig(self.frames["medium_" + ill.illust_id], ill); });
-	} else
-	{
-		ifrm.onload = function () { addBig(self.frames["medium_" + ill.illust_id], ill); };
-	}
-	document.body.appendChild(ifrm);
-}
-function addBig(prt,ill)
-{
-	var ifrm = prt.document.createElement("iframe");
-	ifrm.name = "big_" + ill.illust_id;
-	ifrm.src = prt.document.getElementsByClassName("works_display")[0].getElementsByClassName("_work")[0].href;
-	if (ifrm.attachEvent)
-	{
-		ifrm.attachEvent('onload', function ()
+
+	return function(caption,id,classname) {
+		var dlg = document.createElement("div");
+		dlg.className = "pubd-dialog display-none" + (classname?" "+classname:"");
+
+		//添加图标与标题
+		var cpt = document.createElement("div");
+		cpt.className = "caption";
+		var icon = document.createElement("i");
+		icon.className = "pubd-icon";
+		cpt.appendChild(icon);
+		var span = document.createElement("span");
+		span.innerHTML = caption;
+		cpt.appendChild(span);
+		dlg.appendChild(cpt);
+		dlg.caption = span;
+		dlg.icon = icon;
+
+		//添加标题栏按钮
+		var cptBtns = document.createElement("div");
+		cptBtns.className = "dlg-cpt-btns";
+		//添加关闭按钮
+		cptBtns.add = function(text,classname,callback){
+			var btn = buildDlgCptBtn(text,classname,callback);
+			this.insertBefore(btn,this.firstChild);
+			return btn;
+		}
+		cptBtns.close = cptBtns.add("X","dlg-btn-close",(function()
+			{
+				dlg.classList.add("display-none");
+			}));
+		dlg.appendChild(cptBtns);
+		dlg.cptBtns = cptBtns; //captionButtons
+
+		//添加内容
+		var content = document.createElement("div");
+		content.className = "dlg-content";
+		dlg.appendChild(content);
+		dlg.content = content;
+
+		//窗口激活
+		dlg.active = function()
 		{
-			findBig(prt.frames["big_" + ill.illust_id], ill);
+			if (!this.classList.contains("pubd-dlg-active"))
+			{//如果没有激活的话才执行
+				var dlgs = document.getElementsByClassName("pubd-dialog");
+				for (var dlgi=0;dlgi<dlgs.length;dlgi++)
+				{
+					dlgs[dlgi].classList.remove("pubd-dlg-active");//取消激活
+					dlgs[dlgi].style.zIndex = parseInt(window.getComputedStyle(dlgs[dlgi],null).getPropertyValue("z-index")) - 1;
+				}
+				this.style.zIndex = "";
+				this.classList.add("pubd-dlg-active");//添加激活
+			}
+		}
+		//窗口初始化
+		dlg.initialise = function()
+		{
+			return;
+		}
+		//窗口显示
+		dlg.show = function()
+		{
+			this.initialise();
+			this.classList.remove("display-none");
+			this.active();
+		}
+		//窗口隐藏
+		dlg.hide = function()
+		{
+			this.cptBtns.close.click;
+		}
+		//添加鼠标拖拽移动
+		dlg.drag = {disX: 0,disY: 0};
+		//startDrag(cpt, dlg);
+		cpt.addEventListener("mousedown",function(e){
+			dlg.drag.disX = e.pageX - dlg.offsetLeft;
+			dlg.drag.disY = e.pageY - dlg.offsetTop;
+			var handler_mousemove = function (e) {
+				dlg.style.left = (e.pageX - dlg.drag.disX) + 'px';
+				dlg.style.top = (e.pageY - dlg.drag.disY) + 'px';
+			};
+			var handler_mouseup = function (e) {
+				document.removeEventListener("mousemove",handler_mousemove);
+			};
+			document.addEventListener("mousemove",handler_mousemove);
+			document.addEventListener("mouseup",handler_mouseup,{once:true});
 		});
-	} else
-	{
-		ifrm.onload = function ()
+		//点击窗口激活窗口
+		dlg.addEventListener("mousedown",function(e){
+			dlg.active();
+		});
+		return dlg;
+	};
+})();
+
+//创建选项卡类
+var Tab = (function () {
+
+	return function(title) {
+		var obj = {
+			title:document.createElement("li"),
+			content:document.createElement("li"),
+		}
+		obj.title = document.createElement("li");
+		obj.title.className = "pubd-tab-title";
+		obj.title.innerHTML = title;
+		obj.name = function()
 		{
-			findBig(prt.frames["big_" + ill.illust_id], ill);
-		};
-	}
-	prt.document.body.appendChild(ifrm);
-}
-function findBig(prt, ill)
-{
-	var finnaly_pic = prt.document.getElementsByTagName("img")[0].src;
-	ill.original_src[0] = finnaly_pic;
+			return this.title.textContent;
+		}
+		obj.rename = function(newName)
+		{
+			if (typeof(newName)=="string" && newName.length>0)
+			{
+				this.title.innerHTML = newName;
+				return true;
+			}else
+				return false;
+		}
 
-	var regSrc = new RegExp(illustPattern, "ig");
-	var aImg = regSrc.exec(ill.original_src[0]);
+		obj.content.className = "pubd-tab-content";
+		obj.content.innerHTML = "设置内容";
 
-	if (aImg.length >= 1)
-	{
-		ill.domain = aImg[1];
-		ill.year = aImg[2];
-		ill.month = aImg[3];
-		ill.day = aImg[4];
-		ill.hour = aImg[5];
-		ill.minute = aImg[6];
-		ill.second = aImg[7];
-		ill.filename[0] = aImg[8];
-		ill.hash = aImg[10];
-		ill.extention[0] = aImg[11];
+		return obj;
+	};
+})();
 
-		getPicNum++;
-		console.info("%s为漫画单图，扩展名为%s", ill.illust_id, ill.extention[0]);
-	} else
-	{
-		alert("获取漫画单图原始图片路径信息失败，可能需要更新正则匹配模式。");
+//创建复数选项卡类
+var Tabs = (function () {
 
-	}
+	return function() {
+		var tabs = document.createElement("div");
+		tabs.className = "pubd-tabs";
+		tabs.item = new Array(); //储存卡
+		//添加卡名区域
+		var ult = document.createElement("ul");
+		ult.className = "tab-title";
+		tabs.appendChild(ult);
+		//添加卡内容区域
+		var ulc = document.createElement("ul");
+		ulc.className = "tab-content";
+		tabs.appendChild(ulc);
+		tabs.add = function(name)
+		{
+			var tab = new Tab(name);
+			tabs.item.push(tab);
+			ult.appendChild(tab.title);
+			ulc.appendChild(tab.content);
+		}
+		return tabs;
+	};
+})();
 
-	return finnaly_pic;
-}
-//处理多图的回调函数
-function dealManga(response, ill, index)
-{
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
-	var picture = PageDOM.getElementsByTagName("img")[0];
-	ill.original_src[0] = picture.src;
-	//var regSrc = /https?:\/\/([^\/]+)\/.+\/(\d{4})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/(\d{2})\/((\d+)(?:[\-_][\w\d\-]+)?)\.([\w\d]+)/ig; //P站图片命名规则
-	var regSrc = new RegExp(illustPattern, "ig");
-	var aImg = regSrc.exec(picture.src);
-	if (aImg.length >= 1)
-	{
-		ill.domain = aImg[1];
-		ill.year = aImg[2];
-		ill.month = aImg[3];
-		ill.day = aImg[4];
-		ill.hour = aImg[5];
-		ill.minute = aImg[6];
-		ill.second = aImg[7];
-		ill.filename[0] = aImg[8];
-		ill.hash = aImg[10];
-		ill.extention[0] = aImg[11];
-		getPicNum++;
-	} else
-	{
-		alert("获取多图原始图片信息失败，可能需要更新正则匹配模式。");
-	}
+//创建框架类
+var Frame = (function () {
+
+	return function(title,classname) {
+		var frame = document.createElement("div");
+		frame.className = "pubd-frame" + (classname?" "+classname:"");
 	
-	for (var mpi = 1; mpi < ill.page_count; mpi++)
-	{
-		ill.filename[mpi] = ill.filename[0].replace(/_p\d+$/ig, "_p" + mpi);
-		ill.extention[mpi] = ill.extention[0];
-		ill.original_src[mpi] = ill.original_src[0].replace(ill.filename[0], ill.filename[mpi]);
-		getPicNum++;
+		var caption = document.createElement("div");
+		caption.className = "pubd-frame-caption";
+		caption.innerHTML = title;
+		frame.caption = caption;
+		frame.appendChild(caption);
+		var content = document.createElement("div");
+		content.className = "pubd-frame-content";
+		frame.content = content;
+		frame.appendChild(content);
+
+		frame.name = function()
+		{
+			return this.caption.textContent;
+		}
+		frame.rename = function(newName)
+		{
+			if (typeof(newName)=="string" && newName.length>0)
+			{
+				this.caption.innerHTML = newName;
+				return true;
+			}else
+				return false;
+		}
+
+		return frame;
+	};
+})();
+
+//创建带Label的Input类
+var LabelInput = (function () {
+
+	return function(text,classname,name,type,value,beforeText) {
+		var label = document.createElement("label");
+		label.innerHTML = text;
+		label.className = classname;
+
+		var ipt = document.createElement("input");
+		ipt.name = name;
+		ipt.id = ipt.name;
+		ipt.type = type;
+		ipt.value = value;
+
+		label.input = ipt;
+		if (beforeText)
+			label.insertBefore(ipt,label.firstChild);
+		else
+			label.appendChild(ipt);
+		return label;
+	};
+})();
+
+//创建进度条类
+var Progress = (function () {
+	//强制保留pos位小数，如：2，会在2后面补上00.即2.00 
+	function toDecimal2(num,pos) { 
+		var f = parseFloat(num); 
+		if (isNaN(f)) { 
+			return false; 
+		} 
+		var f = Math.round(num*Math.pow(10,pos))/Math.pow(10,pos); 
+		var s = f.toString(); 
+		var rs = s.indexOf('.'); 
+		if (pos > 0 && rs < 0) { 
+			rs = s.length; 
+			s += '.'; 
+		} 
+		while (s.length <= rs + pos) { 
+			s += '0'; 
+		}
+		return s;
 	}
-}
 
-//快速模式处理多图的回调函数
-function dealMangaFast(response, ill, index)
-{
-	var parser = new DOMParser();
-	PageDOM = parser.parseFromString(response, "text/html");
+	return function(classname,align_right) {
+		var progress = document.createElement("div");
+		progress.className = "pubd-progress" + (classname?" "+classname:"");
+		if (align_right) progress.classList.add("pubd-progress-right");
 
-	var mangaSec = PageDOM.getElementsByClassName("manga")[0];
-	var items = mangaSec.getElementsByClassName("item-container");
+		progress.scaleNum = 0;
 
-	ill.page_count = items.length;
-	console.info("%s为多图，存在%d张", ill.illust_id, ill.page_count);
+		var bar = document.createElement("div");
+		bar.className = "pubd-progress-bar";
+		progress.appendChild(bar);
 
-	dataset.illust_file_count += ill.page_count - 1;
-	getPicNum++;
-	for (var mpi = 1; mpi < ill.page_count; mpi++)
-	{
-		ill.filename[mpi] = ill.filename[0].replace(/_p\d+$/ig, "_p" + mpi);
-		ill.extention[mpi] = ill.extention[0];
-		ill.original_src[mpi] = ill.original_src[0].replace(ill.filename[0], ill.filename[mpi]);
-		getPicNum++;
-	}
+		var txt = document.createElement("span");
+		txt.className = "pubd-progress-text";
+		progress.appendChild(txt);
 
-}
-var ARIA2 = (function () {
+		progress.set = function(scale,pos,str)
+		{
+			if (!pos) pos = 2;
+			var  percentStr = toDecimal2((scale * 100),pos) + "%";
+			scale = scale>1?1:(scale<0?0:scale);
+			this.scaleNum = scale;
+			bar.style.width = percentStr;
+			if (str)
+				txt.innerHTML = str;
+			else
+				txt.innerHTML = percentStr;
+		}
+		progress.scale = function()
+		{
+			return this.scaleNum;
+		}
+
+		return progress;
+	};
+})();
+
+//创建用户卡片类
+var UserCard = (function () {
+
+	return function(userid) {
+		var uinfo = document.createElement("div");
+		uinfo.userid = userid;
+		uinfo.className = "pubd-user-info";
+		var uhead = document.createElement("div");
+		uhead.className = "pubd-user-info-head";
+		uinfo.appendChild(uhead);
+		var uhead_img = document.createElement("img");
+		uinfo.uhead = uhead_img;
+		uhead.appendChild(uhead_img);
+		uinfo.uhead = uhead_img;
+
+		var infos = document.createElement("dl");
+		infos.className = "pubd-user-info-dl";
+		//ID
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-id-dt";
+		dt.innerHTML = "ID"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-id-dd";
+		dd.innerHTML = uinfo.userid;
+		uinfo.uid = dd;
+		infos.appendChild(dd);
+		//作品数
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-illusts-dt";
+		dt.innerHTML = "作品投稿数"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-illusts-dd";
+		uinfo.uillusts = dd;
+		infos.appendChild(dd);
+		//昵称
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-name-dt";
+		dt.innerHTML = "昵称"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-name-dd";
+		uinfo.uname = dd;
+		infos.appendChild(dd);
+		//收藏数
+		var dt=document.createElement("dt");
+		dt.className = "pubd-user-info-bookmarks-dt";
+		dt.innerHTML = "插画收藏数"
+		infos.appendChild(dt);
+		var dd=document.createElement("dd");
+		dd.className = "pubd-user-info-bookmarks-dd";
+		uinfo.ubookmarks = dd;
+		infos.appendChild(dd);
+
+		uinfo.infos = infos;
+		uinfo.appendChild(infos);
+
+		uinfo.set = function(obj)
+		{
+			if (obj.id)
+			{
+				uinfo.userid = obj.id;
+				uinfo.uid.innerHTML = obj.id;
+			}
+			if (obj.head) uinfo.uhead.src = obj.head;
+			if (obj.name) uinfo.uname.innerHTML = obj.name;
+			if (obj.illusts) uinfo.uillusts.innerHTML = obj.illusts;
+			if (obj.bookmarks) uinfo.ubookmarks.innerHTML = obj.bookmarks;
+		}
+		return uinfo;
+	};
+})();
+
+//创建下拉框类
+var Select = (function () {
+	return function(classname,name) {
+		var select = document.createElement("select");
+		select.className = "pubd-select" + (classname?" "+classname:"");
+		select.name = name;
+		select.id = select.name;
+
+		select.add = function(text,value)
+		{
+			var opt = new Option(text, value);
+			this.options.add(opt);
+		}
+		select.remove = function(index)
+		{
+			this.options.remove(index);
+		}
+
+		return select;
+	};
+})();
+
+//创建Aria2类
+var Aria2 = (function () {
 	var jsonrpc_version = '2.0';
 
 	function get_auth(url) {
 		return url.match(/^(?:(?![^:@]+:[^:@\/]*@)[^:\/?#.]+:)?(?:\/\/)?(?:([^:@]*(?::[^:@]*)?)?@)?/)[1];
 	};
 
-	function request(jsonrpc_path, method, params, getVersion) {
-		var xhr = new XMLHttpRequest();
+	function request(jsonrpc_path, method, params, callback, priority) {
+		if (callback==undefined) callback = function(){return;}
 		var auth = get_auth(jsonrpc_path);
 		jsonrpc_path = jsonrpc_path.replace(/^((?![^:@]+:[^:@\/]*@)[^:\/?#.]+:)?(\/\/)?(?:(?:[^:@]*(?::[^:@]*)?)?@)?(.*)/, '$1$2$3'); // auth string not allowed in url for firefox
 
 		var request_obj = {
 			jsonrpc: jsonrpc_version,
 			method: method,
-			id: getVersion ? "1" : (new Date()).getTime().toString(),
+			id: priority ? "1" : (new Date()).getTime().toString(),
 		};
 		if (params) request_obj['params'] = params;
 		if (auth && auth.indexOf('token:') == 0) params.unshift(auth);
 
-		xhr.open("POST", jsonrpc_path + "?tm=" + (new Date()).getTime().toString(), true);
-		xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+		var headers = {"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",}
 		if (auth && auth.indexOf('token:') != 0) {
-			xhr.setRequestHeader("Authorization", "Basic " + btoa(auth));
+			headers.Authorization = "Basic " + btoa(auth);
 		}
-		xhr.send(JSON.stringify(request_obj));
-		if (getVersion) {
-			xhr.onreadystatechange = function ()  //设置回调函数
-			{
-				if (xhr.readyState == 4 && xhr.status == 200)
+		GM_xmlhttpRequest({
+			url: jsonrpc_path + "?tm=" + (new Date()).getTime().toString(),
+			method:"POST",
+			responseType:"text",
+			data:JSON.stringify(request_obj),
+			headers: headers,
+			onload: function(response) {
+				try
 				{
-					var JSONreq = JSON.parse(xhr.responseText);
-					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="发现Aria2 ver" + JSONreq.result.version;
+					var JSONreq = JSON.parse(response.response);
+					callback(JSONreq);
+				}catch(e)
+				{
+					console.error("Aria2发送信息错误",e,response);
+					callback(false);
 				}
-				else if (xhr.readyState == 4 && xhr.status != 200)
-					document.getElementsByName("PUBD_PRC_path_check")[0].innerHTML="Aria2连接失败";
+			},
+			onerror: function(response) {
+				console.error(response);
+				callback(false);
 			}
-		}
+		})
 	};
 
 	return function (jsonrpc_path) {
 		this.jsonrpc_path = jsonrpc_path;
-		this.addUri = function (uri, options) {
-			request(this.jsonrpc_path, 'aria2.addUri', [[uri, ], options]);
+		this.addUri = function (uri, options, callback) {
+			request(this.jsonrpc_path, 'aria2.addUri', [[uri, ], options], callback);
 		};
-		this.getVersion = function () {
-			request(this.jsonrpc_path, 'aria2.getVersion', [], true);
+		this.addTorrent = function (base64txt, options, callback)
+		{
+			request(this.jsonrpc_path, 'aria2.addTorrent', [base64txt, [], options], callback);
+		};
+		this.getVersion = function (callback) {
+			request(this.jsonrpc_path, 'aria2.getVersion', [], callback, true);
+		};
+		this.getGlobalOption = function (callback) {
+			request(this.jsonrpc_path, 'aria2.getGlobalOption', [], callback, true);
 		};
 		return this;
 	}
 })();
-//生成菜单
-function buildMenu()
+
+/*
+ * 自定义函数区
+*/
+//构建开始按钮
+function buildbtnStart(touch)
 {
-	var menu_ul = document.createElement("ul");
-	menu_ul.className = "items";
-	//menu_ul.style.display = "none";
-	menu_ul.style.display = "block";
-	var li = document.createElement("li");
-	var a = document.createElement("a");
-	a.className = "item";
-	a.innerHTML = "Aria2 RPC";
-	a.onclick = function () { startProgram(0); li1.removeChild(menu_ul); };
-	li.appendChild(a);
-	menu_ul.appendChild(li);
-	var li = document.createElement("li");
-	var a = document.createElement("a");
-	a.className = "item";
-	a.innerHTML = "导出下载文件";
-	a.onclick = function ()
+	if (touch) //手机版
 	{
-		if (exportWindow.parentNode != exportInsertPlace)
-			exportInsertPlace.appendChild(exportWindow);
-		li1.removeChild(menu_ul);
-		startProgram(1);
+
+	}else
+	{
+		var btnStart = document.createElement("a");
+		btnStart.id = "pubd-start";
+		btnStart.className = "pubd-start";
+		//添加图标
+		var icon = document.createElement("i");
+		icon.className = "pubd-icon";
+		btnStart.appendChild(icon);
+		//添加文字
+		var span = document.createElement("span");
+		span.className = "text";
+		span.innerHTML = "使用PUBD扒图";
+		btnStart.appendChild(span);
+
+		//鼠标移入和按下都起作用
+		//btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
+		btnStart.addEventListener("click",function(){pubd.menu.classList.toggle("display-none")});
+	}
+	return btnStart;
+}
+
+//构建菜单
+function buildbtnMenu(touch)
+{
+	if (touch) //手机版
+	{
+
+	}else
+	{
+		var menu2 = new pubdMenu(touch);
+		menu2.add("子菜单1","",function(){alert("子菜单1")});
+		menu2.add("子菜单2","",function(){alert("子菜单2")});
+		var menu1 = new pubdMenu(touch);
+		menu1.add("子菜单1","",function(){alert("子菜单1")});
+		menu1.add("子菜单2","",null,menu2);
+		var menu3 = new pubdMenu(touch);
+		menu3.add("子菜单1","",function(){alert("子菜单1")});
+		menu3.add("子菜单2","",function(){alert("子菜单2")});
+		menu3.add("子菜单2","",function(){alert("子菜单3")});
+		menu3.add("子菜单2","",function(){alert("子菜单4")});
+		var menu4 = new pubdMenu(touch);
+		menu4.add("子菜单1","",null,menu3);
+		menu4.add("子菜单2","",function(){alert("子菜单2")});
+		menu4.add("子菜单2","",function(){alert("子菜单5")});
+		menu4.add("子菜单2","",function(){alert("子菜单6")});
+
+		var menu = new pubdMenu(touch,"pubd-menu-main");
+		menu.id = "pubd-menu";
+		menu.add("下载该画师","",function()
+				{
+					pubd.dialog.downthis.show();
+					menu.hide();
+				}
+			);
+		menu.add("占位用","",null,menu1);
+		menu.add("没功能","",null,menu4);
+		menu.add("多个画师下载",null,function()
+				{//做成“声音”的设备样子
+					alert("这个功能也没有开发")
+				}
+			);
+		menu.add(0);
+		menu.add("选项","pubd-menu-setting",function()
+				{
+					pubd.dialog.config.show();
+					menu.hide();
+				}
+			);
+	}
+	return menu;
+}
+
+//构建设置对话框
+function buildDlgConfig(touch)
+{
+	var dlg = new Dialog("PUBD选项 v" + scriptVersion,"pubd-config","pubd-config");
+	dlg.cptBtns.add("反馈","dlg-btn-debug","https://github.com/Mapaler/PixivUserBatchDownload/issues");
+	dlg.cptBtns.add("？","dlg-btn-help","https://github.com/Mapaler/PixivUserBatchDownload/tree/develop_v5");
+	dlg.token_ani = null; //储存Token进度条动画句柄
+	var dlgc = dlg.content;
+
+	var dl=document.createElement("dl");
+	dlgc.appendChild(dl);
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "Pixiv访问权限，默认仅能访问公开作品";
+	var dd=document.createElement("dd");
+	var checkbox = new LabelInput("开启登陆功能，解除浏览限制","pubd-needlogin","pubd-needlogin","checkbox","1",true);
+	dlg.needlogin = checkbox.input;
+	dlg.needlogin.onclick = function()
+	{
+		if (dlg.needlogin.checked)
+		{
+			dlg.token_info.classList.remove("height-none");
+			dlg.start_token_animate();
+		}else
+		{	
+			dlg.token_info.classList.add("height-none");
+			dlg.stop_token_animate();
+		}
+		pubd.dialog.login.cptBtns.close.click();
+	}
+	dd.appendChild(checkbox);
+
+	var a_setting = document.createElement("a");
+	a_setting.className = "pubd-browsing-restriction";
+	a_setting.href = "http://www.pixiv.net/setting_user.php#over-18";
+	a_setting.target = "_blank";
+	a_setting.innerHTML = "设置我的账户浏览限制";
+	dd.appendChild(a_setting);
+	dl.appendChild(dd);
+	var dd=document.createElement("dd");
+	dd.className = "pubd-token-info height-none";
+	dlg.token_info = dd;
+	var progress = new Progress("pubd-token-expires",true);
+	dlg.token_expires = progress;
+	dd.appendChild(progress);
+	//开始动画
+	dlg.start_token_animate = function()
+	{
+		//if (!dlg.classList.contains("display-none"))
+		//{
+			dlg.stop_token_animate();
+			requestAnimationFrame(token_animate);
+			dlg.token_ani = setInterval(function () {requestAnimationFrame(token_animate)}, 1000);
+		//}
+	}
+	//停止动画
+	dlg.stop_token_animate = function()
+	{
+		clearInterval(dlg.token_ani);
+	}
+	//动画具体实现
+	function token_animate()
+	{
+		var nowdate = new Date();
+		var olddate = new Date(pubd.auth.login_date);
+		var expires_in = parseInt(pubd.auth.response.expires_in);
+		var differ = expires_in - (nowdate - olddate)/1000;
+		var scale = differ / expires_in;
+		if (differ>0)
+		{
+			progress.set(scale,2,"Token有效剩余" + parseInt(differ) + "秒");
+		}else
+		{
+			progress.set(0,2,"Token已失效，请重新登录");
+			clearInterval(dlg.token_ani);
+		}
+		//console.log("Token有效剩余" + differ + "秒"); //检测动画后台是否停止
+	}
+
+	var ipt = document.createElement("input");
+	ipt.type = "button";
+	ipt.className = "pubd-tologin";
+	ipt.value = "账户登陆"
+	ipt.onclick = function()
+	{
+		pubd.dialog.login.show();
+	}
+	dd.appendChild(ipt);
+	dl.appendChild(dd);
+
+	//“下载该画师”窗口选项
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+
+	var frm = new Frame("“下载该画师”窗口","pubd-frmdownthis");
+	var chk_autoanalyse = new LabelInput("打开窗口时自动获取","pubd-autoanalyse","pubd-autoanalyse","checkbox","1",true);
+	dlg.autoanalyse = chk_autoanalyse.input;
+	var chk_autodownload = new LabelInput("获取完成后自动下载","pubd-autodownload","pubd-autodownload","checkbox","1",true);
+	dlg.autodownload = chk_autodownload.input;
+
+	frm.content.appendChild(chk_autoanalyse);
+	frm.content.appendChild(chk_autodownload);
+	dd.appendChild(frm);
+	dl.appendChild(dd);
+
+/*
+	//选项卡栏
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+	dd.className = "pubd-config-tab"
+	var tabs = new Tabs();
+	tabs.add("第一选项卡");
+	tabs.add("第二选项卡");
+	dd.appendChild(tabs);
+	dl.appendChild(dd);
+*/
+	//配置方案储存
+	dlg.schemes = null;
+	dlg.reloadSchemes = function()
+	{//重新读取所有下载方案
+		dlg.downScheme.options.length = 0;
+		dlg.schemes.forEach(function(item,index){
+			dlg.downScheme.add(item.name,index);
+		})
+		if (dlg.downScheme.options.length > 0)
+			dlg.selectScheme(0);
+	}
+	dlg.loadScheme = function(scheme)
+	{//读取一个下载方案
+		if (scheme == undefined)
+		{
+			dlg.rpcurl.value = "";
+			dlg.savedir.value = "";
+			dlg.savepath.value = "";
+			dlg.loadMasklistFromArray([]);
+		}else
+		{
+			dlg.rpcurl.value = scheme.rpcurl;
+			dlg.savedir.value = scheme.savedir;
+			dlg.savepath.value = scheme.savepath;
+			dlg.loadMasklistFromArray(scheme.masklist);
+		}
+	}
+	dlg.addMask = function(name,logic,content,value)
+	{//向掩码列表添加一个新的掩码
+		if (value == undefined)
+			value = dlg.masklist.options.length;
+		var text = name + " : " + logic + " : " + content;
+		var opt = new Option(text, value);
+		dlg.masklist.options.add(opt);
+	}
+	dlg.loadMask = function(mask)
+	{//读取一个掩码到三个文本框，只是用来查看
+		dlg.mask_name.value = mask.name;
+		dlg.mask_logic.value = mask.logic;
+		dlg.mask_content.value = mask.content;
+	}
+	dlg.loadMasklistFromArray = function(masklist)
+	{//从掩码数组重置掩码列表
+		dlg.masklist.length = 0;
+		masklist.forEach(function(item,index){
+			dlg.addMask(item.name,item.logic,item.content,index);
+		})
+	}
+	//选择一个方案，同时读取设置
+	dlg.selectScheme = function(index)
+	{
+		if (index == undefined) index=0;
+		if (dlg.downScheme.options.length<1 || dlg.downScheme.selectedOptions.length<1){return;}
+		var scheme = dlg.schemes[index];
+		dlg.loadScheme(scheme);
+		dlg.downScheme.selectedIndex = index;
+	}
+	//选择一个掩码，同时读取设置
+	dlg.selectMask = function(index)
+	{
+		if (dlg.downScheme.options.length<1 || dlg.downScheme.selectedOptions.length<1){return;}
+		if (dlg.masklist.options.length<1 || dlg.masklist.selectedOptions.length<1){return;}		
+		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+		var mask = scheme.masklist[index];
+		dlg.loadMask(mask);
+		dlg.masklist.selectedIndex = index;
+	}
+	//配置方案选择
+	var dt=document.createElement("dt");
+	dt.innerHTML = "选择下载方案";
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+	var slt = new Select("pubd-downscheme");
+	slt.onchange = function()
+	{
+		dlg.selectScheme(this.selectedIndex);
 	};
-	li.appendChild(a);
-	menu_ul.appendChild(li);
-	var li = document.createElement("li");
-	var a = document.createElement("a");
-	a.className = "item";
-	a.innerHTML = "生成直接链接";
-	a.onclick = function ()
-	{
-		if (directLinkWindow.parentNode != directLinkInsertPlace)
-			exportInsertPlace.appendChild(directLinkWindow);
-		li1.removeChild(menu_ul);
-		startProgram(2);
-	};
-	li.appendChild(a);
-	menu_ul.appendChild(li);
-	var li = document.createElement("li");
-	li.className = "separated";
-	var a = document.createElement("a");
-	a.className = "item";
-	a.innerHTML = "设置";
-	a.onclick = function ()
-	{
-		if (setWindow.parentNode != setInsertPlace)
-			setInsertPlace.appendChild(setWindow);
-		li1.removeChild(menu_ul);
-	}
-	li.appendChild(a);
-	menu_ul.appendChild(li);
-	return menu_ul;
-}
-function buildSetting()
-{
-	var set = document.createElement("div");
-	set.id = "PixivUserBatchDownloadSetting";
-	set.className = "notification-popup";
-	set.style.display = "block";
-	//自定义CSS
-	var style = document.createElement("style");
-	set.appendChild(style);
-	style.type = "text/css";
-	style.innerHTML +=
-		[
-			".PUBD_type_name" + "{\r\n" + [
-				'width:120px',
-			].join(';\r\n') + "\r\n}",
-			".PUBD_PRC_path" + "{\r\n" + [
-				'width:180px' ,
-			].join(';') + "\r\n}",
-			".PUBD_save_dir,.PUBD_save_path,.PUBD_multiple_mask,.PUBD_image_src,.PUBD_referer" + "{\r\n" + [
-				'width:340px' ,
-			].join(';') + "\r\n}",
-			"#PixivUserBatchDownloadSetting .thread" + "{\r\n" + [
-				'margin:0',
-				'padding-left:5px',
-			].join(';') + "\r\n}",
-			"#PixivUserBatchDownloadSetting .type_name" + "{\r\n" + [
-				'height:60px',
-			].join(';') + "\r\n}",
-			"#PixivUserBatchDownloadSetting .text" + "{\r\n" + [
-				'height:4em',
-				'margin-right:0',
-			].join(';') + "\r\n}",
-		].join('\r\n');
-
-
-	//标题行
-	var h2 = document.createElement("h2");
-	h2.innerHTML = "Pixiv画师作品批量获取工具" + (typeof (GM_info) != "undefined" ? " v" + GM_info.script.version : "");
-	h2.appendChild(document.createElement("br"));
-	var a = document.createElement("a");
-	a.style.color = "red";
-	a.href = "https://github.com/Mapaler/PixivUserBatchDownload/tree/develop";
-	a.target = "_blank";
-	a.innerHTML = "试用3.0，提供反馈，参与开发";
-	h2.appendChild(a);
-
-	var a = document.createElement("a");
-	a.className = "_official-badge";
-	a.innerHTML = "设置说明";
-	a.href = "https://github.com/Mapaler/PixivUserBatchDownload/blob/master/README.md";
-	a.target = "_blank";
-	h2.appendChild(a);
-	//设置内容
-	var ul = document.createElement("ul");
-	ul.className = "notification-list message-thread-list";
+	dlg.downScheme = slt;
+	dd.appendChild(slt);
 	
-	//设置-模式
-	var li = document.createElement("li");
-	li.className = "thread download_mode";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "分析模式";
-	divTime.innerHTML = "选择是否获得文件的准确扩展名"
-
-	var lbl = document.createElement("label");
 	var ipt = document.createElement("input");
-	ipt.type = "radio";
-	ipt.value = 0;
-	if (download_mod == ipt.value) ipt.setAttribute('checked', 'true');
-	ipt.name = "PUBD_download_mode";
-	lbl.appendChild(ipt);
-	lbl.innerHTML += "准确模式（分析扩展名）";
-	divText.appendChild(lbl);
-	var lbl = document.createElement("label");
-	var ipt = document.createElement("input");
-	ipt.type = "radio";
-	ipt.value = 1;
-	if (download_mod == ipt.value) ipt.setAttribute('checked', 'true');
-	ipt.name = "PUBD_download_mode";
-	lbl.appendChild(ipt);
-	lbl.innerHTML += "快速模式（直接生成3种可能的扩展名，无法获取作品介绍）";
-	divText.appendChild(lbl);
-
-	//设置-RPC Path
-	var li = document.createElement("li");
-	li.className = "thread";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "Aria2 JSON-RPC Path";
-	divTime.innerHTML = "填写Aria2 JSON-RPC地址"
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_PRC_path";
-	ipt.name = "PUBD_PRC_path";
-	ipt.value = getConfig("PUBD_PRC_path");
-	divText.appendChild(ipt);
-	var btnCheckLink = document.createElement("button");
-	btnCheckLink.className = "_button";
-	btnCheckLink.name = "PUBD_PRC_path_check";
-	btnCheckLink.innerHTML = "检测地址";
-	btnCheckLink.onclick = function ()
+	ipt.type = "button";
+	ipt.className = "pubd-downscheme-new";
+	ipt.value = "新建"
+	ipt.onclick = function()
 	{
-		this.innerHTML = "正在连接...";
-		var aria2 = new ARIA2(document.getElementsByName("PUBD_PRC_path")[0].value);
-		aria2.getVersion();
+		var schemName = prompt("请输入方案名","我的方案");
+		var scheme = new DownScheme(schemName);
+		var length = dlg.schemes.push(scheme);
+		dlg.downScheme.add(scheme.name,length-1);
+		dlg.downScheme.selectedIndex = length-1;
+		dlg.loadScheme(scheme);
+		console.log(scheme);
+		//dlg.reloadSchemes();
 	}
-	divText.appendChild(btnCheckLink);
-	//设置-下载目录
-	var li = document.createElement("li");
-	li.className = "thread";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
+	dd.appendChild(ipt);
 
-	divName.innerHTML = "下载目录";
-	divTime.innerHTML = "下载主目录绝对路径，留空使用Aria2默认路径"
 	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_save_dir";
-	ipt.name = "PUBD_save_dir";
-	ipt.value = getConfig("PUBD_save_dir");
-	divText.appendChild(ipt);
-	//设置-图片网址
-	var li = document.createElement("li");
-	li.className = "thread";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "图片网址";
-	divTime.innerHTML = "下载的图片文件地址"
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_image_src";
-	ipt.name = "PUBD_image_src";
-	ipt.value = getConfig("PUBD_image_src");
-	divText.appendChild(ipt);
-	//设置-下载路径
-	var li = document.createElement("li");
-	li.className = "thread";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "保存路径";
-	divTime.innerHTML = "分组保存的文件夹和文件名"
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_save_path";
-	ipt.name = "PUBD_save_path";
-	ipt.value = getConfig("PUBD_save_path");
-	divText.appendChild(ipt);
-	//设置-referer（引用）地址
-	var li = document.createElement("li");
-	li.className = "thread";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "引用页面";
-	divTime.innerHTML = "Referer，访问来源页面地址"
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_referer";
-	ipt.name = "PUBD_referer";
-	ipt.value = getConfig("PUBD_referer");
-	divText.appendChild(ipt);
-	//设置-类型命名
-	var li = document.createElement("li");
-	li.className = "thread type_name";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "类型命名";
-	divTime.innerHTML = "%{type_name}的内容"
-
-	var lbl = document.createElement("label");
-	lbl.innerHTML = "单图：";
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_type_name";
-	ipt.name = "PUBD_type_name0";
-	ipt.value = getConfig("PUBD_type_name0");
-	lbl.appendChild(ipt);
-	divText.appendChild(lbl);
-
-	var lbl = document.createElement("label");
-	lbl.innerHTML = "多图：";
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_type_name";
-	ipt.name = "PUBD_type_name1";
-	ipt.value = getConfig("PUBD_type_name1");
-	lbl.appendChild(ipt);
-	divText.appendChild(lbl);
-
-	var lbl = document.createElement("label");
-	lbl.innerHTML = "动图：";
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_type_name";
-	ipt.name = "PUBD_type_name2";
-	ipt.value = getConfig("PUBD_type_name2");
-	lbl.appendChild(ipt);
-	divText.appendChild(lbl);
-
-	var lbl = document.createElement("label");
-	lbl.innerHTML = "单漫：";
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_type_name";
-	ipt.name = "PUBD_type_name3";
-	ipt.value = getConfig("PUBD_type_name3");
-	lbl.appendChild(ipt);
-	divText.appendChild(lbl);
-	//设置-多图掩码
-	var li = document.createElement("li");
-	li.className = "thread";
-	var divTime = document.createElement("div");
-	divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "多图掩码内容";
-	divTime.innerHTML = "替换%{multiple}的内容"
-	var ipt = document.createElement("input");
-	ipt.type = "text";
-	ipt.className = "PUBD_multiple_mask";
-	ipt.name = "PUBD_multiple_mask";
-	ipt.value = getConfig("PUBD_multiple_mask");
-	divText.appendChild(ipt);
-
-	//确定按钮行
-	var confirmbar = document.createElement("div");
-	confirmbar.className = "_notification-request-permission";
-	confirmbar.style.display = "block";
-	var btnConfirm = document.createElement("button");
-	btnConfirm.className = "_button";
-	btnConfirm.innerHTML = "确定";
-	var btnCancel = document.createElement("button");
-	btnCancel.className = "_button";
-	btnCancel.innerHTML = "取消";
-	btnCancel.onclick = function () { set.parentNode.removeChild(set); }
-	var btnReset = document.createElement("button");
-	btnReset.className = "_button";
-	btnReset.innerHTML = "重置设置";
-	btnReset.onclick = function () { ResetConfig(); }
-	confirmbar.appendChild(btnConfirm);
-	confirmbar.appendChild(btnCancel);
-	confirmbar.appendChild(btnReset);
-
-	set.appendChild(h2);
-	set.appendChild(ul);
-	set.appendChild(confirmbar);
-
-	btnConfirm.onclick = function ()
+	ipt.type = "button";
+	ipt.className = "pubd-downscheme-remove";
+	ipt.value = "删除"
+	ipt.onclick = function()
 	{
-		setConfig("PUBD_reset", Version);
-		var radioObj = document.getElementsByName("PUBD_download_mode");
-		for (var oi = 0; oi < radioObj.length; oi++)
-		{
-			if (radioObj[oi].checked)
-			{
-				setConfig("PUBD_download_mode", oi); //radioObj[oi].value
-				break;
-			}
+		if (dlg.downScheme.options.length < 1){alert("已经没有方案了");return;}
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中方案");return;}
+		var index = dlg.downScheme.selectedIndex;
+		dlg.schemes.splice(index, 1);
+		dlg.downScheme.remove(index);
+		var index = dlg.downScheme.selectedIndex;
+		if (index<0) dlg.reloadSchemes();//没有选中的，重置
+		else dlg.loadScheme(dlg.schemes[index]);
+	}
+	dd.appendChild(ipt);
+	dl.appendChild(dd);
+
+	//Aria2 URL
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "Aria2 JSON-RPC 路径"
+	var rpcchk = document.createElement("span"); //显示检查状态用
+	rpcchk.className = "pubd-rpcchk-info";
+	dlg.rpcchk = rpcchk;
+	dlg.rpcchk.runing = false;
+	dt.appendChild(rpcchk);
+	var dd=document.createElement("dd");
+	var rpcurl = document.createElement("input");
+	rpcurl.type = "url";
+	rpcurl.className = "pubd-rpcurl";
+	rpcurl.name = "pubd-rpcurl";
+	rpcurl.id = rpcurl.name;
+	rpcurl.placeholder = "Aria2的信息接收路径"
+	rpcurl.onchange =  function()
+	{
+		dlg.rpcchk.innerHTML = "";
+		dlg.rpcchk.runing = false;
+		if (dlg.downScheme.selectedOptions.length < 1){return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].rpcurl = rpcurl.value;
+	}
+	dlg.rpcurl = rpcurl;
+	dd.appendChild(rpcurl);
+
+	var ipt = document.createElement("input");
+	ipt.type = "button";
+	ipt.className = "pubd-rpcchk";
+	ipt.value = "检查路径"
+	ipt.onclick = function()
+	{
+		if (dlg.rpcchk.runing) return;
+		if (dlg.rpcurl.value.length < 1)
+		{	
+			dlg.rpcchk.innerHTML = "路径为空";
+			return;
 		}
-		setConfig("PUBD_PRC_path", document.getElementsByName("PUBD_PRC_path")[0].value);
-		setConfig("PUBD_save_dir", document.getElementsByName("PUBD_save_dir")[0].value);
-		setConfig("PUBD_image_src", document.getElementsByName("PUBD_image_src")[0].value);
-		setConfig("PUBD_save_path", document.getElementsByName("PUBD_save_path")[0].value);
-		setConfig("PUBD_referer", document.getElementsByName("PUBD_referer")[0].value);
-		setConfig("PUBD_type_name0", document.getElementsByName("PUBD_type_name0")[0].value);
-		setConfig("PUBD_type_name1", document.getElementsByName("PUBD_type_name1")[0].value);
-		setConfig("PUBD_type_name2", document.getElementsByName("PUBD_type_name2")[0].value);
-		setConfig("PUBD_type_name3", document.getElementsByName("PUBD_type_name3")[0].value);
-		setConfig("PUBD_multiple_mask", document.getElementsByName("PUBD_multiple_mask")[0].value);
-
-		btnCancel.onclick();
-	}
-
-	return set;
-}
-
-//生成导出下载窗口
-function buildExport() {
-	var set = document.createElement("div");
-	set.id = "PixivUserBatchDownloadExport";
-	set.className = "notification-popup";
-	set.style.display = "block";
-	//自定义CSS
-	var style = document.createElement("style");
-	set.appendChild(style);
-	style.type = "text/css";
-	style.innerHTML +=
-		[
-			".PUBD_batch" + "{\r\n" + [
-				'width:350px',
-				'max-width:350px',
-				'min-width:350px',
-				'height:300px',
-			].join(';\r\n') + "\r\n}",
-		].join('\r\n');
-
-	//标题行
-	var h2 = document.createElement("h2");
-	h2.innerHTML = "Aria2导出";
-
-	//设置内容
-	var ul = document.createElement("ul");
-	ul.className = "notification-list message-thread-list";
-
-	//导出-Batch
-	var li = document.createElement("li");
-	//li.className = "thread";
-	//var divTime = document.createElement("div");
-	//divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	//li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "命令行提示符批处理";
-	//divTime.innerHTML = "保存为bat文件运行"
-	var ipt = document.createElement("textarea");
-	ipt.className = "PUBD_batch";
-	ipt.name = "PUBD_batch";
-	ipt.wrap = "off";
-	divText.appendChild(ipt);
-
-	//导出-Down
-	var li = document.createElement("li");
-	//li.className = "thread";
-	//var divTime = document.createElement("div");
-	//divTime.className = "time date";
-	//var divName = document.createElement("div");
-	//divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	//li.appendChild(divTime);
-	//li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	//divName.innerHTML = "下载命令";
-	//divTime.innerHTML = "保存为bat文件运行"
-	var btnExport = document.createElement("a");
-	btnExport.className = "_button";
-	btnExport.name = "PUBD_down";
-	btnExport.target = "_blank"
-	btnExport.download = "aria2" + ".session.txt"
-	btnExport.innerHTML = "导出Aria2会话文件";
-	//btnExport.onclick = function () { startProgram(2); }
-	divText.appendChild(btnExport);
-
-	//确定按钮行
-	var confirmbar = document.createElement("div");
-	confirmbar.className = "_notification-request-permission";
-	confirmbar.style.display = "block";
-	var btnClose = document.createElement("button");
-	btnClose.className = "_button";
-	btnClose.innerHTML = "关闭";
-	btnClose.onclick = function () { set.parentNode.removeChild(set); }
-
-	confirmbar.appendChild(btnClose);
-
-	set.appendChild(h2);
-	set.appendChild(ul);
-	set.appendChild(confirmbar);
-	return set;
-}
-
-//生成直接下载链接窗口
-function buildDirectLink()
-{
-	var set = document.createElement("div");
-	set.id = "PixivUserBatchDownloadDirectLink";
-	set.className = "notification-popup";
-	set.style.display = "block";
-	//自定义CSS
-	var style = document.createElement("style");
-	set.appendChild(style);
-	style.type = "text/css";
-	style.innerHTML +=
-		[
-			".PUBD_dLink" + "{\r\n" + [
-				'width:100%',
-				'height:300px',
-				'overflow:scroll',
-				'border:1px solid #becad8',
-			].join(';\r\n') + "\r\n}",
-			"#PixivUserBatchDownloadDirectLink a" + "{\r\n" + [
-				'display:inline',
-				'padding:0',
-				'background:none',
-				'color:	#258fb8',
-				'white-space:nowrap',
-			].join(';\r\n') + "\r\n}",
-		].join('\r\n');
-
-	//标题行
-	var h2 = document.createElement("h2");
-	h2.innerHTML = "直接下载链接";
-
-	//设置内容
-	var ul = document.createElement("ul");
-	ul.className = "notification-list message-thread-list";
-
-	//导出-Batch
-	var li = document.createElement("li");
-	//li.className = "thread";
-	//var divTime = document.createElement("div");
-	//divTime.className = "time date";
-	var divName = document.createElement("div");
-	divName.className = "name";
-	var divText = document.createElement("div");
-	divText.className = "text";
-	//li.appendChild(divTime);
-	li.appendChild(divName);
-	li.appendChild(divText);
-	ul.appendChild(li);
-
-	divName.innerHTML = "用<a href=\"https://addons.mozilla.org/firefox/addon/downthemall/\" target=\"_blank\">DownThemAll!</a>的批量下载，重命名掩码设置为“*title*”<br />" +
-		"如果发生403错误，使用<a href=\"https://addons.mozilla.org/firefox/addon/referrer-control/\" target=\"_blank\">RefControl</a>添加站点“pixiv.net”，设置“伪装-发送站点根目录”";
-	//divTime.innerHTML = "保存为bat文件运行"
-	var ipt = document.createElement("div");
-	ipt.className = "PUBD_dLink";
-	divText.appendChild(ipt);
-
-	//确定按钮行
-	var confirmbar = document.createElement("div");
-	confirmbar.className = "_notification-request-permission";
-	confirmbar.style.display = "block";
-	var btnClose = document.createElement("button");
-	btnClose.className = "_button";
-	btnClose.innerHTML = "关闭";
-	btnClose.onclick = function () { set.parentNode.removeChild(set); }
-
-	confirmbar.appendChild(btnClose);
-
-	set.appendChild(h2);
-	set.appendChild(ul);
-	set.appendChild(confirmbar);
-	return set;
-}
-
-//检测下载完成情况
-function startProgramCheck(mode) {
-	if (getPicNum > 0 && getPicNum >= dataset.illust_file_count) {
-		li2.innerHTML = "获取完成：" + getPicNum + "/" + dataset.illust_file_count;
-		startDownload(mode);
-		clearInterval(downOver);
-	}
-	else
-	{
-		li2.innerHTML = "已获取图像地址：" + getPicNum + "/" + dataset.illust_file_count;
-		var PUBD_batch = document.getElementsByName("PUBD_batch")[0];
-		if (PUBD_batch) PUBD_batch.value = li2.innerHTML;
-		var PUBD_dLink = document.getElementsByClassName("PUBD_dLink")[0];
-		if (PUBD_dLink) PUBD_dLink.innerHTML = li2.innerHTML;
-	}
-	console.debug("获取%d/%d",getPicNum, dataset.illust_file_count);
-}
-//开始构建下载
-function startDownload(mode) {
-	switch (mode)
-	{
-		case 0: //RPC模式
-			var aria2 = new ARIA2(getConfig("PUBD_PRC_path"));
-
-			for (var ii = 0; ii < dataset.illust.length; ii++) {
-				var ill = dataset.illust[ii];
-				for (var pi = 0; pi < ill.original_src.length; pi++)
-				{
-					var ext = ill.extention[pi];
-					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
-					{
-						var srtObj = {
-							"out": replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true),
-							"referer": showMask(getConfig("PUBD_referer"), ill, pi),
-							"remote-time": "true",
-							"allow-overwrite": "false",
-							"auto-file-renaming": "false"
-						}
-						if(getConfig("PUBD_save_dir").length>0)
-						{
-							srtObj.dir = replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true);
-						}
-						aria2.addUri(showMask(getConfig("PUBD_image_src"), ill, pi), srtObj);
-
-						//快速模式重新更改扩展名
-						if (download_mod == 1)
-						{
-							switch (dmi)
-							{
-								case 0:
-									ill.extention[pi] = ext == "jpg" ? "png" : "jpg";
-									break;
-								case 1:
-									ill.extention[pi] = ext != "gif" ? "gif" : "png";
-									break;
-								case 2:
-									ill.extention[pi] = ext; //操作完还原
-									break;
-								default:
-							}
-							ill.original_src[pi] = ill.original_src[0].replace(/\.\w+$/, "." + ill.extention[pi]);
-						}
-					}
-				}
-			}
-			alert("全部发送完毕");
-			break;
-		case 1: //生成BAT下载命令模式
-			var txt = "";
-			var downtxt = "";
-			for (var ii = 0; ii < dataset.illust.length; ii++)
-			{
-				var ill = dataset.illust[ii];
-				for (var pi = 0; pi < ill.original_src.length; pi++)
-				{
-					var ext = ill.extention[pi];
-					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
-					{
-						txt += "aria2c --allow-overwrite=false --auto-file-renaming=false --remote-time=true " + ((getConfig("PUBD_save_dir").length > 0) ? "--dir=\"" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) + "\" " : "") + "--out=\"" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true) + "\" --referer=\"" + showMask(getConfig("PUBD_referer"), ill, pi) + "\" \"" + showMask(getConfig("PUBD_image_src"), ill, pi) + "\"";
-						downtxt += showMask(getConfig("PUBD_image_src"), ill, pi)
-							+ ((getConfig("PUBD_save_dir").length > 0) ? "\r\n dir=" + replacePathSafe(showMask(getConfig("PUBD_save_dir"), ill, pi, replacePathSafe), true) : "")
-							+ "\r\n out=" + replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true)
-							+ "\r\n referer=" + showMask(getConfig("PUBD_referer"), ill, pi)
-							+ "\r\n allow-overwrite=false"
-							+ "\r\n auto-file-renaming=false"
-							+ "\r\n remote-time=true"
-						;
-						txt += "\r\n";
-						downtxt += "\r\n";
-						//快速模式重新更改扩展名
-						if (download_mod == 1)
-						{
-							switch (dmi)
-							{
-								case 0:
-									ill.extention[pi] = ext == "jpg" ? "png" : "jpg";
-									break;
-								case 1:
-									ill.extention[pi] = ext != "gif" ? "gif" : "png";
-									break;
-								case 2:
-									ill.extention[pi] = ext; //操作完还原
-									break;
-								default:
-							}
-							ill.original_src[pi] = ill.original_src[0].replace(/\.\w+$/, "." + ill.extention[pi]);
-						}
-					}
-				}
-			}
-			var txta = document.getElementsByName("PUBD_batch")[0];
-			var btn = document.getElementsByName("PUBD_down")[0];
-			if (txta) txta.value = txt;
-			var downBlob = new Blob([downtxt], {'type': 'text\/plain'});
-			var downurl = window.URL.createObjectURL(downBlob);//"data:text/plain;charset=utf-8," + encodeURIComponent(downtxt);
-			if (btn)
-			{
-				btn.href = downurl;
-				btn.download = dataset.user_id + "_" + dataset.user_name + ".session.txt"
-			}
-			break;
-		case 2: //生成直接下载链接模式
-			var linksDom = document.getElementsByClassName("PUBD_dLink")[0];
-			linksDom.innerHTML = "";
-			for (var ii = 0; ii < dataset.illust.length; ii++)
-			{
-				var ill = dataset.illust[ii];
-				for (var pi = 0; pi < ill.original_src.length; pi++)
-				{
-					var ext = ill.extention[pi];
-					for (var dmi = 0; dmi < ((download_mod == 1 && ill.type != 2) ? 3 : 1) ; dmi++)
-					{
-						var dlink = document.createElement("a");
-						var br = document.createElement("br");
-						dlink.href = showMask(getConfig("PUBD_image_src"), ill, pi);
-						dlink.title = replacePathSafe(showMask(getConfig("PUBD_save_path"), ill, pi, replacePathSafe), true);
-						dlink.innerHTML = dlink.title; //showMask("%{illust_id}_%{title}_p%{page}", ill, pi);
-						linksDom.appendChild(dlink);
-						linksDom.appendChild(br);
-						//快速模式重新更改扩展名
-						if (download_mod == 1)
-						{
-							switch (dmi)
-							{
-								case 0:
-									ill.extention[pi] = ext == "jpg" ? "png" : "jpg";
-									break;
-								case 1:
-									ill.extention[pi] = ext != "gif" ? "gif" : "png";
-									break;
-								case 2:
-									ill.extention[pi] = ext; //操作完还原
-									break;
-								default:
-							}
-							ill.original_src[pi] = ill.original_src[0].replace(/\.\w+$/, "." + ill.extention[pi]);
-						}
-					}
-				}
-			}
-			break;
-		default:
-			alert("未知的下载模式");
-			break;
-	}
-};
-	
-function getConfig(key, type)
-{
-	//-1原始，返回null，0 = 字符，返回空, 1 = 数字返回0,
-	if (type == undefined)
-		type = 0;
-	var value = window.localStorage.getItem(key);
-	if (window.localStorage)
-	{
-		switch (type)
-		{
-			case 0: //字符
-				return value || "";
-				break;
-			case 1: //数字
-				return value ? parseInt(0 + value.replace(/\D/ig, "")) : 0;
-				break;
-			default: //原始
-				return value;
-		}
-	} else
-	{
-		alert("浏览器不支持本地储存。");
-	}
-};
-function setConfig(key, value)
-{
-	if (window.localStorage)
-	{
-		window.localStorage.setItem(key, value);
-	} else
-	{
-		alert("浏览器不支持本地储存。");
-	}
-};
-function ResetConfig(part)
-{
-	function partReset(key,value,ispart)
-	{
-		if (ispart && !getConfig(key, -1) || !ispart) setConfig(key, value);
-	}
-	partReset("PUBD_reset", Version, part);
-	partReset("PUBD_PRC_path", "http://localhost:6800/jsonrpc", part);
-	partReset("PUBD_download_mode", 0, part);
-	partReset("PUBD_save_dir", "C:\\Users\\Public\\Pictures\\PixivUserBatchDownload\\", part);
-	partReset("PUBD_image_src", "%{original_src}", part);
-	partReset("PUBD_save_path", "%{user_id}_%{user_name}/%{multiple}%{filename}.%{extention}", part);
-	partReset("PUBD_referer", "%{url}", part);
-	partReset("PUBD_type_name0", "", part);
-	partReset("PUBD_type_name1", "multiple", part);
-	partReset("PUBD_type_name2", "ugoku", part);
-	partReset("PUBD_type_name3", "manga", part);
-	partReset("PUBD_multiple_mask", "%{illust_id}_%{title}/", part);
-
-	if (document.getElementsByName("PUBD_PRC_path")[0]) document.getElementsByName("PUBD_PRC_path")[0].value = getConfig("PUBD_PRC_path");
-	//if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[getConfig("PUBD_download_mode",1)].checked = true;
-	if (document.getElementsByName("PUBD_download_mode")[0]) document.getElementsByName("PUBD_download_mode")[0].checked = true;
-	if (document.getElementsByName("PUBD_save_dir")[0]) document.getElementsByName("PUBD_save_dir")[0].value = getConfig("PUBD_save_dir");
-	if (document.getElementsByName("PUBD_image_src")[0]) document.getElementsByName("PUBD_image_src")[0].value = getConfig("PUBD_image_src");
-	if (document.getElementsByName("PUBD_save_path")[0]) document.getElementsByName("PUBD_save_path")[0].value = getConfig("PUBD_save_path");
-	if (document.getElementsByName("PUBD_referer")[0]) document.getElementsByName("PUBD_referer")[0].value = getConfig("PUBD_referer");
-	if (document.getElementsByName("PUBD_type_name0")[0]) document.getElementsByName("PUBD_type_name0")[0].value = getConfig("PUBD_type_name0");
-	if (document.getElementsByName("PUBD_type_name1")[0]) document.getElementsByName("PUBD_type_name1")[0].value = getConfig("PUBD_type_name1");
-	if (document.getElementsByName("PUBD_type_name2")[0]) document.getElementsByName("PUBD_type_name2")[0].value = getConfig("PUBD_type_name2");
-	if (document.getElementsByName("PUBD_type_name3")[0]) document.getElementsByName("PUBD_type_name3")[0].value = getConfig("PUBD_type_name3");
-	if (document.getElementsByName("PUBD_multiple_mask")[0]) document.getElementsByName("PUBD_multiple_mask")[0].value = getConfig("PUBD_multiple_mask");
-};
-
-function showMask(str,ill,index,deal)
-{
-	if (deal == undefined)
-		deal = function (arg) { return arg;}
-	var newTxt = str;
-	var regMask = /%{([^}]+)}/g;
-	var rs = regMask.exec(str);
-	while (rs != null) {
-		if (rs[1] == "multiple")
-		{
-			var rp = "";
-			if (ill.type == 1)
-			{
-				if (getConfig("PUBD_multiple_mask").indexOf("%{multiple}") >= 0 || getConfig("PUBD_multiple_mask").indexOf("%{type_name}") >= 0 && getConfig("PUBD_type_name" + ill.type).indexOf("%{multiple}" >= 0))
-					console.error("掩码中存在循环自身引用");
-				else
-					var rp = showMask(getConfig("PUBD_multiple_mask"), ill, index, deal);
-			}
-			newTxt = newTxt.replace(rs[0], rp);
-		}
-		else if (rs[1] == "type_name")
-		{
-			var rp = "";
-			if (getConfig("PUBD_type_name" + ill.type).indexOf("%{type_name}") >= 0 || getConfig("PUBD_type_name" + ill.type).indexOf("%{multiple}") >= 0 && getConfig("PUBD_multiple_mask").indexOf("%{type_name}" >= 0))
-				console.error("掩码中存在循环自身引用");
+		dlg.rpcchk.innerHTML = "正在连接...";
+		dlg.rpcchk.runing = true;
+		var aria2 = new Aria2(dlg.rpcurl.value);
+		aria2.getVersion(function (rejo){
+			if (rejo)
+				dlg.rpcchk.innerHTML="发现Aria2 ver" + rejo.result.version;
 			else
-				var rp = showMask(getConfig("PUBD_type_name" + ill.type), ill, index, deal);
-			newTxt = newTxt.replace(rs[0], rp);
-		}
-		else if (rs[1] == "page")
-			newTxt = newTxt.replace(rs[0], index);
-		else if (rs[1] == "filename" || rs[1] == "extention" || rs[1] == "original_src")
-			newTxt = newTxt.replace(rs[0], deal(ill[rs[1]][index]));
-		else if (ill[rs[1]] != undefined)
-			newTxt = newTxt.replace(rs[0], deal(ill[rs[1]]));
-		else if (dataset[rs[1]] != undefined)
-			newTxt = newTxt.replace(rs[0], deal(dataset[rs[1]]));
-		var rs = regMask.exec(str);
+				dlg.rpcchk.innerHTML="Aria2连接失败";
+			dlg.rpcchk.runing = false;
+		});
 	}
+	dd.appendChild(ipt);
+	dl.appendChild(dd);
+
+	//下载目录
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "下载目录"
+	var dd=document.createElement("dd");
+	var savedir = document.createElement("input");
+	savedir.type = "url";
+	savedir.className = "pubd-savedir";
+	savedir.name = "pubd-savedir";
+	savedir.id = savedir.name;
+	savedir.placeholder = "文件下载到的目录"
+	savedir.onchange =  function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].savedir = savedir.value;
+	}
+	dlg.savedir = savedir;
+	dd.appendChild(savedir);
+	dl.appendChild(dd);
+
+	//保存路径
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "保存路径"
+	var dd=document.createElement("dd");
+	var savepath = document.createElement("input");
+	savepath.type = "text";
+	savepath.className = "pubd-savepath";
+	savepath.name = "pubd-savedir";
+	savepath.id = savepath.name;
+	savepath.placeholder = "分组保存的文件夹和文件名"
+	savepath.onchange =  function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].savepath = savepath.value;
+	}
+	dlg.savepath = savepath;
+	dd.appendChild(savepath);
+	dl.appendChild(dd);
+
+	//自定义掩码
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "自定义掩码"
+	var dd=document.createElement("dd");
+	dl.appendChild(dd);
+	//▼掩码名
+	var ipt = document.createElement("input");
+	ipt.type = "text";
+	ipt.className = "pubd-mask-name";
+	ipt.name = "pubd-mask-name";
+	ipt.id = ipt.name;
+	ipt.placeholder = "自定义掩码名";
+	dlg.mask_name = ipt;
+	dd.appendChild(ipt);
+	//▲掩码名
+	//▼执行条件
+	var ipt = document.createElement("input");
+	ipt.type = "text";
+	ipt.className = "pubd-mask-logic";
+	ipt.name = "pubd-mask-logic";
+	ipt.id = ipt.name;
+	ipt.placeholder = "执行条件";
+	dlg.mask_logic = ipt;
+	dd.appendChild(ipt);
+	//▲执行条件
+	var ipt = document.createElement("input");
+	ipt.type = "button";
+	ipt.className = "pubd-mask-add";
+	ipt.value = "+";
+	ipt.onclick = function()
+	{//增加自定义掩码
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中下载方案");return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].mask.add(dlg.mask_name.value,dlg.mask_logic.value,dlg.mask_content.value);
+		dlg.addMask(dlg.mask_name.value,dlg.mask_logic.value,dlg.mask_content.value);
+		dlg.mask_name.value = dlg.mask_logic.value = dlg.mask_content.value = "";
+	}
+	dd.appendChild(ipt);
+	var mask_remove = document.createElement("input");
+	mask_remove.type = "button";
+	mask_remove.className = "pubd-mask-remove";
+	mask_remove.value = "-";
+	mask_remove.onclick = function()
+	{//删除自定义掩码
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中下载方案");return;}
+		if (dlg.masklist.options.length < 1){alert("已经没有掩码了");return;}
+		if (dlg.masklist.selectedOptions.length < 1){alert("没有选中掩码");return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		var maskIndex = dlg.masklist.selectedIndex;
+		dlg.schemes[schemeIndex].mask.remove(maskIndex);
+		dlg.masklist.remove(maskIndex);
+		for (var mi=maskIndex;mi<dlg.masklist.options.length;mi++)
+		{
+			dlg.masklist.options[mi].value = mi;
+		}
+	}
+	dd.appendChild(mask_remove);
+
+	//▼掩码内容
+	var ipt = document.createElement("input");
+	ipt.type = "text";
+	ipt.className = "pubd-mask-content";
+	ipt.name = "pubd-mask-content";
+	ipt.id = ipt.name;
+	ipt.placeholder = "掩码内容";
+	dlg.mask_content = ipt;
+	dd.appendChild(ipt);
+	//▲掩码内容
+	dl.appendChild(dd);
+	
+	//▼掩码列表
+	var dd=document.createElement("dd");
+	var masklist = new Select("pubd-mask-list")
+	masklist.size = 5;
+	masklist.onchange = function()
+	{//读取选中的掩码
+		dlg.selectMask(this.selectedIndex);
+	}
+	dlg.masklist = masklist;
+	dd.appendChild(masklist);
+	//▲掩码列表
+	dl.appendChild(dd);
+
+	//保存按钮栏
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+	dd.className = "pubd-config-savebar"
+	var ipt = document.createElement("input");
+	ipt.type = "button";
+	ipt.className = "pubd-reset";
+	ipt.value = "重置"
+	ipt.onclick = function()
+	{
+		dlg.reset();
+	}
+	dd.appendChild(ipt);
+	var ipt = document.createElement("input");
+	ipt.type = "button";
+	ipt.className = "pubd-save";
+	ipt.value = "保存设置"
+	ipt.onclick = function()
+	{
+		dlg.save();
+	}
+	dd.appendChild(ipt);
+	dl.appendChild(dd);
+
+	//保存设置函数
+	dlg.save = function()
+	{
+		spawnNotification("设置已保存", scriptIcon, scriptName);
+		pubd.auth.needlogin = dlg.needlogin.checked;
+		pubd.auth.save();
+		GM_setValue("pubd-autoanalyse",dlg.autoanalyse.checked); //自动分析
+		GM_setValue("pubd-autodownload",dlg.autodownload.checked); //自动下载
+		var schemesStr = JSON.stringify(dlg.schemes);
+		GM_setValue("pubd-downschemes",schemesStr); //下载方案
+		GM_setValue("pubd-defaultscheme",dlg.downScheme.selectedIndex); //默认方案
+		pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
+	}
+	//重置设置函数
+	dlg.reset = function()
+	{
+		spawnNotification("设置已重置", scriptIcon, scriptName);
+		GM_deleteValue("pubd-auth"); //登陆相关信息
+		GM_deleteValue("pubd-autoanalyse"); //自动分析
+		GM_deleteValue("pubd-autodownload"); //自动下载
+		GM_deleteValue("pubd-downschemes"); //下载方案
+		GM_deleteValue("pubd-defaultscheme");//默认方案
+	}
+	//窗口关闭
+	dlg.close = function(){
+		dlg.stop_token_animate();
+	};
+	//关闭窗口按钮
+	dlg.cptBtns.close.addEventListener("click",dlg.close);
+	//窗口初始化
+	dlg.initialise = function(){
+		dlg.needlogin.checked = pubd.auth.needlogin;
+		if (pubd.auth.needlogin) //如果要登陆，就显示Token区域，和动画
+		{
+			dlg.token_info.classList.remove("height-none");
+			dlg.start_token_animate();
+		}
+		else
+		{
+			dlg.token_info.classList.add("height-none");
+		}
+		dlg.autoanalyse.checked = GM_getValue("pubd-autoanalyse");
+		dlg.autodownload.checked = GM_getValue("pubd-autodownload");
+
+		dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
+		dlg.reloadSchemes();
+		dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
+		//ipt_token.value = pubd.auth.response.access_token;
+	};
+	return dlg;
+}
+
+//构建登陆对话框
+function buildDlgLogin(touch)
+{
+	var dlg = new Dialog("登陆账户","pubd-login","pubd-login");
+
+	var dlgc = dlg.content;
+	//Logo部分
+	var logo_box = document.createElement("div");
+	logo_box.className = "logo-box";
+	var logo = document.createElement("div");
+	logo.className = "logo";
+	logo_box.appendChild(logo);
+	var catchphrase = document.createElement("div");
+	catchphrase.className = "catchphrase";
+	catchphrase.innerHTML = "登陆获取你的账户通行证，解除年龄限制"
+	logo_box.appendChild(catchphrase);
+	dlgc.appendChild(logo_box);
+	//实际登陆部分
+	var container_login = document.createElement("div");
+	container_login.className = "container-login";
+
+	var input_field_group = document.createElement("div");
+	input_field_group.className = "input-field-group";
+	container_login.appendChild(input_field_group);
+	var input_field1 = document.createElement("div");
+	input_field1.className = "input-field";
+	var pid = document.createElement("input");
+	pid.type = "text";
+	pid.className = "pubd-account";
+	pid.name = "pubd-account";
+	pid.id = pid.name;
+	pid.placeholder="邮箱地址/pixiv ID";
+	dlg.pid = pid;
+	input_field1.appendChild(pid);
+	input_field_group.appendChild(input_field1);
+	var input_field2 = document.createElement("div");
+	input_field2.className = "input-field";
+	var pass = document.createElement("input");
+	pass.type = "password";
+	pass.className = "pubd-password";
+	pass.name = "pubd-password";
+	pass.id =pass.name;
+	pass.placeholder="密码";
+	dlg.pass = pass;
+	input_field2.appendChild(pass);
+	input_field_group.appendChild(input_field2);
+
+	var error_msg_list = document.createElement("ul"); //登陆错误信息
+	error_msg_list.className = "error-msg-list";
+	container_login.appendChild(error_msg_list);
+
+	var submit = document.createElement("button");
+	submit.className = "submit";
+	submit.innerHTML = "登陆"
+	container_login.appendChild(submit);
+
+	var signup_form_nav = document.createElement("div");
+	signup_form_nav.className = "signup-form-nav";
+	container_login.appendChild(signup_form_nav);
+	var checkbox = new LabelInput("记住账号密码（警告：明文保存于本地）","pubd-remember","pubd-remember","checkbox","1",true);
+	dlg.remember = checkbox.input;
+	signup_form_nav.appendChild(checkbox);
+	dlgc.appendChild(container_login);
+
+	submit.onclick = function()
+	{
+		dlg.error.replace("登陆中···");
+
+		pubd.auth.newAccount(pid.value,pass.value,dlg.remember.checked);
+
+		pubd.auth.login(
+			function(jore){//onload_suceess_Cb
+				dlg.error.replace("登陆成功");
+				pubd.dialog.config.start_token_animate();
+			},
+			function(jore){//onload_haserror_Cb //返回错误消息
+				dlg.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
+			},
+			function(re){//onload_notjson_Cb //返回不是JSON
+				dlg.error.replace("返回不是JSON，或程序异常");
+			},
+			function(re){//onerror_Cb //AJAX发送失败
+				dlg.error.replace("AJAX发送失败");
+			}
+		);
+	}
+	//添加错误功能
+	error_msg_list.clear = function()
+	{
+		this.innerHTML = ""; //清空当前信息
+	}
+	error_msg_list.add = function(text)
+	{
+		var error_msg_list_item = document.createElement("li");
+		error_msg_list_item.className = "error-msg-list-item";
+		error_msg_list_item.innerHTML = text;
+		this.appendChild(error_msg_list_item);
+	}
+	error_msg_list.adds = function(arr)
+	{
+		arr.forEach(
+			function (item){
+				error_msg_list.add(item);
+			}
+		)
+	}
+	error_msg_list.replace = function(text)
+	{
+		this.clear();
+		if (typeof(text) == "object") //数组
+			this.adds(text);
+		else //单文本
+			this.add(text);
+	}
+	dlg.error = error_msg_list;
+	//窗口关闭
+	dlg.close = function(){
+		pubd.auth.newAccount(pid.value,pass.value,dlg.remember.checked);
+		pubd.auth.save();
+	};
+	//关闭窗口按钮
+	dlg.cptBtns.close.addEventListener("click",dlg.close);
+	//窗口初始化
+	dlg.initialise = function(){
+		dlg.remember.checked = pubd.auth.save_account;
+		pid.value = pubd.auth.username||"";
+		pass.value = pubd.auth.password||"";
+		error_msg_list.clear();
+	};
+	return dlg;
+}
+
+
+//构建当前画师下载对话框
+function buildDlgDownThis(touch,userid)
+{
+	var dlg = new Dialog("下载当前画师","pubd-downthis","pubd-downthis");
+	dlg.user = new UserInfo();
+
+	var dlgc = dlg.content;
+
+	var dl=document.createElement("dl");
+	dlgc.appendChild(dl);
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "" //用户头像等信息
+	var dd=document.createElement("dd");
+
+	var uinfo = new UserCard(userid?userid:pixiv.context.userId); //创建当前用户信息卡
+	
+	dlg.uinfo = uinfo;
+	dd.appendChild(uinfo);
+	dl.appendChild(dd);
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = ""
+	var dd=document.createElement("dd");
+
+	var frm = new Frame("下载内容");
+	var radio1 = new LabelInput("他的作品","pubd-down-content","pubd-down-content","radio","0",true);
+	var radio2 = new LabelInput("他的收藏","pubd-down-content","pubd-down-content","radio","1",true);
+	dlg.dcType = [radio1.input,radio2.input];
+	radio1.input.onclick = function(){reAnalyse(this)};
+	radio2.input.onclick = function(){reAnalyse(this)};
+	function reAnalyse(radio)
+	{
+		if (radio.checked == true)
+		{
+			if (radio.value == 0)
+				dlg.user.bookmarks.break = true; //radio值为0，使收藏中断
+			else
+				dlg.user.illusts.break = true; //radio值为1，使作品中断
+
+			dlg.analyse(radio.value,dlg.uinfo.userid);
+		}
+	}
+	frm.content.appendChild(radio1);
+	frm.content.appendChild(radio2);
+
+	dd.appendChild(frm);
+	dl.appendChild(dd);
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "信息获取进度"
+	var dd=document.createElement("dd");
+	var progress = new Progress("pubd-downthis-progress");
+	dlg.progress = progress;
+	dd.appendChild(progress);
+	dl.appendChild(dd);
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "进程日志"
+	
+	var btnBreak = document.createElement("input");
+	btnBreak.type = "button";
+	btnBreak.className = "pubd-breakdown";
+	btnBreak.value = "中断操作";
+	btnBreak.onclick = function()
+	{
+		dlg.user.illusts.break = true; //使作品中断
+		dlg.user.bookmarks.break = true; //使收藏中断
+	}
+	dt.appendChild(btnBreak);
+	var dd=document.createElement("dd");
+	var ipt = document.createElement("textarea");
+	ipt.readOnly = true;
+	ipt.className = "pubd-downthis-log";
+	ipt.wrap = "off";
+	dlg.logTextarea = ipt;
+	dd.appendChild(ipt);
+	dl.appendChild(dd);
+
+	//下载方案
+	dlg.schemes = null;
+	
+	dlg.reloadSchemes = function()
+	{//重新读取所有下载方案
+		dlg.downScheme.options.length = 0;
+		dlg.schemes.forEach(function(item,index){
+			dlg.downScheme.add(item.name,index);
+		})
+		if (dlg.downScheme.options.length > 0)
+			dlg.selectScheme(0);
+	}
+	
+	//选择一个方案，同时读取设置
+	dlg.selectScheme = function(index)
+	{
+		if (index == undefined) index=0;
+		if (dlg.downScheme.options.length<1 || dlg.downScheme.selectedOptions.length<1){return;}
+		dlg.downScheme.selectedIndex = index;
+	}
+
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	dt.innerHTML = "选择下载方案"
+	var dd=document.createElement("dd");
+	var slt = new Select("pubd-downscheme");
+	dlg.downScheme = slt;
+	dd.appendChild(slt);
+	dl.appendChild(dd);
+
+	//下载按钮栏
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+	dd.className = "pubd-downthis-downbar"
+
+	var startdown = document.createElement("input");
+	startdown.type = "button";
+	startdown.className = "pubd-startdown";
+	startdown.value = "开始下载";
+	startdown.onclick = function()
+	{
+		dlg.startdownload();
+	}
+	startdown.disabled = true;
+	dlg.startdown = startdown;
+	dd.appendChild(startdown);
+	dl.appendChild(dd);
+
+	//显示日志相关
+	dlg.logArr = []; //用于储存一行一行的日志信息。
+	dlg.logClear = function(){
+		dlg.logArr.length = 0;
+		this.logTextarea.value = "";
+	};
+	dlg.log = function(text){
+		dlg.logArr.push(text);
+		this.logTextarea.value = this.logArr.join("\n");
+		this.logTextarea.scrollTop = this.logTextarea.scrollHeight;
+	};
+
+	function xhrGenneral(url,onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb)
+	{
+		var headersObj = new HeadersObject();
+		var auth = pubd.auth;
+		if (auth.needlogin)
+		{
+			var token_type = auth.response.token_type.substring(0,1).toUpperCase() + auth.response.token_type.substring(1);
+			headersObj.Authorization = token_type + " " + auth.response.access_token;
+		}else
+		{
+			console.info("非登录模式获取信息");
+		}
+		GM_xmlhttpRequest({
+			url:url,
+			method:"get",
+			responseType:"text",
+			headers: headersObj,
+			onload: function(response) {
+				try
+				{
+					var jo = JSON.parse(response.responseText);
+					if (jo.error)
+					{
+						console.error("错误：返回错误消息",jo,response);
+						//jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
+						//jo.error.user_message 是单行文本的错误信息
+						onload_hasError_Cb(jo);
+						//下面开始自动登陆
+						if (jo.error.message.indexOf("Error occurred at the OAuth process.")>=0)
+						{
+							dlg.log("Token过期或错误，需要重新登录");
+							if (pubd.auth.save_account)
+							{
+								dlg.log("检测到已保存账户密码，开始自动登陆");
+								var dlgLogin = pubd.dialog.login;
+								dlgLogin.show();
+								
+								pubd.auth.login(
+									function(jore){//onload_suceess_Cb
+										dlgLogin.error.replace("登陆成功");
+										//pubd.dialog.config.start_token_animate();
+										dlgLogin.cptBtns.close.click();
+										dlg.log("登陆成功");
+										//回调自身
+										xhrGenneral(url,onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb);
+									},
+									function(jore){//onload_haserror_Cb //返回错误消息
+										dlgLogin.error.replace(["错误代码：" + jore.errors.system.code,jore.errors.system.message]);
+									},
+									function(re){//onload_notjson_Cb //返回不是JSON
+										dlgLogin.error.replace("返回不是JSON，或程序异常");
+									},
+									function(re){//onerror_Cb //AJAX发送失败
+										dlgLogin.error.replace("AJAX发送失败");
+									}
+								);
+							}
+						}
+					}else
+					{//登陆成功
+						//console.info("JSON返回成功",jo);
+						onload_suceess_Cb(jo);
+					}
+				}catch(e)
+				{
+					console.error("错误：返回可能不是JSON，或程序异常",e,response);
+					onload_notJson_Cb(response);
+				}
+			},
+			onerror: function(response) {
+				console.error("错误：AJAX发送失败",response);
+				onerror_Cb(response);
+			}
+		})
+	}
+
+	//分析
+	dlg.analyse = function(contentType,userid)
+	{
+		if(!userid){dlg.log("错误：没有用户ID");return;}
+		contentType = contentType==undefined?0:parseInt(contentType);
+		var works = contentType==0?dlg.user.illusts:dlg.user.bookmarks; //将需要分析的数据储存到works里
+
+		if(works.runing)
+		{
+			dlg.log("已经在进行分析操作了");
+			return;
+		}
+		works.break = false;
+		works.runing = true;
+
+		dlg.startdown.disabled = true;
+		dlg.progress.set(0);
+		dlg.logClear();
+
+		function startAnalyseUser(userid,contentType)
+		{
+			dlg.log("开始获取ID为 " + userid + " 的用户信息");
+			xhrGenneral(
+				"https://app-api.pixiv.net/v1/user/detail?user_id=" + userid,
+				function(jore){//onload_suceess_Cb
+					works.runing = true;
+					dlg.user.done = true;
+					dlg.user.info = Object.assign(dlg.user.info, jore);
+					dlg.uinfo.set({
+						head:jore.user.profile_image_urls.medium,
+						name:jore.user.name,
+						illusts:jore.profile.total_illusts + jore.profile.total_manga,
+						bookmarks:jore.profile.total_illust_bookmarks_public,
+					});
+					startAnalyseWorks(dlg.user,contentType); //开始获取第一页
+				},
+				function(jore){//onload_haserror_Cb //返回错误消息
+					dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+					works.runing = false;
+				},
+				function(re){//onload_notjson_Cb //返回不是JSON
+					dlg.log("错误：返回不是JSON，或程序异常");
+					works.runing = false;
+				},
+				function(re){//onerror_Cb //AJAX发送失败
+					dlg.log("错误：AJAX发送失败");
+					works.runing = false;
+				}
+			)
+		}
+
+		//根据用户信息是否存在，决定分析用户还是图像
+		if (!dlg.user.done)
+		{
+			startAnalyseUser(userid,contentType);
+		}else
+		{
+			dlg.log("ID：" + userid + " 用户信息已存在");
+			startAnalyseWorks(dlg.user,contentType); //开始获取第一页
+		}
+
+		//开始分析作品的前置操作
+		function startAnalyseWorks(user,contentType)
+		{
+			var uInfo = user.info;
+			var works,total,contentName,apiurl;
+			//获取作品,contentType == 0，获取收藏,contentType == 1
+			if (contentType==0)
+			{
+				works = user.illusts;
+				total = uInfo.profile.total_illusts + uInfo.profile.total_manga;
+				contentName = "作品";
+				apiurl = "https://app-api.pixiv.net/v1/user/illusts?user_id=" + uInfo.user.id;
+			}else
+			{
+				works = user.bookmarks;
+				total = uInfo.profile.total_illust_bookmarks_public;
+				contentName = "收藏";
+				apiurl = "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=" + uInfo.user.id + "&restrict=public";
+			}
+			if (works.item.length>0)
+			{//断点续传
+				dlg.log(contentName + " 断点续传进度 " + works.item.length + "/" + total);
+				dlg.progress.set(works.item.length/total); //设置当前下载进度
+				apiurl = works.next_url;
+			}
+			analyseWorks(user,contentType,apiurl); //开始获取第一页
+		}
+		//分析作品递归函数
+		function analyseWorks(user,contentType,apiurl)
+		{
+			var uInfo = user.info;
+			var works,total,contentName;
+			if (contentType==0)
+			{
+				works = user.illusts;
+				total = uInfo.profile.total_illusts + uInfo.profile.total_manga;
+				contentName = "作品";
+			}else
+			{
+				works = user.bookmarks;
+				total = uInfo.profile.total_illust_bookmarks_public;
+				contentName = "收藏";
+			}
+			if (works.done)
+			{
+				//返回所有动图
+				var ugoiras = works.item.filter(function(item){
+						return item.type == "ugoira";
+					})
+				if (ugoiras.some(function(item){
+					return item.ugoira_metadata == undefined;
+				})>0)
+				{
+					dlg.log("共存在 " + ugoiras.length + " 件动图");
+					analyseUgoira(works,ugoiras,function(){ //开始分析动图
+						analyseWorks(user,contentType,apiurl) //开始获取下一页
+					});
+					return;
+				}
+				//没有动图则继续
+				if (works.item.length<total)
+					dlg.log("可能因为权限原因，无法获取到所有 " + contentName);
+				dlg.log(contentName + " 共 " + works.item.length + " 件已获取完毕");
+				dlg.progress.set(1);
+				works.runing = false;
+				works.next_url = "";
+				dlg.startdown.disabled = false;
+				if (GM_getValue("pubd-autodownload"))
+				{//自动开始
+					dlg.log("自动开始下载");
+					dlg.startdownload();
+				}
+				return;
+			}
+			if (works.break)
+			{
+				dlg.log("检测到 " + contentName + " 中断进程命令");
+				works.break = false;
+				works.runing = false;
+				return;
+			}
+
+			xhrGenneral(
+				apiurl,
+				function(jore){//onload_suceess_Cb
+					works.runing = true;
+					var illusts = jore.illusts;
+					for (var ii=0,ii_len=illusts.length;ii<ii_len;ii++)
+					{
+						var work = illusts[ii];
+						var original;
+						if (work.page_count>1)
+						{/*漫画多图*/
+							original = work.meta_pages[0].image_urls.original;
+						}else
+						{/*单张图片或动图，含漫画单图*/
+							original = work.meta_single_page.original_image_url;
+						}
+						var regSrc = new RegExp(illustPattern, "ig");
+						var regRes = regSrc.exec(original);
+						if (regRes)
+						{
+							work.url_without_page = regRes[1];
+							work.domain = regRes[2];
+							work.filename = regRes[3];
+							work.token = regRes[4];
+							work.extention = regRes[5];
+						}
+
+						//然后添加扩展名等
+						if (work.restrict>0)//非公共权限
+							dlg.log(contentName + " " + work.id + " 非公共权限，可能无法正常下载");
+
+						works.item.push(work);
+					}
+					dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
+					dlg.progress.set(works.item.length/total); //设置当前下载进度
+					if (jore.next_url)
+					{//还有下一页
+						works.next_url = jore.next_url;
+					}else
+					{//没有下一页
+						works.done = true;
+					}
+					analyseWorks(user,contentType,jore.next_url); //开始获取下一页
+				},
+				function(jore){//onload_haserror_Cb //返回错误消息
+					dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+					works.runing = false;
+				},
+				function(re){//onload_notjson_Cb //返回不是JSON
+					dlg.log("错误：返回不是JSON，或程序异常");
+					works.runing = false;
+				},
+				function(re){//onerror_Cb //AJAX发送失败
+					dlg.log("错误：AJAX发送失败");
+					works.runing = false;
+				}
+			)
+		}
+
+		function analyseUgoira(works,ugoirasItems,callback)
+		{
+			var dealItems = ugoirasItems.filter(function(item){
+					return (item.ugoira_metadata == undefined && item.type == "ugoira");
+				})
+			if (dealItems.length<1)
+			{
+				dlg.log("动图获取完毕");
+				dlg.progress.set(1); //设置当前下载进度
+				callback();
+				return;
+			}
+			if (works.break)
+			{
+				dlg.log("检测到中断进程命令");
+				works.break = false;
+				works.runing = false;
+				return;
+			}
+
+			var work = dealItems[0]; //当前处理的图
+
+			xhrGenneral(
+				"https://app-api.pixiv.net/v1/ugoira/metadata?illust_id=" + work.id,
+				function(jore){//onload_suceess_Cb
+					works.runing = true;
+					var illusts = jore.illusts;
+					work = Object.assign(work,jore);
+					dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
+					dlg.progress.set(1-dealItems.length/ugoirasItems.length); //设置当前下载进度
+					analyseUgoira(works,ugoirasItems,callback); //开始获取下一项
+				},
+				function(jore){//onload_haserror_Cb //返回错误消息
+					dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+					if (work.restrict>0)//非公共权限
+					{//添加一条空信息
+						work.ugoira_metadata = {
+							frames:[
+
+							],
+							zip_urls:{
+								medium:"",
+							},
+						};
+						dlg.log("跳过本条，获取下一条");
+						analyseUgoira(works,ugoirasItems,callback); //开始获取下一项
+					}
+					works.runing = false;
+				},
+				function(re){//onload_notjson_Cb //返回不是JSON
+					dlg.log("错误：返回不是JSON，或程序异常");
+					works.runing = false;
+				},
+				function(re){//onerror_Cb //AJAX发送失败
+					dlg.log("错误：AJAX发送失败");
+					works.runing = false;
+				}
+			)
+		}
+	}
+	//开始下载按钮
+	dlg.startdownload = function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中方案");return;}
+		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+		var contentType = dlg.dcType[1].checked?1:0;
+		var userInfo = dlg.user.info;
+		var illustsItems = contentType==0?dlg.user.illusts.item:dlg.user.bookmarks.item; //将需要分析的数据储存到works里
+		downloadWork(scheme,userInfo,illustsItems);//调用公用下载窗口
+	}
+	//启动初始化
+	dlg.initialise = function(){
+		//var dcType = (GM_getValue("pubd-down-content") == 1)?1:0;
+		var dcType = 0;
+		if (dlg.user.bookmarks.runing) //如果有程序正在运行，则覆盖设置。
+			dcType = 1;
+		else if (dlg.user.illusts.runing)
+			dcType = 0;
+		
+		dlg.dcType[dcType].checked = true;
+		if (GM_getValue("pubd-autoanalyse"))
+		{
+			dlg.analyse(dcType,dlg.uinfo.userid);
+		}
+		
+		dlg.schemes = pubd.downSchemes;
+		dlg.reloadSchemes();
+		dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
+	};
+
+	return dlg;
+}
+//为了区分设置窗口和保存的设置，产生一个新的下载方案数组
+function NewDownSchemeArrayFromJson(jsonarr)
+{
+	
+	if (typeof(jsonarr) == "string")
+	{
+		try
+		{
+			var jsonarr = JSON.parse(jsonarr);
+		}catch(e)
+		{
+			console.error("拷贝新下载方案数组时失败",e);
+			return false;
+		}
+	}
+	var sarr = new Array();
+	if (jsonarr instanceof Array)
+	{
+		for (var si = 0;si<jsonarr.length;si++)
+		{
+			var scheme = new DownScheme();
+			//var scheme = Object.create(new DownScheme());
+			//console.log("拷贝下载方案前",scheme);
+			scheme.loadFromJson(jsonarr[si]);
+			sarr.push(scheme);
+			//console.log("拷贝下载方案后",scheme);
+		}
+	}
+	return sarr;
+}
+//下载具体内容
+function downloadWork(scheme,userInfo,illustsItems)
+{
+					try
+					{
+
+	var masklist = scheme.masklist;
+	var works_len = illustsItems.length;
+	var aria2 = new Aria2(scheme.rpcurl);
+
+	spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
+	illustsItems.reduce(function (previous, current, index, array)
+	{
+		var page_count = current.page_count;
+		if (current.type == "ugoira") //动图
+			page_count = current.ugoira_metadata.frames.length;
+			
+		for (var pi = 0; pi < page_count; pi++)
+		{
+			var url = current.url_without_page + pi + "." + current.extention;
+			var srtObj = {
+				"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, current, pi), true),
+				"referer": "https://app-api.pixiv.net/",
+				"user-agent": "PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)",
+			}
+			if(scheme.savedir.length>0)
+			{
+				srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, current, pi), true);
+			}
+			//console.log(url,srtObj);
+			aria2.addUri(url, srtObj);
+		}
+	},false)
+
+					}catch(e)
+					{
+						console.error(e);
+					}
+}
+function showMask(str,masklist,user,illust,page)
+{
+	var newTxt = str;
+	var pattern = "%{([^}]+)}";
+	var rs = null;
+//	console.log(rs = regMask.exec(newTxt),rs = regMask.exec(newTxt),rs = regMask.exec(newTxt),rs = regMask.exec(newTxt))
+
+	while (( rs = new RegExp(pattern).exec(newTxt) ) != null) {
+		var mymask = masklist.filter(function(mask)
+		{
+			return mask.name == rs[1];
+		});
+		if (mymask.length > 0)
+		{
+			var mask = mymask[0];
+			try
+			{
+				var evTemp = eval("(" + mask.logic + ")"); //mask的逻辑判断
+				if (evTemp)
+					newTxt = newTxt.replace(rs[0], mask.content);
+				else
+					newTxt = newTxt.replace(rs[0], "");
+			}catch(e)
+			{
+				console.error(rs[0] + " 自定义掩码出现了异常情况",e);
+			}
+		}
+
+		else if (rs[1] != undefined)
+		{
+			try
+			{
+				var evTemp = eval(rs[1]);
+				if (evTemp!=undefined)
+					newTxt = newTxt.replace(rs[0], evTemp.toString());
+			}catch(e)
+			{
+				console.error(rs[0] + " 掩码出现了异常情况",e);
+			}
+		}
+	}
+
 	return newTxt;
 }
-
 function replacePathSafe(str, keepTree) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
-{
-	if (typeof(str) == "undefined")
-		return "";
+{//keepTree表示是否要保留目录树的字符（\、/和:）
+	var nstr = "";
+	if (typeof(str) == "undefined") return nstr;
+	str = str.toString();
 	if (keepTree)
-		var nstr = str.replace(/[\*\?"<>\|]/ig, "_");
+		nstr = str.replace(/[\*\?"<>\|]/ig, "_");
 	else
-		var nstr = str.replace(/[\\\/:\*\?"<>\|]/ig, "_");
+		nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_");
 	return nstr;
 }
-})();
+//开始构建UI
+function startBuild(touch,loggedIn)
+{
+	if (touch) //手机版
+	{
+		alert("PUBD暂不支持手机版");
+	}else
+	{
+		pubd.auth = new Auth();
+		try{
+			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
+			//pubd.auth.response.access_token = "";
+		}catch(e){
+			console.error("脚本初始化时，读取登录信息失败",e);
+		}
+		pubd.downSchemes = NewDownSchemeArrayFromJson(GM_getValue("pubd-downschemes"));
+
+		var btnStartInsertPlace = document.getElementsByClassName("user-relation")[0];
+		if (!btnStartInsertPlace) btnStartInsertPlace = document.getElementsByClassName("badges")[0]; //自己的页面
+		var btnStartBox = document.createElement("li");
+		if (!loggedIn)
+		{
+			var btnStartInsertPlace = document.getElementsByClassName("introduction")[0];
+			var btnStartBox = document.createElement("div");
+		}
+		pubd.start = buildbtnStart(touch);
+		pubd.menu = buildbtnMenu(touch);
+		btnStartBox.appendChild(pubd.start);
+		btnStartBox.appendChild(pubd.menu);
+		btnStartInsertPlace.appendChild(btnStartBox);
+
+		//var btnDlgInsertPlace = document.getElementsByClassName("layout-wrapper")[0] || document.body;
+		var btnDlgInsertPlace = document.body;
+		pubd.dialog.config = buildDlgConfig(touch);
+		btnDlgInsertPlace.appendChild(pubd.dialog.config);
+		pubd.dialog.login = buildDlgLogin(touch);
+		btnDlgInsertPlace.appendChild(pubd.dialog.login);
+		pubd.dialog.downthis = buildDlgDownThis(touch);
+		btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
+
+	}
+}
+
+startBuild(pubd.touch,pubd.loggedIn); //开始主程序
