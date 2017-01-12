@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0.0 Alpha1
+// @version		5.0.0 Alpha2
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2359,6 +2359,11 @@ function startBuild(touch,loggedIn)
 		alert("PUBD暂不支持手机版");
 	}else
 	{
+		//生成警告
+		var showAlert = document.createElement("h1");
+		showAlert.className = "pubd-alert-" + pubd.configVersion;
+		showAlert.innerHTML = '你没有正确安装用户样式，或用户样式已过期，请访问<a href="https://github.com/Mapaler/PixivUserBatchDownload" target="_blank">PUBD发布页</a>更新版本。';
+
 		pubd.auth = new Auth();
 		try{
 			pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
@@ -2376,6 +2381,9 @@ function startBuild(touch,loggedIn)
 			var btnStartInsertPlace = document.getElementsByClassName("introduction")[0];
 			var btnStartBox = document.createElement("div");
 		}
+		
+		btnStartInsertPlace.appendChild(showAlert); //添加警告
+
 		pubd.start = buildbtnStart(touch);
 		pubd.menu = buildbtnMenu(touch);
 		btnStartBox.appendChild(pubd.start);
