@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0.0 Alpha2
+// @version		5.0.0 Alpha3
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -171,64 +171,6 @@ function spawnNotification(theBody, theIcon, theTitle)
 		});
 	}
 }
-/*\
-|*|
-|*|  :: cookies.js ::
-|*|
-|*|  A complete cookies reader/writer framework with full unicode support.
-|*|
-|*|  https://developer.mozilla.org/en-US/docs/DOM/document.cookie
-|*|
-|*|  This framework is released under the GNU Public License, version 3 or later.
-|*|  http://www.gnu.org/licenses/gpl-3.0-standalone.html
-|*|
-|*|  Syntaxes:
-|*|
-|*|  * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])
-|*|  * docCookies.getItem(name)
-|*|  * docCookies.removeItem(name[, path], domain)
-|*|  * docCookies.hasItem(name)
-|*|  * docCookies.keys()
-|*|
-\*/
-
-var docCookies = {
-  getItem: function (sKey) {
-    return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
-  },
-  setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
-    if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) { return false; }
-    var sExpires = "";
-    if (vEnd) {
-      switch (vEnd.constructor) {
-        case Number:
-          sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
-          break;
-        case String:
-          sExpires = "; expires=" + vEnd;
-          break;
-        case Date:
-          sExpires = "; expires=" + vEnd.toUTCString();
-          break;
-      }
-    }
-    document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
-    return true;
-  },
-  removeItem: function (sKey, sPath, sDomain) {
-    if (!sKey || !this.hasItem(sKey)) { return false; }
-    document.cookie = encodeURIComponent(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + ( sDomain ? "; domain=" + sDomain : "") + ( sPath ? "; path=" + sPath : "");
-    return true;
-  },
-  hasItem: function (sKey) {
-    return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
-  },
-  keys: /* optional method: you can safely remove it! */ function () {
-    var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
-    for (var nIdx = 0; nIdx < aKeys.length; nIdx++) { aKeys[nIdx] = decodeURIComponent(aKeys[nIdx]); }
-    return aKeys;
-  }
-};
 
 /*
  * 自定义对象区
@@ -377,8 +319,6 @@ var Auth = (function () {
 				//device_token:"6e50367b155c2ba9faeaf2152ee4607c",
 				get_secure_url:"true",
 			})
-			var device_token = docCookies.getItem("device_token");
-			if (device_token) postObj.increase({"device_token": device_token});
 
 			//登陆是老的API
 			GM_xmlhttpRequest({
@@ -890,7 +830,7 @@ var UserCard = (function () {
 		//收藏数
 		var dt=document.createElement("dt");
 		dt.className = "pubd-user-info-bookmarks-dt";
-		dt.innerHTML = "插画收藏数"
+		dt.innerHTML = "公开收藏数"
 		infos.appendChild(dt);
 		var dd=document.createElement("dd");
 		dd.className = "pubd-user-info-bookmarks-dd";
@@ -1045,6 +985,7 @@ function buildbtnMenu(touch)
 
 	}else
 	{
+		/*
 		var menu2 = new pubdMenu(touch);
 		menu2.add("子菜单1","",function(){alert("子菜单1")});
 		menu2.add("子菜单2","",function(){alert("子菜单2")});
@@ -1061,7 +1002,7 @@ function buildbtnMenu(touch)
 		menu4.add("子菜单2","",function(){alert("子菜单2")});
 		menu4.add("子菜单2","",function(){alert("子菜单5")});
 		menu4.add("子菜单2","",function(){alert("子菜单6")});
-
+		*/
 		var menu = new pubdMenu(touch,"pubd-menu-main");
 		menu.id = "pubd-menu";
 		menu.add("下载该画师","",function()
@@ -1070,6 +1011,7 @@ function buildbtnMenu(touch)
 					menu.hide();
 				}
 			);
+		/*
 		menu.add("占位用","",null,menu1);
 		menu.add("没功能","",null,menu4);
 		menu.add("多个画师下载",null,function()
@@ -1077,6 +1019,7 @@ function buildbtnMenu(touch)
 					alert("这个功能也没有开发")
 				}
 			);
+			*/
 		menu.add(0);
 		menu.add("选项","pubd-menu-setting",function()
 				{
@@ -1093,7 +1036,7 @@ function buildDlgConfig(touch)
 {
 	var dlg = new Dialog("PUBD选项 v" + scriptVersion,"pubd-config","pubd-config");
 	dlg.cptBtns.add("反馈","dlg-btn-debug","https://github.com/Mapaler/PixivUserBatchDownload/issues");
-	dlg.cptBtns.add("？","dlg-btn-help","https://github.com/Mapaler/PixivUserBatchDownload/tree/develop_v5");
+	dlg.cptBtns.add("？","dlg-btn-help","https://github.com/Mapaler/PixivUserBatchDownload/wiki");
 	dlg.token_ani = null; //储存Token进度条动画句柄
 	var dlgc = dlg.content;
 
