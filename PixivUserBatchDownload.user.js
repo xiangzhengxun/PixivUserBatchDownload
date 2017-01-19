@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0.0 Alpha3
+// @version		5.0.0 Alpha4
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -396,11 +396,11 @@ var DownScheme = (function () {
 						return false;
 					}
 				}
-				if (json.name) this.name = json.name;
-				if (json.rpcurl) this.rpcurl = json.rpcurl;
-				if (json.savedir) this.savedir = json.savedir;
-				if (json.savepath) this.savepath = json.savepath;
-				if (json.masklist) this.masklist = JSON.parse(JSON.stringify(json.masklist));
+				this.name = json.name;
+				this.rpcurl = json.rpcurl;
+				this.savedir = json.savedir;
+				this.savepath = json.savepath;
+				this.masklist = JSON.parse(JSON.stringify(json.masklist));
 				return true;
 			},
 		}
