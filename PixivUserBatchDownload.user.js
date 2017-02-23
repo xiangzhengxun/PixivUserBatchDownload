@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0.1 Beta1
+// @version		5.0.1 Beta2
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -25,6 +25,7 @@
 */
 var pubd = { //储存设置
 	configVersion: 0, //当前设置版本，用于提醒是否需要重置
+	cssVersion: 0, //当前需求CSS版本，用于提醒是否需要更新CSS
 	touch:false, //是触屏
 	loggedIn:false, //登陆了
 	start:null, //开始按钮
@@ -1225,9 +1226,22 @@ function buildDlgConfig(touch)
 		dlg.masklist.selectedIndex = index;
 	}
 	//配置方案选择
+	
 	var dt=document.createElement("dt");
-	dt.innerHTML = "选择下载方案";
 	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+
+	var frm = new Frame("下载方案设置","pubd-selectscheme");
+
+	var dl_ss=document.createElement("dl");
+
+	frm.content.appendChild(dl_ss);
+	dd.appendChild(frm);
+	dl.appendChild(dd);
+
+	var dt=document.createElement("dt");
+	dt.innerHTML = "默认下载方案";
+	dl_ss.appendChild(dt);
 	var dd=document.createElement("dd");
 	var slt = new Select("pubd-downscheme");
 	slt.onchange = function()
@@ -1270,12 +1284,12 @@ function buildDlgConfig(touch)
 		else dlg.loadScheme(dlg.schemes[index]);
 	}
 	dd.appendChild(ipt);
-	dl.appendChild(dd);
+	dl_ss.appendChild(dd);
 
 	//Aria2 URL
 
 	var dt=document.createElement("dt");
-	dl.appendChild(dt);
+	dl_ss.appendChild(dt);
 	dt.innerHTML = "Aria2 JSON-RPC 路径"
 	var rpcchk = document.createElement("span"); //显示检查状态用
 	rpcchk.className = "pubd-rpcchk-info";
@@ -1324,11 +1338,11 @@ function buildDlgConfig(touch)
 		});
 	}
 	dd.appendChild(ipt);
-	dl.appendChild(dd);
+	dl_ss.appendChild(dd);
 
 	//下载目录
 	var dt=document.createElement("dt");
-	dl.appendChild(dt);
+	dl_ss.appendChild(dt);
 	dt.innerHTML = "下载目录"
 	var dd=document.createElement("dd");
 	var savedir = document.createElement("input");
@@ -1345,11 +1359,11 @@ function buildDlgConfig(touch)
 	}
 	dlg.savedir = savedir;
 	dd.appendChild(savedir);
-	dl.appendChild(dd);
+	dl_ss.appendChild(dd);
 
 	//保存路径
 	var dt=document.createElement("dt");
-	dl.appendChild(dt);
+	dl_ss.appendChild(dt);
 	dt.innerHTML = "保存路径"
 	var dd=document.createElement("dd");
 	var savepath = document.createElement("input");
@@ -1366,14 +1380,14 @@ function buildDlgConfig(touch)
 	}
 	dlg.savepath = savepath;
 	dd.appendChild(savepath);
-	dl.appendChild(dd);
+	dl_ss.appendChild(dd);
 
 	//自定义掩码
 	var dt=document.createElement("dt");
-	dl.appendChild(dt);
+	dl_ss.appendChild(dt);
 	dt.innerHTML = "自定义掩码"
 	var dd=document.createElement("dd");
-	dl.appendChild(dd);
+	dl_ss.appendChild(dd);
 	//▼掩码名
 	var ipt = document.createElement("input");
 	ipt.type = "text";
@@ -1439,7 +1453,7 @@ function buildDlgConfig(touch)
 	dlg.mask_content = ipt;
 	dd.appendChild(ipt);
 	//▲掩码内容
-	dl.appendChild(dd);
+	dl_ss.appendChild(dd);
 	
 	//▼掩码列表
 	var dd=document.createElement("dd");
@@ -1452,7 +1466,7 @@ function buildDlgConfig(touch)
 	dlg.masklist = masklist;
 	dd.appendChild(masklist);
 	//▲掩码列表
-	dl.appendChild(dd);
+	dl_ss.appendChild(dd);
 
 	//保存按钮栏
 	var dt=document.createElement("dt");
@@ -1482,7 +1496,6 @@ function buildDlgConfig(touch)
 	//保存设置函数
 	dlg.save = function()
 	{
-		spawnNotification("设置已保存", scriptIcon, scriptName);
 		pubd.auth.needlogin = dlg.needlogin.checked;
 		pubd.auth.save();
 		GM_setValue("pubd-autoanalyse",dlg.autoanalyse.checked); //自动分析
@@ -1490,18 +1503,22 @@ function buildDlgConfig(touch)
 		var schemesStr = JSON.stringify(dlg.schemes);
 		GM_setValue("pubd-downschemes",schemesStr); //下载方案
 		GM_setValue("pubd-defaultscheme",dlg.downScheme.selectedIndex); //默认方案
+		GM_setValue("pubd-configversion",pubd.configVersion); //设置版本
+
+		spawnNotification("设置已保存", scriptIcon, scriptName);
 		pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
 		pubd.dialog.downthis.reloadSchemes();
 	}
 	//重置设置函数
 	dlg.reset = function()
 	{
-		spawnNotification("设置已重置", scriptIcon, scriptName);
 		GM_deleteValue("pubd-auth"); //登陆相关信息
 		GM_deleteValue("pubd-autoanalyse"); //自动分析
 		GM_deleteValue("pubd-autodownload"); //自动下载
 		GM_deleteValue("pubd-downschemes"); //下载方案
-		GM_deleteValue("pubd-defaultscheme");//默认方案
+		GM_deleteValue("pubd-defaultscheme"); //默认方案
+		GM_deleteValue("pubd-configversion"); //设置版本
+		spawnNotification("设置已重置", scriptIcon, scriptName);
 	}
 	//窗口关闭
 	dlg.close = function(){
@@ -2324,7 +2341,7 @@ function startBuild(touch,loggedIn)
 	{
 		//生成警告
 		var showAlert = document.createElement("h1");
-		showAlert.className = "pubd-alert-" + pubd.configVersion;
+		showAlert.className = "pubd-alert-" + pubd.cssVersion;
 		showAlert.innerHTML = '你没有正确安装用户样式，或用户样式已过期，请访问<a href="https://github.com/Mapaler/PixivUserBatchDownload" target="_blank">PUBD发布页</a>更新版本。';
 
 		pubd.auth = new Auth();
