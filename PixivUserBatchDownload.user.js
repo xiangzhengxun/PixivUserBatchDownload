@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0.0 Alpha4
+// @version		5.0.1 Beta
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -144,6 +144,14 @@ if(typeof(GM_listValues) == "undefined")
 /*
  * 现成函数库
 */
+//String.format实现占位符输出
+String.prototype.format=function()
+{
+  if(arguments.length==0) return this;
+  for(var s=this, i=0; i<arguments.length; i++)
+    s=s.replace(new RegExp("\\{"+i+"\\}","g"), arguments[i]);
+  return s;
+};
 //发送网页通知
 function spawnNotification(theBody, theIcon, theTitle)
 {
@@ -1483,6 +1491,7 @@ function buildDlgConfig(touch)
 		GM_setValue("pubd-downschemes",schemesStr); //下载方案
 		GM_setValue("pubd-defaultscheme",dlg.downScheme.selectedIndex); //默认方案
 		pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
+		pubd.dialog.downthis.reloadSchemes();
 	}
 	//重置设置函数
 	dlg.reset = function()
@@ -1661,6 +1670,7 @@ function buildDlgDownThis(touch,userid)
 {
 	var dlg = new Dialog("下载当前画师","pubd-downthis","pubd-downthis");
 	dlg.user = new UserInfo();
+	dlg.works = null; //当前处理对象
 
 	var dlgc = dlg.content;
 
@@ -1744,11 +1754,15 @@ function buildDlgDownThis(touch,userid)
 	
 	dlg.reloadSchemes = function()
 	{//重新读取所有下载方案
+		dlg.schemes = pubd.downSchemes;
+
 		dlg.downScheme.options.length = 0;
 		dlg.schemes.forEach(function(item,index){
 			dlg.downScheme.add(item.name,index);
 		})
-		if (dlg.downScheme.options.length > 0)
+		if (GM_getValue("pubd-defaultscheme")>=0)
+			dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
+		else if (dlg.downScheme.options.length > 0)
 			dlg.selectScheme(0);
 	}
 	
@@ -1882,6 +1896,7 @@ function buildDlgDownThis(touch,userid)
 		if(!userid){dlg.log("错误：没有用户ID");return;}
 		contentType = contentType==undefined?0:parseInt(contentType);
 		var works = contentType==0?dlg.user.illusts:dlg.user.bookmarks; //将需要分析的数据储存到works里
+		dlg.works = works;
 
 		if(works.runing)
 		{
@@ -2048,12 +2063,15 @@ function buildDlgDownThis(touch,userid)
 
 						//然后添加扩展名等
 						if (work.restrict>0)//非公共权限
+						{
 							dlg.log(contentName + " " + work.id + " 非公共权限，可能无法正常下载");
+							console.log(work);
+						}
 
 						works.item.push(work);
 					}
 					dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
-					dlg.progress.set(works.item.length/total); //设置当前下载进度
+					if (works == dlg.works) dlg.progress.set(works.item.length/total); //如果没有中断则设置当前下载进度
 					if (jore.next_url)
 					{//还有下一页
 						works.next_url = jore.next_url;
@@ -2163,9 +2181,9 @@ function buildDlgDownThis(touch,userid)
 			dlg.analyse(dcType,dlg.uinfo.userid);
 		}
 		
-		dlg.schemes = pubd.downSchemes;
+		//dlg.schemes = pubd.downSchemes;
 		dlg.reloadSchemes();
-		dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
+		//dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
 	};
 
 	return dlg;
@@ -2203,41 +2221,43 @@ function NewDownSchemeArrayFromJson(jsonarr)
 //下载具体内容
 function downloadWork(scheme,userInfo,illustsItems)
 {
-					try
-					{
-
-	var masklist = scheme.masklist;
-	var works_len = illustsItems.length;
-	var aria2 = new Aria2(scheme.rpcurl);
-
-	spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
-	illustsItems.reduce(function (previous, current, index, array)
+	try
 	{
-		var page_count = current.page_count;
-		if (current.type == "ugoira") //动图
-			page_count = current.ugoira_metadata.frames.length;
-			
-		for (var pi = 0; pi < page_count; pi++)
-		{
-			var url = current.url_without_page + pi + "." + current.extention;
-			var srtObj = {
-				"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, current, pi), true),
-				"referer": "https://app-api.pixiv.net/",
-				"user-agent": "PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)",
-			}
-			if(scheme.savedir.length>0)
-			{
-				srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, current, pi), true);
-			}
-			//console.log(url,srtObj);
-			aria2.addUri(url, srtObj);
-		}
-	},false)
 
-					}catch(e)
-					{
-						console.error(e);
-					}
+		var masklist = scheme.masklist;
+		var works_len = illustsItems.length;
+		var aria2 = new Aria2(scheme.rpcurl);
+
+		spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
+		illustsItems.reduce(function (previous, current, index, array)
+		{
+			var page_count = current.page_count;
+			if (current.type == "ugoira") //动图
+				page_count = current.ugoira_metadata.frames.length;
+				
+			for (var pi = 0; pi < page_count; pi++)
+			{
+				var url = current.url_without_page + pi + "." + current.extention;
+				if (url == "https://source.pixiv.net/common/images/limit_mypixiv_360.png") continue; //无法查看的文件
+
+				var srtObj = {
+					"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, current, pi), true),
+					"referer": "https://app-api.pixiv.net/",
+					"user-agent": "PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)",
+				}
+				if(scheme.savedir.length>0)
+				{
+					srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, current, pi), true);
+				}
+				//console.log(url,srtObj);
+				aria2.addUri(url, srtObj);
+			}
+		},false)
+
+	}catch(e)
+	{
+		console.error(e);
+	}
 }
 function showMask(str,masklist,user,illust,page)
 {
