@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0.1 Beta2
+// @version		5.0.2
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2082,7 +2082,7 @@ function buildDlgDownThis(touch,userid)
 						if (work.restrict>0)//非公共权限
 						{
 							dlg.log(contentName + " " + work.id + " 非公共权限，可能无法正常下载");
-							console.log(work);
+							//console.log(work);
 						}
 
 						works.item.push(work);
@@ -2311,8 +2311,11 @@ function showMask(str,masklist,user,illust,page)
 				var evTemp = eval(rs[1]);
 				if (evTemp!=undefined)
 					newTxt = newTxt.replace(rs[0], evTemp.toString());
+				else
+					newTxt = newTxt.replace(rs[0], "");
 			}catch(e)
 			{
+				newTxt = newTxt.replace(rs[0], "");
 				console.error(rs[0] + " 掩码出现了异常情况",e);
 			}
 		}
