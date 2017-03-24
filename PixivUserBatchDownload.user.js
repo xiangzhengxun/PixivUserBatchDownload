@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.0.2
+// @version		5.1.0
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -45,6 +45,7 @@ var scriptIcon = ((typeof (GM_info) != "undefined") && GM_info.script.icon) ? GM
 
 //var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(?:-([0-9a-zA-Z]+))?(?:(?:_p|_ugoira))?)\\d+?(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
+var limitingPattern = '(https?://([^/]+)/common/images/(limit_mypixiv()))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
 
 /*
  * 获取初始状态
@@ -71,21 +72,25 @@ if (location.host.indexOf("touch")>=0) //typeof(pixiv.AutoView)!="undefined"
 /*
  * Debug 用 仿GM函数区
 */
-//访GM_xmlhttpRequest函数v1.2
+//访GM_xmlhttpRequest函数v1.3
 if(typeof(GM_xmlhttpRequest) == "undefined")
 {
 	var GM_xmlhttpRequest = function(GM_param){
 
 		var xhr = new XMLHttpRequest();	//创建XMLHttpRequest对象
+		xhr.open(GM_param.method, GM_param.url, true);
 		if(GM_param.responseType) xhr.responseType = GM_param.responseType;
+		if(GM_param.overrideMimeType) xhr.overrideMimeType(GM_param.overrideMimeType);
 		xhr.onreadystatechange = function()  //设置回调函数
 		{
-			if (xhr.readyState == 4 && xhr.status == 200 && GM_param.onload)
-				GM_param.onload(xhr);
-			if (xhr.readyState == 4 && xhr.status != 200 && GM_param.onerror)
-				GM_param.onerror(xhr);
+			if (xhr.readyState === xhr.DONE)
+			{
+				if (xhr.status === 200 && GM_param.onload)
+					GM_param.onload(xhr);
+				if (xhr.status !== 200 && GM_param.onerror)
+					GM_param.onerror(xhr);
+			}
 		}
-		xhr.open(GM_param.method, GM_param.url, true);
 
 		for (var header in GM_param.headers){
 			xhr.setRequestHeader(header, GM_param.headers[header]);
@@ -1053,8 +1058,18 @@ function buildDlgConfig(touch)
 	dlgc.appendChild(dl);
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
-	dt.innerHTML = "Pixiv访问权限，默认仅能访问公开作品";
+	//dt.innerHTML = "Pixiv访问权限，默认仅能访问公开作品";
 	var dd=document.createElement("dd");
+	dl.appendChild(dd);
+
+	var frm = new Frame("Pixiv访问权限","pubd-token");
+	dd.appendChild(frm);
+
+	var dl_t=document.createElement("dl");
+	frm.content.appendChild(dl_t);
+
+	var dd=document.createElement("dd");
+	dl_t.appendChild(dd);
 	var checkbox = new LabelInput("开启登陆功能，解除浏览限制","pubd-needlogin","pubd-needlogin","checkbox","1",true);
 	dlg.needlogin = checkbox.input;
 	dlg.needlogin.onclick = function()
@@ -1078,8 +1093,8 @@ function buildDlgConfig(touch)
 	a_setting.target = "_blank";
 	a_setting.innerHTML = "设置我的账户浏览限制";
 	dd.appendChild(a_setting);
-	dl.appendChild(dd);
 	var dd=document.createElement("dd");
+	dl_t.appendChild(dd);
 	dd.className = "pubd-token-info height-none";
 	dlg.token_info = dd;
 	var progress = new Progress("pubd-token-expires",true);
@@ -1128,7 +1143,6 @@ function buildDlgConfig(touch)
 		pubd.dialog.login.show();
 	}
 	dd.appendChild(ipt);
-	dl.appendChild(dd);
 
 	//“下载该画师”窗口选项
 	var dt=document.createElement("dt");
@@ -1225,23 +1239,11 @@ function buildDlgConfig(touch)
 		dlg.loadMask(mask);
 		dlg.masklist.selectedIndex = index;
 	}
+
 	//配置方案选择
-	
-	var dt=document.createElement("dt");
-	dl.appendChild(dt);
-	var dd=document.createElement("dd");
-
-	var frm = new Frame("下载方案设置","pubd-selectscheme");
-
-	var dl_ss=document.createElement("dl");
-
-	frm.content.appendChild(dl_ss);
-	dd.appendChild(frm);
-	dl.appendChild(dd);
-
 	var dt=document.createElement("dt");
 	dt.innerHTML = "默认下载方案";
-	dl_ss.appendChild(dt);
+	dl.appendChild(dt);
 	var dd=document.createElement("dd");
 	var slt = new Select("pubd-downscheme");
 	slt.onchange = function()
@@ -1284,7 +1286,20 @@ function buildDlgConfig(touch)
 		else dlg.loadScheme(dlg.schemes[index]);
 	}
 	dd.appendChild(ipt);
-	dl_ss.appendChild(dd);
+	dl.appendChild(dd);
+
+	//配置方案详情设置
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+
+	var frm = new Frame("当前方案设置","pubd-selectscheme");
+
+	var dl_ss=document.createElement("dl");
+
+	frm.content.appendChild(dl_ss);
+	dd.appendChild(frm);
+	dl.appendChild(dd);
 
 	//Aria2 URL
 
@@ -1864,16 +1879,20 @@ function buildDlgDownThis(touch,userid)
 							dlg.log("Token过期或错误，需要重新登录");
 							if (pubd.auth.save_account)
 							{
-								dlg.log("检测到已保存账户密码，开始自动登陆");
+								dlg.log("检测到已保存账户密码，开始自动登录");
 								var dlgLogin = pubd.dialog.login;
 								dlgLogin.show();
 								
 								pubd.auth.login(
 									function(jore){//onload_suceess_Cb
-										dlgLogin.error.replace("登陆成功");
+										dlgLogin.error.replace("登录成功");
 										//pubd.dialog.config.start_token_animate();
 										dlgLogin.cptBtns.close.click();
-										dlg.log("登陆成功");
+										dlg.log("登录成功");
+
+										//如果设置窗口运行着的话还启动动画
+										if (pubd.dialog.config.classList.contains("display-none"))
+											pubd.dialog.config.start_token_animate();
 										//回调自身
 										xhrGenneral(url,onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb);
 									},
@@ -1929,6 +1948,12 @@ function buildDlgDownThis(touch,userid)
 
 		function startAnalyseUser(userid,contentType)
 		{
+			try{ //为了避免不同网页重复获取Token，开始分析前先读取储存的Token。
+				pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
+			}catch(e){
+				console.error("开始分析前，重新读取登录信息失败",e);
+			}
+
 			dlg.log("开始获取ID为 " + userid + " 的用户信息");
 			xhrGenneral(
 				"https://app-api.pixiv.net/v1/user/detail?user_id=" + userid,
@@ -2071,19 +2096,37 @@ function buildDlgDownThis(touch,userid)
 						var regRes = regSrc.exec(original);
 						if (regRes)
 						{
+							//然后添加扩展名等
 							work.url_without_page = regRes[1];
 							work.domain = regRes[2];
 							work.filename = regRes[3];
 							work.token = regRes[4];
 							work.extention = regRes[5];
+						}else
+						{
+							var regSrcL = new RegExp(limitingPattern, "ig");
+							var regResL = regSrcL.exec(original);
+							if (regResL)
+							{
+								dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
+								//console.log(work);
+								work.url_without_page = regResL[1];
+								work.domain = regResL[2];
+								work.filename = regResL[3];
+								work.token = regResL[4];
+								work.extention = regResL[5];
+							}else
+							{
+								dlg.log(contentName + " " + work.id + " 原图格式未知。");
+							}
 						}
 
-						//然后添加扩展名等
+						/*
 						if (work.restrict>0)//非公共权限
 						{
 							dlg.log(contentName + " " + work.id + " 非公共权限，可能无法正常下载");
-							//console.log(work);
 						}
+						*/
 
 						works.item.push(work);
 					}
@@ -2181,7 +2224,11 @@ function buildDlgDownThis(touch,userid)
 		var contentType = dlg.dcType[1].checked?1:0;
 		var userInfo = dlg.user.info;
 		var illustsItems = contentType==0?dlg.user.illusts.item:dlg.user.bookmarks.item; //将需要分析的数据储存到works里
-		downloadWork(scheme,userInfo,illustsItems);//调用公用下载窗口
+		dlg.log("开始逐项发送到Aria2，此过程请勿进行其他操作。");
+		var downP = {progress:dlg.progress,current:0,max:0};
+		downloadWork(scheme,userInfo,illustsItems,downP,function(){
+			dlg.log("下载信息发送完毕");
+		});//调用公用下载窗口
 	}
 	//启动初始化
 	dlg.initialise = function(){
@@ -2236,46 +2283,78 @@ function NewDownSchemeArrayFromJson(jsonarr)
 	return sarr;
 }
 //下载具体内容
-function downloadWork(scheme,userInfo,illustsItems)
+function downloadWork(scheme,userInfo,illustsItems,downP,callback)
 {
 	try
 	{
+		//spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
+		spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。为了避免发送过程卡顿，PUBD 5.1x版本开始将此过程修改为逐项发送，请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
 
-		var masklist = scheme.masklist;
-		var works_len = illustsItems.length;
-		var aria2 = new Aria2(scheme.rpcurl);
-
-		spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
-		illustsItems.reduce(function (previous, current, index, array)
+		var nillusts = illustsItems; //为了不改变原数组，新建一个数组
+		downP.max = nillusts.reduce(function (previous, current, index, array)
 		{
 			var page_count = current.page_count;
 			if (current.type == "ugoira") //动图
 				page_count = current.ugoira_metadata.frames.length;
-				
-			for (var pi = 0; pi < page_count; pi++)
-			{
-				var url = current.url_without_page + pi + "." + current.extention;
-				if (url == "https://source.pixiv.net/common/images/limit_mypixiv_360.png") continue; //无法查看的文件
+			return previous + page_count;
+		},0); //获取总需要下载发送的页数
 
-				var srtObj = {
-					"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, current, pi), true),
-					"referer": "https://app-api.pixiv.net/",
-					"user-agent": "PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)",
-				}
-				if(scheme.savedir.length>0)
-				{
-					srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, current, pi), true);
-				}
-				//console.log(url,srtObj);
-				aria2.addUri(url, srtObj);
-			}
-		},false)
-
+		sendToAria2_illust(nillusts,userInfo,scheme,downP,callback);
 	}catch(e)
 	{
 		console.error(e);
 	}
 }
+//作品循环递归输出
+function sendToAria2_illust(illusts,userInfo,scheme,downP,callback)
+{
+	if (illusts.length<1) //做完了
+	{
+		callback();
+		return;
+	}
+
+	sendToAria2_Page(illusts[0],0,userInfo,scheme,downP,function(){
+		illusts.shift(); //删掉第一个元素
+		sendToAria2_illust(illusts,userInfo,scheme,downP,callback); //递归调用自身
+	})
+}
+//作品每页循环递归输出
+function sendToAria2_Page(illust,page,userInfo,scheme,downP,callback)
+{
+	var page_count = illust.page_count;
+	if (illust.type == "ugoira") //动图
+		page_count = illust.ugoira_metadata.frames.length;
+	if (page>=page_count || illust.filename == "limit_mypixiv") //无法查看的文件
+	{
+		if (illust.filename == "limit_mypixiv")
+			downP.progress.set((downP.current+=page_count)/downP.max); //直接加上所有页数
+		callback();
+		return;
+	}
+	var url = illust.url_without_page + page + "." + illust.extention;
+
+	var aria2 = new Aria2(scheme.rpcurl);
+	var srtObj = {
+		"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), true),
+		"referer": "https://app-api.pixiv.net/",
+		"user-agent": "PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)",
+	}
+	if(scheme.savedir.length>0)
+	{
+		srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), true);
+	}
+	aria2.addUri(url, srtObj, function(res){
+		if(res === false)
+		{
+			alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
+			return;
+		}
+		downP.progress.set(++downP.current/downP.max); //设置进度
+		sendToAria2_Page(illust,++page,userInfo,scheme,downP,callback); //递归调用自身
+	});
+}
+
 function showMask(str,masklist,user,illust,page)
 {
 	var newTxt = str;
