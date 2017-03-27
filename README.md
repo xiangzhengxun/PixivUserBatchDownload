@@ -30,4 +30,4 @@ PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 * [用户样式部分(userstyles.org)](https://userstyles.org/styles/137583)
 
 ## 使用说明
-请访问▶**[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)**◀阅读。
+请访问▶ **[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)** ◀阅读。
