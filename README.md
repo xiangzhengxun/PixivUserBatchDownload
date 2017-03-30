@@ -15,6 +15,13 @@ PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离�
 完整下载流程的结构如下<br>
 ![结构图](http://ww1.sinaimg.cn/large/6c84b2d6gw1fbnmzq72bdj20jj0ff3za.jpg)
 
+## 后续功能开发状态
+- [x] 下载逐项发送（不卡死）
+- [ ] 输出文本信息（下载列表）
+- [ ] 多画师批量下载
+- [x] 子菜单快速完成操作（已开发但暂未使用）
+- [ ] Tab选项卡式面板
+
 ## License|许可协议
 PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 
