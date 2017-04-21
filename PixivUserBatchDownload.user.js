@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.1.0
+// @version		5.1.1
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -37,6 +37,7 @@ var pubd = { //储存设置
 	},
 	auth:null,
 	downSchemes:[],
+	downbreak:false,
 };
 
 var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
@@ -1770,6 +1771,7 @@ function buildDlgDownThis(touch,userid)
 	{
 		dlg.user.illusts.break = true; //使作品中断
 		dlg.user.bookmarks.break = true; //使收藏中断
+		pubd.downbreak = true; //使下载中断
 	}
 	dt.appendChild(btnBreak);
 	var dd=document.createElement("dd");
@@ -2224,10 +2226,11 @@ function buildDlgDownThis(touch,userid)
 		var contentType = dlg.dcType[1].checked?1:0;
 		var userInfo = dlg.user.info;
 		var illustsItems = contentType==0?dlg.user.illusts.item:dlg.user.bookmarks.item; //将需要分析的数据储存到works里
-		dlg.log("开始逐项发送到Aria2，此过程请勿进行其他操作。");
+		dlg.log("开始逐项发送到Aria2，此过程请勿进行其他操作，请耐心等待");
 		var downP = {progress:dlg.progress,current:0,max:0};
 		downloadWork(scheme,userInfo,illustsItems,downP,function(){
 			dlg.log("下载信息发送完毕");
+			spawnNotification("" + userInfo.user.name + " 的相关插画已全部发送到指定的Aria2", userInfo.user.profile_image_urls.medium, "发送完毕");
 		});//调用公用下载窗口
 	}
 	//启动初始化
@@ -2288,7 +2291,6 @@ function downloadWork(scheme,userInfo,illustsItems,downP,callback)
 	try
 	{
 		//spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
-		spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。为了避免发送过程卡顿，PUBD 5.1x版本开始将此过程修改为逐项发送，请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
 
 		var nillusts = illustsItems; //为了不改变原数组，新建一个数组
 		downP.max = nillusts.reduce(function (previous, current, index, array)
@@ -2322,6 +2324,12 @@ function sendToAria2_illust(illusts,userInfo,scheme,downP,callback)
 //作品每页循环递归输出
 function sendToAria2_Page(illust,page,userInfo,scheme,downP,callback)
 {
+	if (pubd.downbreak)
+	{
+		spawnNotification("下载已停止","中断下载");
+		pubd.downbreak = false;
+		return;
+	}
 	var page_count = illust.page_count;
 	if (illust.type == "ugoira") //动图
 		page_count = illust.ugoira_metadata.frames.length;
