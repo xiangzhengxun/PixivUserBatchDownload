@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.0
+// @version		5.2.1
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -417,6 +417,7 @@ var DownScheme = (function () {
 				this.rpcurl = json.rpcurl;
 				this.savedir = json.savedir;
 				this.savepath = json.savepath;
+				this.textout = json.textout;
 				this.masklist = JSON.parse(JSON.stringify(json.masklist));
 				return true;
 			},
@@ -1028,15 +1029,6 @@ function buildbtnMenu(touch)
 					menu.hide();
 				}
 			);
-		if (typeof(pixiv.context.illustId) != "undefined")
-		{ /*需要子菜单，显示不同的下载方案*/
-		menu.add("下载当前作品","",function()
-				{
-					pubd.dialog.downthis.show();
-					menu.hide();
-				}
-			);
-		}
 		/*
 		menu.add("占位用","",null,menu1);
 		menu.add("没功能","",null,menu4);
@@ -1045,10 +1037,19 @@ function buildbtnMenu(touch)
 					alert("这个功能也没有开发")
 				}
 			);
-			*/
-
+		*/
+		/*
+		if (typeof(pixiv.context.illustId) != "undefined")
+		{ //需要子菜单，显示不同的下载方案
+		menu.add("下载当前作品","",function()
+				{
+					pubd.dialog.downthis.show();
+					menu.hide();
+				}
+			);
+		}
 		if (typeof(pixiv.context.userId) != "undefined")
-		{ /*需要子菜单，显示不同的下载方案*/
+		{
 		menu.add("收藏作者","",function()
 				{
 					
@@ -1060,6 +1061,7 @@ function buildbtnMenu(touch)
 				}
 			);
 		}
+		*/
 		menu.add(0);
 		menu.add("选项","pubd-menu-setting",function()
 				{
