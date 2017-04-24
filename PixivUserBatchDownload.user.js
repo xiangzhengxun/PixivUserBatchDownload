@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.2
+// @version		5.2.3
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -1437,6 +1437,7 @@ function buildDlgConfig(touch)
 	textout.name = "pubd-textout";
 	textout.id = textout.name;
 	textout.placeholder = "直接输出文本信息时的格式"
+	textout.wrap = "off";
 	textout.onchange =  function()
 	{
 		if (dlg.downScheme.selectedOptions.length < 1){return;}
