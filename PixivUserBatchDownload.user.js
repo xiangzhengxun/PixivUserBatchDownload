@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.1.1
+// @version		5.2.0
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -25,7 +25,7 @@
 */
 var pubd = { //储存设置
 	configVersion: 0, //当前设置版本，用于提醒是否需要重置
-	cssVersion: 0, //当前需求CSS版本，用于提醒是否需要更新CSS
+	cssVersion: 1, //当前需求CSS版本，用于提醒是否需要更新CSS
 	touch:false, //是触屏
 	loggedIn:false, //登陆了
 	start:null, //开始按钮
@@ -38,6 +38,7 @@ var pubd = { //储存设置
 	auth:null,
 	downSchemes:[],
 	downbreak:false,
+	staruser:[],
 };
 
 var scriptName = typeof(GM_info)!="undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
@@ -383,6 +384,7 @@ var DownScheme = (function () {
 			rpcurl:"http://localhost:6800/jsonrpc",
 			savedir:"D:/PivixDownload/",
 			savepath:"%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
+			textout:"%{illust.url_without_page}%{page}.%{illust.extention}\n",
 			masklist:[],
 			mask:{
 				add:function(name,logic,content){
@@ -1026,6 +1028,15 @@ function buildbtnMenu(touch)
 					menu.hide();
 				}
 			);
+		if (typeof(pixiv.context.illustId) != "undefined")
+		{ /*需要子菜单，显示不同的下载方案*/
+		menu.add("下载当前作品","",function()
+				{
+					pubd.dialog.downthis.show();
+					menu.hide();
+				}
+			);
+		}
 		/*
 		menu.add("占位用","",null,menu1);
 		menu.add("没功能","",null,menu4);
@@ -1035,6 +1046,20 @@ function buildbtnMenu(touch)
 				}
 			);
 			*/
+
+		if (typeof(pixiv.context.userId) != "undefined")
+		{ /*需要子菜单，显示不同的下载方案*/
+		menu.add("收藏作者","",function()
+				{
+					
+					pubd.staruser.push(pixiv.context.userId);
+					var starStr = JSON.stringify(pubd.staruser);
+					GM_setValue("pubd-staruser",starStr); //下载方案
+
+					menu.hide();
+				}
+			);
+		}
 		menu.add(0);
 		menu.add("选项","pubd-menu-setting",function()
 				{
@@ -1191,12 +1216,14 @@ function buildDlgConfig(touch)
 			dlg.rpcurl.value = "";
 			dlg.savedir.value = "";
 			dlg.savepath.value = "";
+			dlg.textout.value = "";
 			dlg.loadMasklistFromArray([]);
 		}else
 		{
 			dlg.rpcurl.value = scheme.rpcurl;
 			dlg.savedir.value = scheme.savedir;
 			dlg.savepath.value = scheme.savepath;
+			dlg.textout.value = scheme.textout;
 			dlg.loadMasklistFromArray(scheme.masklist);
 		}
 	}
@@ -1385,7 +1412,7 @@ function buildDlgConfig(touch)
 	var savepath = document.createElement("input");
 	savepath.type = "text";
 	savepath.className = "pubd-savepath";
-	savepath.name = "pubd-savedir";
+	savepath.name = "pubd-savepath";
 	savepath.id = savepath.name;
 	savepath.placeholder = "分组保存的文件夹和文件名"
 	savepath.onchange =  function()
@@ -1397,6 +1424,27 @@ function buildDlgConfig(touch)
 	dlg.savepath = savepath;
 	dd.appendChild(savepath);
 	dl_ss.appendChild(dd);
+
+	//输出文本
+	var dt=document.createElement("dt");
+	dl_ss.appendChild(dt);
+	dt.innerHTML = "文本输出模式格式"
+	var dd=document.createElement("dd");
+	var textout = document.createElement("textarea");
+	textout.className = "pubd-textout";
+	textout.name = "pubd-textout";
+	textout.id = textout.name;
+	textout.placeholder = "直接输出文本信息时的格式"
+	textout.onchange =  function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){return;}
+		var schemeIndex = dlg.downScheme.selectedIndex;
+		dlg.schemes[schemeIndex].textout = textout.value;
+	}
+	dlg.textout = textout;
+	dd.appendChild(textout);
+	dl_ss.appendChild(dd);
+
 
 	//自定义掩码
 	var dt=document.createElement("dt");
@@ -1473,7 +1521,7 @@ function buildDlgConfig(touch)
 	
 	//▼掩码列表
 	var dd=document.createElement("dd");
-	var masklist = new Select("pubd-mask-list")
+	var masklist = new Select("pubd-mask-list","pubd-mask-list")
 	masklist.size = 5;
 	masklist.onchange = function()
 	{//读取选中的掩码
@@ -1823,6 +1871,18 @@ function buildDlgDownThis(touch,userid)
 	var dd=document.createElement("dd");
 	dd.className = "pubd-downthis-downbar"
 
+	var textdown = document.createElement("input");
+	textdown.type = "button";
+	textdown.className = "pubd-textdown";
+	textdown.value = "输出\n文本";
+	textdown.onclick = function()
+	{
+		dlg.textdownload();
+	}
+	textdown.disabled = true;
+	dlg.textdown = textdown;
+	dd.appendChild(textdown);
+
 	var startdown = document.createElement("input");
 	startdown.type = "button";
 	startdown.className = "pubd-startdown";
@@ -1835,6 +1895,20 @@ function buildDlgDownThis(touch,userid)
 	dlg.startdown = startdown;
 	dd.appendChild(startdown);
 	dl.appendChild(dd);
+
+	//文本输出栏
+	var dt=document.createElement("dt");
+	dl.appendChild(dt);
+	var dd=document.createElement("dd");
+	dd.className = ""
+	dl.appendChild(dd);
+
+	var ipt = document.createElement("textarea");
+	ipt.readOnly = true;
+	ipt.className = "pubd-downthis-textout display-none";
+	ipt.wrap = "off";
+	dlg.textoutTextarea = ipt;
+	dd.appendChild(ipt);
 
 	//显示日志相关
 	dlg.logArr = []; //用于储存一行一行的日志信息。
@@ -1944,6 +2018,7 @@ function buildDlgDownThis(touch,userid)
 		works.break = false;
 		works.runing = true;
 
+		dlg.textdown.disabled = true;
 		dlg.startdown.disabled = true;
 		dlg.progress.set(0);
 		dlg.logClear();
@@ -2062,6 +2137,7 @@ function buildDlgDownThis(touch,userid)
 				dlg.progress.set(1);
 				works.runing = false;
 				works.next_url = "";
+				dlg.textdown.disabled = false;
 				dlg.startdown.disabled = false;
 				if (GM_getValue("pubd-autodownload"))
 				{//自动开始
@@ -2219,8 +2295,36 @@ function buildDlgDownThis(touch,userid)
 		}
 	}
 	//开始下载按钮
+	dlg.textdownload = function()
+	{
+		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中方案");return;}
+		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+		var contentType = dlg.dcType[1].checked?1:0;
+		var userInfo = dlg.user.info;
+		var illustsItems = contentType==0?dlg.user.illusts.item:dlg.user.bookmarks.item; //将需要分析的数据储存到works里
+		dlg.log("正在生成文本信息");
+
+		var outTxtArr = illustsItems.map(function(item)
+		{
+			var page_count = item.page_count;
+			if (item.type == "ugoira") //动图
+				page_count = item.ugoira_metadata.frames.length;
+			var outArr = []; //输出内容
+			for (var pi = 0; pi < page_count; pi++)
+			{
+				outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
+			}
+			return outArr.join("");
+		});
+		var outTxt = outTxtArr.join("");
+		dlg.textoutTextarea.value = outTxt;
+		dlg.textoutTextarea.classList.remove("display-none");
+		dlg.log("文本信息输出成功");
+	}
+	//开始下载按钮
 	dlg.startdownload = function()
 	{
+		dlg.textoutTextarea.classList.add("display-none");
 		if (dlg.downScheme.selectedOptions.length < 1){alert("没有选中方案");return;}
 		var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
 		var contentType = dlg.dcType[1].checked?1:0;

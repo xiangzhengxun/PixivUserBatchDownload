@@ -1,7 +1,7 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-	.display-none,.pubd-alert-0
+	.display-none,.pubd-alert-1
 	{/*任何需要隐藏的*/
 		display:none !important;
 	}
@@ -445,8 +445,13 @@
 		top: 120px;
 	}
 	.pubd-config input[type="text"],.pubd-config input[type="email"],.pubd-config input[type="password"],.pubd-config input[type="url"]
-	{/*选项对话框图标*/
-		padding: 0 4px;
+	{/*文本输入框*/
+		height: 20px;
+    margin: 0;
+    padding: 0 4px;
+    color: #333;
+    font-size: 12px;
+    border: 1px solid #becad7;
 	}
 	.pubd-config .pubd-icon
 	{/*选项对话框图标*/
@@ -491,7 +496,7 @@
 	{/*RPC地址检测信息*/
 		float: right;
 	}
-	.pubd-config .pubd-savedir,.pubd-config .pubd-savepath
+	.pubd-config .pubd-savedir,.pubd-config .pubd-savepath,.pubd-config .pubd-textout
 	{/*下载目录与保存目录*/
 		width: calc(100% - 10px);
 	}
@@ -508,6 +513,10 @@
 	{/*自定义掩码-内容*/
 		width: calc(100% - 10px);
 		margin: 3px 0;
+	}
+	.pubd-config .pubd-textout,.pubd-config .pubd-mask-list
+	{/*只允许垂直改变大小*/
+		resize: vertical;
 	}
 	.pubd-config .pubd-mask-add,.pubd-config .pubd-mask-remove
 	{/*自定义掩码-加减*/
@@ -666,11 +675,29 @@
 		width : calc(100% - 10px);
 		height : 100px;
 	}
+	.pubd-downthis .pubd-downthis-downbar
+	{
+	}
+	.pubd-downthis .pubd-textdown
+	{/*文本下载按钮*/
+		width: calc(20% - 5px);
+		height: 50px;
+		margin-right: 5px;
+		vertical-align: middle;
+	}
 	.pubd-downthis .pubd-startdown
 	{/*开始下载按钮*/
-		width: 100%;
+		width: 80%;
 		height: 50px;
 		font-size: 30px;
+		vertical-align: middle;
+	}
+	.pubd-downthis .pubd-downthis-textout
+	{/*文本输出*/
+		min-width: 100px;
+		min-height: 40px;
+		width : calc(100% - 10px);
+		height : 100px;
 	}
 	/*▲下载当前画师窗口内容*/
 }
