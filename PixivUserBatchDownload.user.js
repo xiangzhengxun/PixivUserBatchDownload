@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.1
+// @version		5.2.2
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2314,7 +2314,8 @@ function buildDlgDownThis(touch,userid)
 			var outArr = []; //输出内容
 			for (var pi = 0; pi < page_count; pi++)
 			{
-				outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
+				if (item.filename != "limit_mypixiv")
+					outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
 			}
 			return outArr.join("");
 		});
