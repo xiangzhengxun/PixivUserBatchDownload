@@ -1,11 +1,11 @@
-# PixivUserBatchDownload v5.0
+# PixivUserBatchDownload v5.x
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，简称PUBD。
 
 PUBD的理念是让人在阅览P站的过程中看见喜欢的画师便可以立即一键下载。
 
 PUBD的功能主要是可以下载画师所有作品，并且可以自定义下载路径、文件名。
 
-PUBD老用户请注意，PUBD v5.0是为了解决P站改版重新编写的一个全新程序，与之前的程序完全不同(Aria2部分除外)，请重新学习使用方法。
+PUBD老用户请注意，PUBD v5.x是为了解决P站改版重新编写的一个全新程序，与之前的程序完全不同(Aria2部分除外)，请重新学习使用方法。
 
 ![程序运行图](http://ww4.sinaimg.cn/large/6c84b2d6gw1fbnrf6o7nuj20px0g50w8.jpg)
 
