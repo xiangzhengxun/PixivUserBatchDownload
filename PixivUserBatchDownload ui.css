@@ -1,7 +1,7 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-	.display-none,.pubd-alert-1
+	.display-none,.pubd-alert-2
 	{/*任何需要隐藏的*/
 		display:none !important;
 	}
@@ -160,6 +160,8 @@
 		top: 120px;
 		z-index: 9000;
 		min-width: 210px;
+    overflow: auto;
+		resize:both;
 		padding: 30px 8px 8px 8px;
 		background-color: RGBA(191,214,236,0.7);
 		background-image: 
@@ -274,22 +276,38 @@
 	.pubd-dialog .dlg-content
 	{/*对话框内容*/
 		padding: 5px;
+		margin: 0;
 		border: #147DF2 solid 1px;
 		outline: white solid 1px;
+		height:calc(100% - 12px);
+		overflow: auto;
 	}
 	.pubd-dialog .dlg-content,.pubd-frame .pubd-frame-caption
 	{/*对话框内容和框架标题都要设置相同的背景颜色*/
 		background-color: #F0F0F0;
 	}
+	.pubd-dialog dl:first-child
+	{/*对话框内容内的列表*/
+		width:100%;
+		height:100%;
+		padding: 0;
+		margin: 0;
+		overflow: auto;
+	}
+	dl dt,dl dd
+	{/*列表名和内容*/
+	}
 	.pubd-progress
 	{/*进度*/
 		width: 100%;
+		box-sizing: border-box;
 		text-align: center;
 		position: relative;
 		display:inline-block;
 		background-color: #CDCDCD;
 		border: #8C8C8C solid 1px;
 		box-shadow: 0 0 1px #fff inset, 0px 5px 4px #FFF inset,0px -3px 2px #DDD inset, 0px 0px 4px #000 inset;
+		overflow: hidden;
 	}
 	.pubd-progress,.pubd-progress .pubd-progress-bar,.pubd-progress .pubd-progress-text
 	{/*进度条三个部分的通用设置*/
@@ -357,7 +375,9 @@
 	}
 	.pubd-user-info
 	{/*一个用户信息框*/
-		width: 350px;
+		width: calc(100% - 12px);
+		min-width: 270px;
+		overflow: hidden;
 		height: 50px;
 		background-color: white;
 		border: 1px #888 solid;
@@ -444,14 +464,14 @@
 		left: 380px;
 		top: 120px;
 	}
-	.pubd-config input[type="text"],.pubd-config input[type="email"],.pubd-config input[type="password"],.pubd-config input[type="url"]
+	.pubd-config input[type="text"],.pubd-config input[type="email"],.pubd-config input[type="password"],.pubd-config input[type="url"],.pubd-config textarea
 	{/*文本输入框*/
 		height: 20px;
-    margin: 0;
     padding: 0 4px;
     color: #333;
     font-size: 12px;
     border: 1px solid #becad7;
+		box-sizing: border-box;
 	}
 	.pubd-config .pubd-icon
 	{/*选项对话框图标*/
@@ -464,6 +484,7 @@
 	{/*选项面板按钮*/
 		width: 80px;
 		margin-left: 5px;
+		box-sizing: border-box;
 	}
 	.pubd-browsing-restriction
 	{/*访问P站设置的链接*/
@@ -487,18 +508,32 @@
 	.pubd-config .pubd-downscheme
 	{/*下载方案下拉框*/
 		width: calc(100% - 170px);
+		box-sizing: border-box;
+	}
+	.pubd-config .pubd-selectscheme-bar
+	{/*下载方案详细栏-dd*/
+		height: calc(100% - 216px);
+	}
+	.pubd-config .pubd-selectscheme
+	{/*下载方案详细栏-frame*/
+		height: calc(100% - 11px);
+		box-sizing: border-box;
+	}
+	.pubd-config .pubd-selectscheme .pubd-frame-content
+	{/*下载方案详细栏-frame-具体内容*/
+		height: 100%;
 	}
 	.pubd-config .pubd-rpcurl
 	{/*RPC地址*/
-		width: calc(100% - 95px);
+		width: calc(100% - 85px);
 	}
 	.pubd-config .pubd-rpcchk-info
 	{/*RPC地址检测信息*/
 		float: right;
 	}
 	.pubd-config .pubd-savedir,.pubd-config .pubd-savepath,.pubd-config .pubd-textout
-	{/*下载目录与保存目录*/
-		width: calc(100% - 10px);
+	{/*下载目录与保存目录，文本输出格式*/
+		width: 100%;
 	}
 	.pubd-config .pubd-mask-name
 	{/*自定义掩码-名*/
@@ -506,17 +541,27 @@
 	}
 	.pubd-config .pubd-mask-logic
 	{/*自定义掩码-逻辑条件*/
-		width: calc(100% - 185px);
+		width: calc(100% - 165px);
 		margin-left: 5px;
 	}
 	.pubd-config .pubd-mask-content
 	{/*自定义掩码-内容*/
-		width: calc(100% - 10px);
-		margin: 3px 0;
+		width: 100%;
+	}
+	.pubd-config .pubd-textout-bar
+	{/*文本输出模式格式-dd*/
+		height: calc(50% - 112px);
+	}
+	.pubd-config .pubd-mask-list-bar
+	{/*自定义掩码列表-dd*/
+		height: calc(50% - 112px);
 	}
 	.pubd-config .pubd-textout,.pubd-config .pubd-mask-list
-	{/*只允许垂直改变大小*/
-		resize: vertical;
+	{/*文本输出模式格式、掩码列表*/
+		resize: none;
+		min-height:32px;
+		height:100%;
+		box-sizing: border-box;
 	}
 	.pubd-config .pubd-mask-add,.pubd-config .pubd-mask-remove
 	{/*自定义掩码-加减*/
@@ -524,6 +569,7 @@
 		text-align: center;
 		width: 25px;
 		margin-left: 5px;
+		box-sizing: border-box;
 	}
 	.pubd-config .pubd-config-savebar
 	{/*保存按钮*/
@@ -536,6 +582,7 @@
 	{/*登陆对话框*/
 		left:720px;
 		top: 150px;
+		resize: none;
 	}
 	.pubd-login .dlg-content
 	{/*登陆对话框内容*/
@@ -649,6 +696,7 @@
 	.pubd-downthis
 	{/*下载当前画师*/
 		top: 140px;
+		width: 400px;
 	}
 	.pubd-downthis .pubd-down-content
 	{/*下载内容单选框*/
@@ -664,8 +712,8 @@
 		bottom: 0;
 		right: 0;
 		padding: 0;
-		height: 22px;
-		line-height: 12px;
+		height: 19px;
+		line-height: 11px;
 		font-size:12px;
 	}
 	.pubd-downthis .pubd-downthis-log
@@ -674,6 +722,7 @@
 		min-height: 40px;
 		width : calc(100% - 10px);
 		height : 100px;
+    resize:none;
 	}
 	.pubd-downthis .pubd-downthis-downbar
 	{
@@ -692,12 +741,17 @@
 		font-size: 30px;
 		vertical-align: middle;
 	}
+	.pubd-downthis .pubd-downthis-textout-bar
+	{
+		height : calc(100% - 394px);
+	}
 	.pubd-downthis .pubd-downthis-textout
 	{/*文本输出*/
 		min-width: 100px;
 		min-height: 40px;
 		width : calc(100% - 10px);
-		height : 100px;
+		height : 100%;
+    resize:none;
 	}
 	/*▲下载当前画师窗口内容*/
 }

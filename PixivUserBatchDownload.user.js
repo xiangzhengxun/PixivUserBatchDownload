@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.3
+// @version		5.2.5
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -25,7 +25,7 @@
 */
 var pubd = { //储存设置
 	configVersion: 0, //当前设置版本，用于提醒是否需要重置
-	cssVersion: 1, //当前需求CSS版本，用于提醒是否需要更新CSS
+	cssVersion: 2, //当前需求CSS版本，用于提醒是否需要更新CSS
 	touch:false, //是触屏
 	loggedIn:false, //登陆了
 	start:null, //开始按钮
@@ -1322,6 +1322,7 @@ function buildDlgConfig(touch)
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
 	var dd=document.createElement("dd");
+	dd.className = "pubd-selectscheme-bar";
 
 	var frm = new Frame("当前方案设置","pubd-selectscheme");
 
@@ -1432,6 +1433,7 @@ function buildDlgConfig(touch)
 	dl_ss.appendChild(dt);
 	dt.innerHTML = "文本输出模式格式"
 	var dd=document.createElement("dd");
+	dd.className = "pubd-textout-bar";
 	var textout = document.createElement("textarea");
 	textout.className = "pubd-textout";
 	textout.name = "pubd-textout";
@@ -1524,6 +1526,7 @@ function buildDlgConfig(touch)
 	
 	//▼掩码列表
 	var dd=document.createElement("dd");
+	dd.className = "pubd-mask-list-bar";
 	var masklist = new Select("pubd-mask-list","pubd-mask-list")
 	masklist.size = 5;
 	masklist.onchange = function()
@@ -1903,7 +1906,7 @@ function buildDlgDownThis(touch,userid)
 	var dt=document.createElement("dt");
 	dl.appendChild(dt);
 	var dd=document.createElement("dd");
-	dd.className = ""
+	dd.className = "pubd-downthis-textout-bar"
 	dl.appendChild(dd);
 
 	var ipt = document.createElement("textarea");
