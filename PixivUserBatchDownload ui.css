@@ -156,7 +156,7 @@
 	.pubd-dialog
 	{/*对话框*/
 		position: absolute;
-		left: 400px;
+		left: calc(50vw - 210px);
 		top: 120px;
 		z-index: 9000;
 		min-width: 210px;
@@ -461,7 +461,7 @@
 	.pubd-config
 	{/*选项对话框宽度*/
 		width: 400px;
-		left: 380px;
+		left: calc(50vw - 200px);
 		top: 120px;
 	}
 	.pubd-config input[type="text"],.pubd-config input[type="email"],.pubd-config input[type="password"],.pubd-config input[type="url"],.pubd-config textarea
@@ -580,7 +580,7 @@
 	/*▼登陆对话框相关*/
 	.pubd-login
 	{/*登陆对话框*/
-		left:720px;
+		left: calc(50vw - 180px);
 		top: 150px;
 		resize: none;
 	}
@@ -695,7 +695,8 @@
 	/*▼下载当前画师窗口内容*/
 	.pubd-downthis
 	{/*下载当前画师*/
-		top: 140px;
+		left: calc(50vw - 240px);
+		top: 180px;
 		width: 400px;
 	}
 	.pubd-downthis .pubd-down-content
