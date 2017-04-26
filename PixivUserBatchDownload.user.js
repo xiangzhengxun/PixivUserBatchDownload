@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.5
+// @version		5.2.6
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -1973,7 +1973,7 @@ function buildDlgDownThis(touch,userid)
 										dlg.log("登录成功");
 
 										//如果设置窗口运行着的话还启动动画
-										if (pubd.dialog.config.classList.contains("display-none"))
+										if (!pubd.dialog.config.classList.contains("display-none"))
 											pubd.dialog.config.start_token_animate();
 										//回调自身
 										xhrGenneral(url,onload_suceess_Cb,onload_hasError_Cb,onload_notJson_Cb,onerror_Cb);
