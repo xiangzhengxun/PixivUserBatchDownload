@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.6
+// @version		5.2.7
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2294,16 +2294,12 @@ function showMask(str, masklist, user, illust, page) {
     //var pattern = "%{([^}]+)}"; //旧的简单匹配
     var pattern = "%{(.*?(?:[^\\\\](?:\\\\{2})+|[^\\\\]))}"; //新的支持转义符的
     var rs = null;
-    console.log("正则式", pattern, "匹配文本", newTxt);
-    console.log("正则结果", new RegExp(pattern).exec(newTxt));
     while ((rs = new RegExp(pattern).exec(newTxt)) != null) {
         var mskO = rs[0], //包含括号的原始掩码
             mskN = rs[1]; //去掉掩码括号
         if (mskN != undefined) {
             //去掉转义符的掩码名
-            console.log("处理之前的掩码", mskN);
             mskN = (mskN != undefined) ? mskN.replace(/\\{/ig, "{").replace(/\\}/ig, "}").replace(/\\/ig, "\\") : null;
-            console.log("处理之后的掩码", mskN);
             //搜寻自定义掩码
             var mymask = masklist.filter(function(mask) { return mask.name == mskN; });
             if (mymask.length > 0) { //如果有对应的自定义掩码
