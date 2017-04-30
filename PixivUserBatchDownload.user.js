@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.7
+// @version		5.2.8
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2299,7 +2299,7 @@ function showMask(str, masklist, user, illust, page) {
             mskN = rs[1]; //去掉掩码括号
         if (mskN != undefined) {
             //去掉转义符的掩码名
-            mskN = (mskN != undefined) ? mskN.replace(/\\{/ig, "{").replace(/\\}/ig, "}").replace(/\\/ig, "\\") : null;
+            mskN = (mskN != undefined) ? mskN.replace(/\\{/ig, "{").replace(/\\}/ig, "}").replace(/\\\\/ig, "\\") : null;
             //搜寻自定义掩码
             var mymask = masklist.filter(function(mask) { return mask.name == mskN; });
             if (mymask.length > 0) { //如果有对应的自定义掩码
