@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.8
+// @version		5.2.9
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -25,7 +25,7 @@
  */
 var pubd = { //储存设置
     configVersion: 0, //当前设置版本，用于提醒是否需要重置
-    cssVersion: 2, //当前需求CSS版本，用于提醒是否需要更新CSS
+    cssVersion: 3, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
     start: null, //开始按钮
@@ -1437,7 +1437,7 @@ function buildDlgConfig(touch) {
     var ipt = document.createElement("input");
     ipt.type = "button";
     ipt.className = "pubd-reset";
-    ipt.value = "重置"
+    ipt.value = "重置选项"
     ipt.onclick = function() {
         dlg.reset();
     }
@@ -1445,7 +1445,7 @@ function buildDlgConfig(touch) {
     var ipt = document.createElement("input");
     ipt.type = "button";
     ipt.className = "pubd-save";
-    ipt.value = "保存设置"
+    ipt.value = "保存选项"
     ipt.onclick = function() {
         dlg.save();
     }
@@ -2272,12 +2272,12 @@ function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
 
     var aria2 = new Aria2(scheme.rpcurl);
     var srtObj = {
-        "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), true),
+        "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 2),
         "referer": "https://app-api.pixiv.net/",
         "user-agent": "PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)",
     }
     if (scheme.savedir.length > 0) {
-        srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), true);
+        srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 1);
     }
     aria2.addUri(url, srtObj, function(res) {
         if (res === false) {
@@ -2331,15 +2331,26 @@ function showMask(str, masklist, user, illust, page) {
     return newTxt;
 }
 
-function replacePathSafe(str, keepTree) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
+function replacePathSafe(str, type) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 { //keepTree表示是否要保留目录树的字符（\、/和:）
     var nstr = "";
     if (typeof(str) == "undefined") return nstr;
     str = str.toString();
-    if (keepTree)
-        nstr = str.replace(/[\*\?"<>\|]/ig, "_");
-    else
-        nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_");
+    type = type?type:0;
+    switch(type)
+    {
+    case 1:
+        nstr = str.replace(/[\*\?"<>\|]/ig, "_"); //只替换路径中完全不能出现的特殊字符
+    break;
+    case 2:
+        nstr = str.replace(/[:\*\?"<>\|\r\n]/ig, "_"); //上述字符加冒号:，用于非驱动器路径
+    break;
+    case 3:
+        nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_"); //完全替换所有不能出现的特殊字符，包含斜杠
+    break;
+    default:
+        nstr = str; //不替换字符
+    }
     return nstr;
 }
 //开始构建UI

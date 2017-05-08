@@ -1,7 +1,7 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-	.display-none,.pubd-alert-2
+	.display-none,.pubd-alert-3
 	{/*任何需要隐藏的*/
 		display:none !important;
 	}
@@ -51,7 +51,7 @@
 		text-indent: -999px;
 		white-space: nowrap;
 		vertical-align: middle;
-		background: transparent url('http://source.pixiv.net/www/images/sprites-s9474f3c865.png') no-repeat 0 20px;
+		background: transparent url('https://source.pixiv.net/www/images/sprites-s30f7c00f21.png') no-repeat 0 20px;
 	}
 	.pubd-start .pubd-icon
 	{/*开始按钮图标*/
@@ -572,9 +572,13 @@
 		box-sizing: border-box;
 	}
 	.pubd-config .pubd-config-savebar
-	{/*保存按钮*/
+	{/*保存按钮栏*/
 		text-align: right;
 		margin-top: 5px;
+	}
+	.pubd-config .pubd-reset
+	{/*重置按钮*/
+		float: left;
 	}
 	/*▲选项对话框相关*/
 	/*▼登陆对话框相关*/
