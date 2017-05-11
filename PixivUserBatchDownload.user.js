@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.9
+// @version		5.2.10
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2315,7 +2315,7 @@ function showMask(str, masklist, user, illust, page) {
                 }
             } else { //普通掩码
                 try {
-                    var evTemp = eval("(" + mskN + ")");
+                    var evTemp = eval(mskN);
                     if (evTemp != undefined)
                         newTxt = newTxt.replace(mskO, evTemp.toString());
                     else
