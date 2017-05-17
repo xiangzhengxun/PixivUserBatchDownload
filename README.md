@@ -1,18 +1,24 @@
 # PixivUserBatchDownload v5.x
 [P站](http://www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具，简称PUBD。
 
-PUBD的理念是让人在阅览P站的过程中看见喜欢的画师便可以立即一键下载该画师的所有作品（所以按钮也在画师头像下方）。
+* #### 为什么要做PUBD？
+  PUBD的理念是在阅览P站的过程中，看见喜欢的画师，可以直接一键下载该画师的所有作品。
 
-PUBD的功能主要是可以下载画师所有公开作品，并且可以自定义下载路径、文件名。且可以发送到家里的路由，租用的VPS，自己的手机等远程地址下载。（因为我单位上网收流量费 :cry:）
+  融入网页的体验，不需要专门打开其他程序。
+  
+* #### PUBD都有哪些功能？
+  PUBD的功能主要是可以下载画师所有公开作品，并且可以自定义下载路径、文件名。
+  
+  可以发送到家里的路由、租用的VPS、家里的安卓智能电视等远程地址下载。（做远程主要是因为我单位上网收流量费 :cry:）
 
-PUBD老用户请注意，PUBD v5.x是为了解决P站改版重新编写的一个全新程序，与老版程序完全不同(Aria2部分除外)，请重新学习使用方法。
+*PUBD老用户请注意，PUBD v5.x是为了解决P站改版重新编写的一个全新程序，与老版程序完全不同(Aria2部分除外)，请重新学习使用方法。*
 
 ![程序运行图](http://ww4.sinaimg.cn/large/6c84b2d6gw1fbnrf6o7nuj20px0g50w8.jpg)
 
-## 程序环境
+## 程序结构
 PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离了用户界面到单独的用户样式文件。
 
-完整下载流程的结构如下<br>
+下载流程的结构如下图<br>
 ![结构图](http://ww1.sinaimg.cn/large/6c84b2d6gw1fbnmzq72bdj20jj0ff3za.jpg)
 
 ## 后续功能开发状态
@@ -31,11 +37,11 @@ PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 * Aria2操作对象代码来自[ThunderLixianExporter](https://github.com/binux/ThunderLixianExporter)。
 * Pixiv APP-API分析来自[PixivPy](https://github.com/upbit/pixivpy)。
 
+## 使用说明
+请访问▶ **[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)** ◀阅读。
+
 ## 程序下载
 为了方便扩展自动更新PUBD，我将两部分都发布到了扩展支持自动更新的网站，建议到这里安装。
 
 * [用户脚本部分(Greasy Fork)](https://greasyfork.org/zh-CN/scripts/17879)
 * [用户样式部分(userstyles.org)](https://userstyles.org/styles/137583)
-
-## 使用说明
-请访问▶ **[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)** ◀阅读。
