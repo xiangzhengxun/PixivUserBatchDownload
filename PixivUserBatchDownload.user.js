@@ -71,7 +71,7 @@ if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
 /*
  * Debug 用 仿GM函数区
  */
-//访GM_xmlhttpRequest函数v1.3
+//仿GM_xmlhttpRequest函数v1.3
 if (typeof(GM_xmlhttpRequest) == "undefined") {
     var GM_xmlhttpRequest = function(GM_param) {
 
