@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.10
+// @version		5.2.11
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -47,7 +47,7 @@ var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_
 
 //var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(?:-([0-9a-zA-Z]+))?(?:(?:_p|_ugoira))?)\\d+?(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
-var limitingPattern = '(https?://([^/]+)/common/images/(limit_mypixiv()))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
+var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
 
 /*
  * 获取初始状态
@@ -2030,6 +2030,7 @@ function buildDlgDownThis(touch, userid) {
                                 work.token = regRes[4];
                                 work.extention = regRes[5];
                             } else {
+                                console.log(original);
                                 var regSrcL = new RegExp(limitingPattern, "ig");
                                 var regResL = regSrcL.exec(original);
                                 if (regResL) {
