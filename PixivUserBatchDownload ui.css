@@ -1,7 +1,7 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-	.display-none,.pubd-alert-3
+	.display-none,.pubd-alert-4
 	{/*任何需要隐藏的*/
 		display:none !important;
 	}
@@ -550,11 +550,11 @@
 	}
 	.pubd-config .pubd-textout-bar
 	{/*文本输出模式格式-dd*/
-		height: calc(50% - 112px);
+		height: calc(50% - 122px);
 	}
 	.pubd-config .pubd-mask-list-bar
 	{/*自定义掩码列表-dd*/
-		height: calc(50% - 112px);
+		height: calc(50% - 122px);
 	}
 	.pubd-config .pubd-textout,.pubd-config .pubd-mask-list
 	{/*文本输出模式格式、掩码列表*/

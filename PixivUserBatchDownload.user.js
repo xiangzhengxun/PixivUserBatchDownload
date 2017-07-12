@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.11
+// @version		5.2.14
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -25,7 +25,7 @@
  */
 var pubd = { //储存设置
     configVersion: 0, //当前设置版本，用于提醒是否需要重置
-    cssVersion: 3, //当前需求CSS版本，用于提醒是否需要更新CSS
+    cssVersion: 4, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
     start: null, //开始按钮
@@ -350,7 +350,8 @@ var DownScheme = (function() {
         var obj = {
             name: name ? name : "默认方案",
             rpcurl: "http://localhost:6800/jsonrpc",
-            savedir: "D:/PivixDownload/",
+            https2http: false,
+            savedir: "D:/PixivDownload/",
             savepath: "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
             textout: "%{illust.url_without_page}%{page}.%{illust.extention}\n",
             masklist: [],
@@ -378,6 +379,7 @@ var DownScheme = (function() {
                     }
                 }
                 this.name = json.name;
+                this.https2http = JSON.parse(json.https2http);
                 this.rpcurl = json.rpcurl;
                 this.savedir = json.savedir;
                 this.savepath = json.savepath;
@@ -661,10 +663,12 @@ var Frame = (function() {
 //创建带Label的Input类
 var LabelInput = (function() {
 
-    return function(text, classname, name, type, value, beforeText) {
+    return function(text, classname, name, type, value, beforeText, title) {
         var label = document.createElement("label");
         label.innerHTML = text;
         label.className = classname;
+        if (typeof(title) != "undefined")
+            label.title = title;
 
         var ipt = document.createElement("input");
         ipt.name = name;
@@ -1126,12 +1130,14 @@ function buildDlgConfig(touch) {
     dlg.loadScheme = function(scheme) { //读取一个下载方案
         if (scheme == undefined) {
             dlg.rpcurl.value = "";
+            dlg.https2http.checked  = false;
             dlg.savedir.value = "";
             dlg.savepath.value = "";
             dlg.textout.value = "";
             dlg.loadMasklistFromArray([]);
         } else {
             dlg.rpcurl.value = scheme.rpcurl;
+            dlg.https2http.checked = scheme.https2http;
             dlg.savedir.value = scheme.savedir;
             dlg.savepath.value = scheme.savepath;
             dlg.textout.value = scheme.textout;
@@ -1282,6 +1288,20 @@ function buildDlgConfig(touch) {
         });
     }
     dd.appendChild(ipt);
+    dl_ss.appendChild(dd);
+
+    //额外设置，https转http
+    var dt = document.createElement("dt");
+    dl_ss.appendChild(dt);
+    var dd = document.createElement("dd");
+    var chk_https2http = new LabelInput("图片网址https转http", "pubd-https2http", "pubd-https2http", "checkbox", "1", true, "某些Linux没有正确安装新版OpenSSL，https的图片链接会下载失败。");
+    dlg.https2http = chk_https2http.input;
+    dlg.https2http.onchange = function() {
+        if (dlg.downScheme.selectedOptions.length < 1) { return; }
+        var schemeIndex = dlg.downScheme.selectedIndex;
+        dlg.schemes[schemeIndex].https2http = this.checked;
+    }
+    dd.appendChild(chk_https2http);
     dl_ss.appendChild(dd);
 
     //下载目录
@@ -2226,7 +2246,7 @@ function downloadWork(scheme, userInfo, illustsItems, downP, callback) {
     try {
         //spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
 
-        var nillusts = illustsItems; //为了不改变原数组，新建一个数组
+        var nillusts = illustsItems.concat(); //为了不改变原数组，新建一个数组
         downP.max = nillusts.reduce(function(previous, current, index, array) {
             var page_count = current.page_count;
             if (current.type == "ugoira") //动图
@@ -2269,7 +2289,8 @@ function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
         callback();
         return;
     }
-    var url = illust.url_without_page + page + "." + illust.extention;
+    var url = (scheme.https2http ? illust.url_without_page.replace(/^https:\/\//igm,"http://") : illust.url_without_page) //https替换成http
+     + page + "." + illust.extention;
 
     var aria2 = new Aria2(scheme.rpcurl);
     var srtObj = {
