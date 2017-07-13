@@ -235,8 +235,8 @@ var HeadersObject = function(obj) {
     var headers = {
         'App-OS': 'android',
         'App-OS-Version': '6.0',
-        'App-Version': '5.0.49',
-        'User-Agent': 'PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)',
+        'App-Version': '5.0.63',
+        'User-Agent': 'PixivAndroidApp/5.0.63 (Android 6.0; Google Nexus 5X - 6.0.0 - API 23 - 1080x1920)',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
         "Referer": "https://app-api.pixiv.net/",
     }
@@ -300,12 +300,12 @@ var Auth = (function() {
 
         auth.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
             var postObj = new PostDataObject({ //Post时发送的数据
-                client_id: "BVO2E8vAAikgUBW8FYpi6amXOjQj",
-                client_secret: "LI1WsFUDrrquaINOdarrJclCrkTtc3eojCOswlog",
+                client_id: "MOBrBDS8blbauoSck0ZfDbtuzpyT",
+                client_secret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
                 grant_type: "password",
                 username: auth.username,
                 password: auth.password,
-                //device_token:"6e50367b155c2ba9faeaf2152ee4607c",
+                device_token:"pixiv",
                 get_secure_url: "true",
             })
 
