@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.14
+// @version		5.2.15
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -18,8 +18,10 @@
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_listValues
+//
 // ==/UserScript==
 
+//console.log(GM_xmlhttpRequest, GM_getValue, GM_setValue, GM_deleteValue, GM_listValues);
 /*
  * 公共变量区
  */
@@ -379,7 +381,7 @@ var DownScheme = (function() {
                     }
                 }
                 this.name = json.name;
-                this.https2http = JSON.parse(json.https2http);
+                this.https2http = (json.https2http == "false"|json.https2http == 0)?false:true;
                 this.rpcurl = json.rpcurl;
                 this.savedir = json.savedir;
                 this.savepath = json.savepath;
@@ -2419,7 +2421,6 @@ function startBuild(touch, loggedIn) {
         btnDlgInsertPlace.appendChild(pubd.dialog.login);
         pubd.dialog.downthis = buildDlgDownThis(touch);
         btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
-
     }
 }
 
