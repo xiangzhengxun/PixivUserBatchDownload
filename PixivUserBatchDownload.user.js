@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.15
+// @version		5.2.16
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -47,7 +47,6 @@ var scriptName = typeof(GM_info) != "undefined" ? (GM_info.script.localizedName 
 var scriptVersion = typeof(GM_info) != "undefined" ? GM_info.script.version : "LocalDebug"; //本程序的版本
 var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
 
-//var illustPattern = "https?://([^/]+)/.+/(\\d{4})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/(\\d{2})/((\\d+)(?:-([0-9a-zA-Z]+))?(?:(?:_p|_ugoira))?)\\d+?(?:_\\w+)?\\.([\\w\\d]+)"; //P站图片地址正则匹配式
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
 
@@ -236,9 +235,9 @@ var PostDataObject = (function() {
 var HeadersObject = function(obj) {
     var headers = {
         'App-OS': 'android',
-        'App-OS-Version': '6.0',
-        'App-Version': '5.0.63',
-        'User-Agent': 'PixivAndroidApp/5.0.63 (Android 6.0; Google Nexus 5X - 6.0.0 - API 23 - 1080x1920)',
+        'App-OS-Version': '8.0.0',
+        'App-Version': '5.0.64',
+        'User-Agent': 'PixivAndroidApp/5.0.64 (Android 8.0.0; Android SDK built for x86)',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
         "Referer": "https://app-api.pixiv.net/",
     }
@@ -2052,7 +2051,6 @@ function buildDlgDownThis(touch, userid) {
                                 work.token = regRes[4];
                                 work.extention = regRes[5];
                             } else {
-                                console.log(original);
                                 var regSrcL = new RegExp(limitingPattern, "ig");
                                 var regResL = regSrcL.exec(original);
                                 if (regResL) {
@@ -2067,13 +2065,6 @@ function buildDlgDownThis(touch, userid) {
                                     dlg.log(contentName + " " + work.id + " 原图格式未知。");
                                 }
                             }
-
-                            /*
-                            if (work.restrict>0)//非公共权限
-                            {
-                            	dlg.log(contentName + " " + work.id + " 非公共权限，可能无法正常下载");
-                            }
-                            */
 
                             works.item.push(work);
                         }
@@ -2136,7 +2127,6 @@ function buildDlgDownThis(touch, userid) {
                         { //添加一条空信息
                             work.ugoira_metadata = {
                                 frames: [
-
                                 ],
                                 zip_urls: {
                                     medium: "",
@@ -2200,7 +2190,6 @@ function buildDlgDownThis(touch, userid) {
         }
         //启动初始化
     dlg.initialise = function() {
-        //var dcType = (GM_getValue("pubd-down-content") == 1)?1:0;
         var dcType = 0;
         if (dlg.user.bookmarks.runing) //如果有程序正在运行，则覆盖设置。
             dcType = 1;
@@ -2212,9 +2201,7 @@ function buildDlgDownThis(touch, userid) {
             dlg.analyse(dcType, dlg.uinfo.userid);
         }
 
-        //dlg.schemes = pubd.downSchemes;
         dlg.reloadSchemes();
-        //dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
     };
 
     return dlg;
@@ -2234,11 +2221,8 @@ function NewDownSchemeArrayFromJson(jsonarr) {
     if (jsonarr instanceof Array) {
         for (var si = 0; si < jsonarr.length; si++) {
             var scheme = new DownScheme();
-            //var scheme = Object.create(new DownScheme());
-            //console.log("拷贝下载方案前",scheme);
             scheme.loadFromJson(jsonarr[si]);
             sarr.push(scheme);
-            //console.log("拷贝下载方案后",scheme);
         }
     }
     return sarr;
@@ -2246,8 +2230,6 @@ function NewDownSchemeArrayFromJson(jsonarr) {
 //下载具体内容
 function downloadWork(scheme, userInfo, illustsItems, downP, callback) {
     try {
-        //spawnNotification("正在将 " + userInfo.user.name + " 的相关插画发送到指定的Aria2。如果图片数量较多，在此过程中可能会发生浏览器的卡顿或者暂时停止响应，这是正常情况请耐心等待。", userInfo.user.profile_image_urls.medium, "正在发送 " + userInfo.user.name + " 的相关插画");
-
         var nillusts = illustsItems.concat(); //为了不改变原数组，新建一个数组
         downP.max = nillusts.reduce(function(previous, current, index, array) {
             var page_count = current.page_count;
@@ -2386,12 +2368,11 @@ function startBuild(touch, loggedIn) {
         //生成警告
         var showAlert = document.createElement("h1");
         showAlert.className = "pubd-alert-" + pubd.cssVersion;
-        showAlert.innerHTML = '你没有正确安装用户样式，或用户样式已过期，请访问<a href="https://github.com/Mapaler/PixivUserBatchDownload" target="_blank">PUBD发布页</a>更新版本。';
+        showAlert.innerHTML = '你没有正确安装用户样式，或用户样式已过期，或用户样式没过期但脚本过期，请访问<a href="https://github.com/Mapaler/PixivUserBatchDownload" target="_blank">PUBD发布页</a>更新版本。';
 
         pubd.auth = new Auth();
         try {
             pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
-            //pubd.auth.response.access_token = "";
         } catch (e) {
             console.error("脚本初始化时，读取登录信息失败", e);
         }
@@ -2413,7 +2394,6 @@ function startBuild(touch, loggedIn) {
         btnStartBox.appendChild(pubd.menu);
         btnStartInsertPlace.appendChild(btnStartBox);
 
-        //var btnDlgInsertPlace = document.getElementsByClassName("layout-wrapper")[0] || document.body;
         var btnDlgInsertPlace = document.body;
         pubd.dialog.config = buildDlgConfig(touch);
         btnDlgInsertPlace.appendChild(pubd.dialog.config);
