@@ -19,7 +19,7 @@
 PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离了用户界面到单独的用户样式文件。
 
 下载流程的结构如下图<br>
-![结构图](http://ww1.sinaimg.cn/large/6c84b2d6gw1fbnmzq72bdj20jj0ff3za.jpg)
+![结构图](http://ww1.sinaimg.cn/nmw690/6c84b2d6gw1fbnmzq72bdj20jj0ff3za.jpg)
 
 ## 后续功能开发状态
 - [x] 下载逐项发送（不卡死）
@@ -41,13 +41,20 @@ PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 请访问▶ **[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)** ◀阅读。
 
 2017年9月20日 提醒，貌似P站被墙，请添加如下Hosts
-```
+```shell
+# P站开始
 210.129.120.43 pixiv.net
 210.129.120.41 www.pixiv.net
 210.129.120.44 touch.pixiv.net
 210.140.131.147 source.pixiv.net
+210.140.131.147 imgaz.pixiv.net
 210.129.120.41 app-api.pixiv.net
 210.129.120.43 oauth.secure.pixiv.net
+# 下面这三个目前好像还可以解析，暂时不用添加到hosts
+# 210.140.131.158 d.pixiv.org
+# 210.140.92.141 pixiv.pximg.net
+# 210.140.92.134 i.pximg.net
+# P站结束
 ```
 
 ## 程序下载
