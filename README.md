@@ -40,23 +40,6 @@ PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
 ## 使用说明
 请访问▶ **[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)** ◀阅读。
 
-2017年9月20日 提醒，貌似P站被墙，请添加如下Hosts
-```shell
-# P站开始
-210.129.120.43 pixiv.net
-210.129.120.41 www.pixiv.net
-210.129.120.44 touch.pixiv.net
-210.140.131.147 source.pixiv.net
-210.140.131.147 imgaz.pixiv.net
-210.129.120.41 app-api.pixiv.net
-210.129.120.43 oauth.secure.pixiv.net
-# 下面这三个目前好像还可以解析，暂时不用添加到hosts
-# 210.140.131.158 d.pixiv.org
-# 210.140.92.141 pixiv.pximg.net
-# 210.140.92.134 i.pximg.net
-# P站结束
-```
-
 ## 程序下载
 为了方便扩展自动更新PUBD，我将两部分都发布到了扩展支持自动更新的网站，建议到这里安装。
 
