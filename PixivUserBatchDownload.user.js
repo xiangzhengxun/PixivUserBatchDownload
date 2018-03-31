@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.3.21
+// @version		5.3.22
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2317,8 +2317,11 @@ function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
         return;
     }
     var page_count = illust.page_count;
-    if (illust.type == "ugoira") //动图
+    if (illust.type == "ugoira" && illust.ugoira_metadata != undefined) //动图
+    {
         page_count = illust.ugoira_metadata.frames.length;
+    }
+
     if (page >= page_count || illust.filename == "limit_mypixiv") //无法查看的文件
     {
         if (illust.filename == "limit_mypixiv")
