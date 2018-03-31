@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.2.18
+// @version		5.3.20
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -235,9 +235,9 @@ var PostDataObject = (function() {
 var HeadersObject = function(obj) {
     var headers = {
         'App-OS': 'android',
-        'App-OS-Version': '8.0.0',
-        'App-Version': '5.0.64',
-        'User-Agent': 'PixivAndroidApp/5.0.64 (Android 8.0.0; Android SDK built for x86)',
+        'App-OS-Version': '8.1.0',
+        'App-Version': '5.0.96',
+        'User-Agent': 'PixivAndroidApp/5.0.96 (Android 8.1.0; Android SDK built for x86)',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
         "Referer": "https://app-api.pixiv.net/",
     }
@@ -306,7 +306,7 @@ var Auth = (function() {
                 grant_type: "password",
                 username: auth.username,
                 password: auth.password,
-                device_token:"pixiv",
+                device_token: "pixiv",
                 get_secure_url: "true",
             })
 
@@ -352,6 +352,7 @@ var DownScheme = (function() {
             name: name ? name : "默认方案",
             rpcurl: "http://localhost:6800/jsonrpc",
             https2https2http: false,
+            downfilter: "",
             savedir: "D:/PixivDownload/",
             savepath: "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
             textout: "%{illust.url_without_page}%{page}.%{illust.extention}\n",
@@ -380,8 +381,9 @@ var DownScheme = (function() {
                     }
                 }
                 this.name = json.name;
-                this.https2http = [0,"false",false,undefined,null].indexOf(json.https2http)<0; //存在任一条件时即为false
+                this.https2http = [0, "false", false, undefined, null].indexOf(json.https2http) < 0; //存在任一条件时即为false
                 this.rpcurl = json.rpcurl;
+                this.downfilter = json.downfilter;
                 this.savedir = json.savedir;
                 this.savepath = json.savepath;
                 this.textout = json.textout;
@@ -1001,6 +1003,14 @@ function buildbtnMenu(touch) {
     return menu;
 }
 
+//有默认值的获取设置
+function getValueDefault(name, defaultValue) {
+    var value = GM_getValue(name);
+    if (value != undefined)
+        return value;
+    else
+        return defaultValue;
+}
 //构建设置对话框
 function buildDlgConfig(touch) {
     var dlg = new Dialog("PUBD选项 v" + scriptVersion, "pubd-config", "pubd-config");
@@ -1090,6 +1100,19 @@ function buildDlgConfig(touch) {
     }
     dd.appendChild(ipt);
 
+    //“通用分析选项”窗口选项
+    var dt = document.createElement("dt");
+    dl.appendChild(dt);
+    var dd = document.createElement("dd");
+
+    var frm = new Frame("通用分析选项", "pubd-commonanalyseoptions");
+    var chk_getugoiraframe = new LabelInput("获取动图帧数", "pubd-getugoiraframe", "pubd-getugoiraframe", "checkbox", "1", true);
+    dlg.getugoiraframe = chk_getugoiraframe.input;
+
+    frm.content.appendChild(chk_getugoiraframe);
+    dd.appendChild(frm);
+    dl.appendChild(dd);
+
     //“下载该画师”窗口选项
     var dt = document.createElement("dt");
     dl.appendChild(dt);
@@ -1121,6 +1144,9 @@ function buildDlgConfig(touch) {
     //配置方案储存
     dlg.schemes = null;
     dlg.reloadSchemes = function() { //重新读取所有下载方案
+        if (dlg.schemes.length < 1) {
+            alert("目前本程序没有任何下载方案，需要正常使用请先新建方案。");
+        }
         dlg.downScheme.options.length = 0;
         dlg.schemes.forEach(function(item, index) {
             dlg.downScheme.add(item.name, index);
@@ -1131,7 +1157,8 @@ function buildDlgConfig(touch) {
     dlg.loadScheme = function(scheme) { //读取一个下载方案
         if (scheme == undefined) {
             dlg.rpcurl.value = "";
-            dlg.https2http.checked  = false;
+            dlg.https2http.checked = false;
+            dlg.downfilter.value = "";
             dlg.savedir.value = "";
             dlg.savepath.value = "";
             dlg.textout.value = "";
@@ -1139,6 +1166,7 @@ function buildDlgConfig(touch) {
         } else {
             dlg.rpcurl.value = scheme.rpcurl;
             dlg.https2http.checked = scheme.https2http;
+            dlg.downfilter.value = scheme.downfilter;
             dlg.savedir.value = scheme.savedir;
             dlg.savepath.value = scheme.savepath;
             dlg.textout.value = scheme.textout;
@@ -1204,7 +1232,6 @@ function buildDlgConfig(touch) {
         dlg.downScheme.add(scheme.name, length - 1);
         dlg.downScheme.selectedIndex = length - 1;
         dlg.loadScheme(scheme);
-        console.log(scheme);
         //dlg.reloadSchemes();
     }
     dd.appendChild(ipt);
@@ -1303,6 +1330,26 @@ function buildDlgConfig(touch) {
         dlg.schemes[schemeIndex].https2http = this.checked;
     }
     dd.appendChild(chk_https2http);
+    dl_ss.appendChild(dd);
+
+    //下载过滤
+    var dt = document.createElement("dt");
+    dl_ss.appendChild(dt);
+    dt.innerHTML = "下载过滤器"
+    var dd = document.createElement("dd");
+    var downfilter = document.createElement("input");
+    downfilter.type = "text";
+    downfilter.className = "pubd-downfilter";
+    downfilter.name = "pubd-downfilter";
+    downfilter.id = downfilter.name;
+    downfilter.placeholder = "符合条件的图片将不会被发送到Aria2"
+    downfilter.onchange = function() {
+        if (dlg.downScheme.selectedOptions.length < 1) { return; }
+        var schemeIndex = dlg.downScheme.selectedIndex;
+        dlg.schemes[schemeIndex].downfilter = downfilter.value;
+    }
+    dlg.downfilter = downfilter;
+    dd.appendChild(downfilter);
     dl_ss.appendChild(dd);
 
     //下载目录
@@ -1477,6 +1524,7 @@ function buildDlgConfig(touch) {
     dlg.save = function() {
             pubd.auth.needlogin = dlg.needlogin.checked;
             pubd.auth.save();
+            GM_setValue("pubd-getugoiraframe", dlg.getugoiraframe.checked); //获取动图帧数
             GM_setValue("pubd-autoanalyse", dlg.autoanalyse.checked); //自动分析
             GM_setValue("pubd-autodownload", dlg.autodownload.checked); //自动下载
             var schemesStr = JSON.stringify(dlg.schemes);
@@ -1491,6 +1539,7 @@ function buildDlgConfig(touch) {
         //重置设置函数
     dlg.reset = function() {
             GM_deleteValue("pubd-auth"); //登陆相关信息
+            GM_deleteValue("pubd-getugoiraframe"); //获取动图帧数
             GM_deleteValue("pubd-autoanalyse"); //自动分析
             GM_deleteValue("pubd-autodownload"); //自动下载
             GM_deleteValue("pubd-downschemes"); //下载方案
@@ -1514,17 +1563,18 @@ function buildDlgConfig(touch) {
         } else {
             dlg.token_info.classList.add("height-none");
         }
-        dlg.autoanalyse.checked = GM_getValue("pubd-autoanalyse");
-        dlg.autodownload.checked = GM_getValue("pubd-autodownload");
+
+        dlg.getugoiraframe.checked = getValueDefault("pubd-getugoiraframe", true);
+        dlg.autoanalyse.checked = getValueDefault("pubd-autoanalyse", false);
+        dlg.autodownload.checked = getValueDefault("pubd-autodownload", false);
 
         dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
         dlg.reloadSchemes();
-        dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
+        dlg.selectScheme(getValueDefault("pubd-defaultscheme", 0));
         //ipt_token.value = pubd.auth.response.access_token;
     };
     return dlg;
 }
-
 //构建登陆对话框
 function buildDlgLogin(touch) {
     var dlg = new Dialog("登陆账户", "pubd-login", "pubd-login");
@@ -2001,10 +2051,14 @@ function buildDlgDownThis(touch, userid) {
                             return item.ugoira_metadata == undefined;
                         }) > 0) {
                         dlg.log("共存在 " + ugoiras.length + " 件动图");
-                        analyseUgoira(works, ugoiras, function() { //开始分析动图
-                            analyseWorks(user, contentType, apiurl) //开始获取下一页
-                        });
-                        return;
+                        if (!GM_getValue("pubd-getugoiraframe")) {
+                            dlg.log("由于用户设置，跳过获取动图帧数。");
+                        } else {
+                            analyseUgoira(works, ugoiras, function() { //开始分析动图
+                                analyseWorks(user, contentType, apiurl) //开始获取下一页
+                            });
+                            return;
+                        }
                     }
                     //没有动图则继续
                     if (works.item.length < total)
@@ -2126,8 +2180,7 @@ function buildDlgDownThis(touch, userid) {
                         if (work.restrict > 0) //非公共权限
                         { //添加一条空信息
                             work.ugoira_metadata = {
-                                frames: [
-                                ],
+                                frames: [],
                                 zip_urls: {
                                     medium: "",
                                 },
@@ -2273,28 +2326,37 @@ function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
         callback();
         return;
     }
-    var url = (scheme.https2http ? illust.url_without_page.replace(/^https:\/\//igm,"http://") : illust.url_without_page) //https替换成http
-     + page + "." + illust.extention;
+    var url = (scheme.https2http ? illust.url_without_page.replace(/^https:\/\//igm, "http://") : illust.url_without_page) //https替换成http
+        +
+        page + "." + illust.extention;
 
-    var aria2 = new Aria2(scheme.rpcurl);
-    var srtObj = {
-        "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 2),
-        "referer": "https://app-api.pixiv.net/",
-        "user-agent": "PixivAndroidApp/5.0.49 (Android 6.0; LG-H818)",
-    }
-    if (scheme.savedir.length > 0) {
-        srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 1);
-    }
-    aria2.addUri(url, srtObj, function(res) {
-        if (res === false) {
-            alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
-            return;
-        }
+    //console.log(scheme.downfilter, returnLogicValue(scheme.downfilter, userInfo, illust, page));
+    if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
+        //跳过此次下载
         downP.progress.set(++downP.current / downP.max); //设置进度
         sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
-    });
+        console.info("符合下载过滤器定义，跳过下载：", illust);
+    } else {
+        var aria2 = new Aria2(scheme.rpcurl);
+        var srtObj = {
+            "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 2),
+            "referer": "https://app-api.pixiv.net/",
+            "user-agent": "PixivAndroidApp/5.0.96 (Android 8.1.0; Android SDK built for x86)",
+        }
+        if (scheme.savedir.length > 0) {
+            srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 1);
+        }
+        aria2.addUri(url, srtObj, function(res) {
+            if (res === false) {
+                alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
+                return;
+            }
+            downP.progress.set(++downP.current / downP.max); //设置进度
+            sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
+        });
+    }
 }
-
+//返回掩码值
 function showMask(str, masklist, user, illust, page) {
     var newTxt = str;
     //var pattern = "%{([^}]+)}"; //旧的简单匹配
@@ -2311,8 +2373,7 @@ function showMask(str, masklist, user, illust, page) {
             if (mymask.length > 0) { //如果有对应的自定义掩码
                 var mask = mymask[0];
                 try {
-                    var evTemp = eval("(" + mask.logic + ")"); //mask的逻辑判断
-                    if (evTemp)
+                    if (returnLogicValue(mask.logic, user, illust, page)) //mask的逻辑判断
                         newTxt = newTxt.replace(mskO, mask.content);
                     else
                         newTxt = newTxt.replace(mskO, "");
@@ -2336,26 +2397,35 @@ function showMask(str, masklist, user, illust, page) {
 
     return newTxt;
 }
+//返回逻辑值
+function returnLogicValue(logic, user, illust, page) {
+    try {
+        var evTemp = eval("(" + logic + ")");
+        return evTemp;
+    } catch (e) {
+        return false;
+        console.error("下载过滤器出现了异常情况", e);
+    }
+}
 
 function replacePathSafe(str, type) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 { //keepTree表示是否要保留目录树的字符（\、/和:）
     var nstr = "";
     if (typeof(str) == "undefined") return nstr;
     str = str.toString();
-    type = type?type:0;
-    switch(type)
-    {
-    case 1:
-        nstr = str.replace(/[\*\?"<>\|]/ig, "_"); //只替换路径中完全不能出现的特殊字符
-    break;
-    case 2:
-        nstr = str.replace(/[:\*\?"<>\|\r\n]/ig, "_"); //上述字符加冒号:，用于非驱动器路径
-    break;
-    case 3:
-        nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_"); //完全替换所有不能出现的特殊字符，包含斜杠
-    break;
-    default:
-        nstr = str; //不替换字符
+    type = type ? type : 0;
+    switch (type) {
+        case 1:
+            nstr = str.replace(/[\*\?"<>\|]/ig, "_"); //只替换路径中完全不能出现的特殊字符
+            break;
+        case 2:
+            nstr = str.replace(/[:\*\?"<>\|\r\n]/ig, "_"); //上述字符加冒号:，用于非驱动器路径
+            break;
+        case 3:
+            nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_"); //完全替换所有不能出现的特殊字符，包含斜杠
+            break;
+        default:
+            nstr = str; //不替换字符
     }
     return nstr;
 }

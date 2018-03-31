@@ -11,15 +11,13 @@
   
   可以发送到家里的路由、租用的VPS、家里的安卓智能电视等远程地址下载。（做远程主要是因为我单位上网收流量费 :cry:）
 
-*PUBD老用户请注意，PUBD v5.x是为了解决P站改版重新编写的一个全新程序，与老版程序完全不同(Aria2部分除外)，请重新学习使用方法。*
-
-![程序运行图](http://ww4.sinaimg.cn/large/6c84b2d6gw1fbnrf6o7nuj20px0g50w8.jpg)
+![程序运行图](https://raw.githubusercontent.com/wiki/Mapaler/PixivUserBatchDownload/images/preview.png)
 
 ## 程序结构
 PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离了用户界面到单独的用户样式文件。
 
 下载流程的结构如下图<br>
-![结构图](http://ww1.sinaimg.cn/nmw690/6c84b2d6gw1fbnmzq72bdj20jj0ff3za.jpg)
+![结构图](https://raw.githubusercontent.com/wiki/Mapaler/PixivUserBatchDownload/images/structure.jpg)
 
 ## 后续功能开发状态
 - [x] 下载逐项发送（不卡死）
@@ -28,7 +26,7 @@ PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离�
 - [x] 子菜单快速完成操作（已开发但暂未使用）
 - [ ] Tab选项卡式面板
 - [ ] 仅下载当前一幅作品
-- [ ] 下载过滤器
+- [x] 下载过滤器
 
 ## License|许可协议
 PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler

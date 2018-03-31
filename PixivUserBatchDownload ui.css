@@ -1,7 +1,4 @@
-﻿@namespace url(http://www.w3.org/1999/xhtml);
-
-@-moz-document domain("www.pixiv.net") {
-	.display-none,.pubd-alert-4
+﻿.display-none,.pubd-alert-4
 	{/*任何需要隐藏的*/
 		display:none !important;
 	}
@@ -512,11 +509,11 @@
 	}
 	.pubd-config .pubd-selectscheme-bar
 	{/*下载方案详细栏-dd*/
-		height: calc(100% - 216px);
+		height: calc(100% - 259px);
 	}
 	.pubd-config .pubd-selectscheme
 	{/*下载方案详细栏-frame*/
-		height: calc(100% - 11px);
+		height: calc(100% - 5px);
 		box-sizing: border-box;
 	}
 	.pubd-config .pubd-selectscheme .pubd-frame-content
@@ -531,7 +528,7 @@
 	{/*RPC地址检测信息*/
 		float: right;
 	}
-	.pubd-config .pubd-savedir,.pubd-config .pubd-savepath,.pubd-config .pubd-textout
+	.pubd-config .pubd-downfilter,.pubd-config .pubd-savedir,.pubd-config .pubd-savepath,.pubd-config .pubd-textout
 	{/*下载目录与保存目录，文本输出格式*/
 		width: 100%;
 	}
@@ -550,11 +547,11 @@
 	}
 	.pubd-config .pubd-textout-bar
 	{/*文本输出模式格式-dd*/
-		height: calc(50% - 122px);
+		height: calc(50% - 143px);
 	}
 	.pubd-config .pubd-mask-list-bar
 	{/*自定义掩码列表-dd*/
-		height: calc(50% - 122px);
+		height: calc(50% - 143px);
 	}
 	.pubd-config .pubd-textout,.pubd-config .pubd-mask-list
 	{/*文本输出模式格式、掩码列表*/
@@ -759,4 +756,3 @@
     resize:none;
 	}
 	/*▲下载当前画师窗口内容*/
-}
