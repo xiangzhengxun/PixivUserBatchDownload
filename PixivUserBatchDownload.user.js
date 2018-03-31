@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.3.20
+// @version		5.3.21
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -27,7 +27,7 @@
  */
 var pubd = { //储存设置
     configVersion: 0, //当前设置版本，用于提醒是否需要重置
-    cssVersion: 4, //当前需求CSS版本，用于提醒是否需要更新CSS
+    cssVersion: 5, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
     start: null, //开始按钮
