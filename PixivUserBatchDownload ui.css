@@ -1,4 +1,7 @@
-﻿.display-none,.pubd-alert-5
+﻿@namespace url(http://www.w3.org/1999/xhtml);
+
+@-moz-document domain("www.pixiv.net") {
+	.display-none,.pubd-alert-5
 	{/*任何需要隐藏的*/
 		display:none !important;
 	}
@@ -756,3 +759,4 @@
     resize:none;
 	}
 	/*▲下载当前画师窗口内容*/
+}
