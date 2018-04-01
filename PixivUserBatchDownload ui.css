@@ -512,11 +512,11 @@
 	}
 	.pubd-config .pubd-selectscheme-bar
 	{/*下载方案详细栏-dd*/
-		height: calc(100% - 259px);
+		height: calc(100% - 229px);
 	}
 	.pubd-config .pubd-selectscheme
 	{/*下载方案详细栏-frame*/
-		height: calc(100% - 5px);
+		height: 100%;
 		box-sizing: border-box;
 	}
 	.pubd-config .pubd-selectscheme .pubd-frame-content
@@ -550,11 +550,11 @@
 	}
 	.pubd-config .pubd-textout-bar
 	{/*文本输出模式格式-dd*/
-		height: calc(50% - 143px);
+		height: calc(100% - 375px);
 	}
 	.pubd-config .pubd-mask-list-bar
 	{/*自定义掩码列表-dd*/
-		height: calc(50% - 143px);
+        height: 89px;
 	}
 	.pubd-config .pubd-textout,.pubd-config .pubd-mask-list
 	{/*文本输出模式格式、掩码列表*/
