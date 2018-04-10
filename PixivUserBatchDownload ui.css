@@ -496,6 +496,11 @@
 		overflow: hidden;
 		height: 30px;
 	}
+	.pubd-config
+	{/*设置初始宽度与高度*/
+        /*width: 400px;
+        height: 700px;*/
+	}
 	.pubd-config .pubd-token-expires
 	{/*token进度条*/
 		width: calc(100% - 87px);
@@ -512,7 +517,7 @@
 	}
 	.pubd-config .pubd-selectscheme-bar
 	{/*下载方案详细栏-dd*/
-		height: calc(100% - 229px);
+		height: calc(100% - 260px);
 	}
 	.pubd-config .pubd-selectscheme
 	{/*下载方案详细栏-frame*/
@@ -522,6 +527,7 @@
 	.pubd-config .pubd-selectscheme .pubd-frame-content
 	{/*下载方案详细栏-frame-具体内容*/
 		height: 100%;
+		box-sizing: border-box;
 	}
 	.pubd-config .pubd-rpcurl
 	{/*RPC地址*/
@@ -554,7 +560,8 @@
 	}
 	.pubd-config .pubd-mask-list-bar
 	{/*自定义掩码列表-dd*/
-        height: 89px;
+        height: 71px;
+		box-sizing: border-box;
 	}
 	.pubd-config .pubd-textout,.pubd-config .pubd-mask-list
 	{/*文本输出模式格式、掩码列表*/
