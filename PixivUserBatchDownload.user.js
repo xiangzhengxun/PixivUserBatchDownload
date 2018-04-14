@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.3.23
+// @version		5.3.24
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -351,7 +351,7 @@ var DownScheme = (function() {
         var obj = {
             name: name ? name : "默认方案",
             rpcurl: "http://localhost:6800/jsonrpc",
-            https2https2http: false,
+            https2http: false,
             downfilter: "",
             savedir: "D:/PixivDownload/",
             savepath: "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
@@ -383,7 +383,7 @@ var DownScheme = (function() {
                 this.name = json.name;
                 this.https2http = [0, "false", false, undefined, null].indexOf(json.https2http) < 0; //存在任一条件时即为false
                 this.rpcurl = json.rpcurl;
-                this.downfilter = getValueDefault(json.downfilter, "");
+                this.downfilter = json.downfilter || "";
                 this.savedir = json.savedir;
                 this.savepath = json.savepath;
                 this.textout = json.textout;
