@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.3.24
+// @version		5.3.26
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -1794,8 +1794,8 @@ function buildDlgDownThis(touch, userid) {
         dlg.schemes.forEach(function(item, index) {
             dlg.downScheme.add(item.name, index);
         })
-        if (GM_getValue("pubd-defaultscheme") >= 0)
-            dlg.selectScheme(GM_getValue("pubd-defaultscheme"));
+        if (getValueDefault("pubd-defaultscheme",0) >= 0)
+            dlg.selectScheme(getValueDefault("pubd-defaultscheme",0));
         else if (dlg.downScheme.options.length > 0)
             dlg.selectScheme(0);
     }
@@ -2047,11 +2047,11 @@ function buildDlgDownThis(touch, userid) {
                     var ugoiras = works.item.filter(function(item) {
                         return item.type == "ugoira";
                     })
-                    if (ugoiras.some(function(item) {
+                    dlg.log("共存在 " + ugoiras.length + " 件动图");
+                    if (ugoiras.some(function(item) { //如果有没有帧数据的动图
                             return item.ugoira_metadata == undefined;
-                        }) > 0) {
-                        dlg.log("共存在 " + ugoiras.length + " 件动图");
-                        if (!GM_getValue("pubd-getugoiraframe")) {
+                        })) {
+                        if (!getValueDefault("pubd-getugoiraframe",true)) {
                             dlg.log("由于用户设置，跳过获取动图帧数。");
                         } else {
                             analyseUgoira(works, ugoiras, function() { //开始分析动图
@@ -2069,7 +2069,7 @@ function buildDlgDownThis(touch, userid) {
                     works.next_url = "";
                     dlg.textdown.disabled = false;
                     dlg.startdown.disabled = false;
-                    if (GM_getValue("pubd-autodownload")) { //自动开始
+                    if (getValueDefault("pubd-autodownload",false)) { //自动开始
                         dlg.log("自动开始下载");
                         dlg.startdownload();
                     }
@@ -2148,7 +2148,7 @@ function buildDlgDownThis(touch, userid) {
 
             function analyseUgoira(works, ugoirasItems, callback) {
                 var dealItems = ugoirasItems.filter(function(item) {
-                    return (item.ugoira_metadata == undefined && item.type == "ugoira");
+                    return (item.type == "ugoira" && item.ugoira_metadata == undefined);
                 })
                 if (dealItems.length < 1) {
                     dlg.log("动图获取完毕");
@@ -2210,21 +2210,27 @@ function buildDlgDownThis(touch, userid) {
             var illustsItems = contentType == 0 ? dlg.user.illusts.item : dlg.user.bookmarks.item; //将需要分析的数据储存到works里
             dlg.log("正在生成文本信息");
 
-            var outTxtArr = illustsItems.map(function(item) {
-                var page_count = item.page_count;
-                if (item.type == "ugoira") //动图
-                    page_count = item.ugoira_metadata.frames.length;
-                var outArr = []; //输出内容
-                for (var pi = 0; pi < page_count; pi++) {
-                    if (item.filename != "limit_mypixiv")
-                        outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
-                }
-                return outArr.join("");
-            });
-            var outTxt = outTxtArr.join("");
-            dlg.textoutTextarea.value = outTxt;
-            dlg.textoutTextarea.classList.remove("display-none");
-            dlg.log("文本信息输出成功");
+            try {
+                var outTxtArr = illustsItems.map(function(item) {
+                    var page_count = item.page_count;
+                    if (item.type == "ugoira" && item.ugoira_metadata) //动图
+                    {
+                        page_count = item.ugoira_metadata.frames.length;
+                    }
+                    var outArr = []; //输出内容
+                    for (var pi = 0; pi < page_count; pi++) {
+                        if (item.filename != "limit_mypixiv")
+                            outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
+                    }
+                    return outArr.join("");
+                });
+                var outTxt = outTxtArr.join("");
+                dlg.textoutTextarea.value = outTxt;
+                dlg.textoutTextarea.classList.remove("display-none");
+                dlg.log("文本信息输出成功");
+            } catch (error) {
+                console.log(error)
+            }
         }
         //开始下载按钮
     dlg.startdownload = function() {
@@ -2250,7 +2256,7 @@ function buildDlgDownThis(touch, userid) {
             dcType = 0;
 
         dlg.dcType[dcType].checked = true;
-        if (GM_getValue("pubd-autoanalyse")) {
+        if (getValueDefault("pubd-autoanalyse",false)) {
             dlg.analyse(dcType, dlg.uinfo.userid);
         }
 
@@ -2286,8 +2292,10 @@ function downloadWork(scheme, userInfo, illustsItems, downP, callback) {
         var nillusts = illustsItems.concat(); //为了不改变原数组，新建一个数组
         downP.max = nillusts.reduce(function(previous, current, index, array) {
             var page_count = current.page_count;
-            if (current.type == "ugoira") //动图
+            if (current.type == "ugoira" && current.ugoira_metadata) //动图
+            {
                 page_count = current.ugoira_metadata.frames.length;
+            }
             return previous + page_count;
         }, 0); //获取总需要下载发送的页数
 
@@ -2317,7 +2325,7 @@ function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
         return;
     }
     var page_count = illust.page_count;
-    if (illust.type == "ugoira" && illust.ugoira_metadata != undefined) //动图
+    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
     {
         page_count = illust.ugoira_metadata.frames.length;
     }
@@ -2342,12 +2350,12 @@ function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
     } else {
         var aria2 = new Aria2(scheme.rpcurl);
         var srtObj = {
-            "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 2),
+            "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
             "referer": "https://app-api.pixiv.net/",
             "user-agent": "PixivAndroidApp/5.0.96 (Android 8.1.0; Android SDK built for x86)",
         }
         if (scheme.savedir.length > 0) {
-            srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 1);
+            srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
         }
         aria2.addUri(url, srtObj, function(res) {
             if (res === false) {
@@ -2413,24 +2421,23 @@ function returnLogicValue(logic, user, illust, page) {
 
 function replacePathSafe(str, type) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 { //keepTree表示是否要保留目录树的字符（\、/和:）
-    var nstr = "";
-    if (typeof(str) == "undefined") return nstr;
+    var nstr; //新字符
+    if (typeof(str) == "undefined") return "";
     str = str.toString();
-    type = type ? type : 0;
-    switch (type) {
-        case 1:
-            nstr = str.replace(/[\*\?"<>\|]/ig, "_"); //只替换路径中完全不能出现的特殊字符
-            break;
-        case 2:
-            nstr = str.replace(/[:\*\?"<>\|\r\n]/ig, "_"); //上述字符加冒号:，用于非驱动器路径
-            break;
-        case 3:
-            nstr = str.replace(/[\\\/:\*\?"<>\|\r\n]/ig, "_"); //完全替换所有不能出现的特殊字符，包含斜杠
-            break;
-        default:
-            nstr = str; //不替换字符
+    str = str.replace(/\u0000-\u001F\u007F-\u00A0/ig, ""); //替换所有的控制字符
+    var patternStrs = [
+        "[\\*\\?\"<>\\|]",                 //只替换路径中完全不能出现的特殊字符
+        "[\\*\\?\"<>\\|\\r\\n]",           //上述字符加冒号:，用于非驱动器路径
+        "[\\*\\?\"<>\\|\\r\\n\\\\\\/]",    //完全替换所有不能出现的特殊字符，包含斜杠
+    ];
+    if (patternStrs[type] != undefined)
+    {
+        nstr = str.replace(new RegExp(patternStrs[type],"ig"), "_"); //只替换路径中完全不能出现的特殊字符
+        return nstr;
+    }else
+    {
+        return str; //不替换字符
     }
-    return nstr;
 }
 //开始构建UI
 function startBuild(touch, loggedIn) {
@@ -2449,7 +2456,7 @@ function startBuild(touch, loggedIn) {
         } catch (e) {
             console.error("脚本初始化时，读取登录信息失败", e);
         }
-        pubd.downSchemes = NewDownSchemeArrayFromJson(GM_getValue("pubd-downschemes"));
+        pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0));
 
         var btnStartInsertPlace = document.querySelector("._user-profile-card") || document.querySelector(".ui-layout-west div");
         var btnStartBox = document.createElement("div");
