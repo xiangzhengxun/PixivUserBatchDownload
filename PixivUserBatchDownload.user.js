@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.3.26
+// @version		5.4.28
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -18,7 +18,6 @@
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_listValues
-//
 // ==/UserScript==
 
 //console.log(GM_xmlhttpRequest, GM_getValue, GM_setValue, GM_deleteValue, GM_listValues);
@@ -27,7 +26,7 @@
  */
 var pubd = { //储存设置
     configVersion: 0, //当前设置版本，用于提醒是否需要重置
-    cssVersion: 5, //当前需求CSS版本，用于提醒是否需要更新CSS
+    cssVersion: 6, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
     start: null, //开始按钮
@@ -50,21 +49,44 @@ var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
 
+var thisPageUserid = 0; //当前页面的画师ID
+var findInsertPlaceHook; //储存循环钩子
+var btnStartInsertPlace; //储存开始按钮插入点
 /*
  * 获取初始状态
  */
+//1、获取原网页数据对象
 if (typeof(unsafeWindow) != "undefined")
-    var pixiv = unsafeWindow.pixiv;
-if (typeof(pixiv) == "undefined") {
-    console.error("当前网页没有找到pixiv对象");
+{
+    var pixiv = unsafeWindow.pixiv; //原来的信息
+    var globalInitData = unsafeWindow.globalInitData; //新版的插画页面信息
 }
-if (pixiv && pixiv.user.loggedIn) {
-    pubd.loggedIn = true;
+//2、获取是否为登录状态与当前页面画师ID
+if (typeof(pixiv) == "undefined" && typeof(globalInitData) == "undefined")
+{
+        console.error("当前网页没有找到 pixiv 对象和 globalInitData 对象");
 }
+else
+{
+    if (typeof(globalInitData) != "undefined")  //新版的插画页面信息
+    {
+        pubd.loggedIn = true;
+        thisPageUserid = Object.keys(globalInitData.preload.user)[0];
+    }
+    else if (typeof(pixiv) != "undefined")  //原来的信息
+    {
+        thisPageUserid = pixiv.context.userId;
+        if (pixiv.user.loggedIn)
+        {
+            pubd.loggedIn = true; //判断是否已经登陆
+        }
+    }
+}
+//3、获取是否为手机版
 if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
 {
     pubd.touch = true;
-    console.info("当前访问的是P站触屏手机版");
+    console.info("当前访问的是P站触屏手机版，我没开发。");
 } else {
     console.info("当前访问的是P站桌面版");
 }
@@ -1718,7 +1740,7 @@ function buildDlgDownThis(touch, userid) {
     dt.innerHTML = "" //用户头像等信息
     var dd = document.createElement("dd");
 
-    var uinfo = new UserCard(userid ? userid : pixiv.context.userId); //创建当前用户信息卡
+    var uinfo = new UserCard(userid ? userid : thisPageUserid); //创建当前用户信息卡
 
     dlg.uinfo = uinfo;
     dd.appendChild(uinfo);
@@ -2439,47 +2461,62 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
         return str; //不替换字符
     }
 }
+
 //开始构建UI
-function startBuild(touch, loggedIn) {
-    if (touch) //手机版
+function findInsertPlace(touch, loggedIn) {
+    if (touch ||  //手机版
+        self.frameElement && self.frameElement.tagName == "IFRAME" ||    //属于内嵌iframe
+        window.frames.length != parent.frames.length || 
+        self != top
+    ) 
     {
-        alert("PUBD暂不支持手机版");
+        //alert("PUBD暂不支持手机版");
+        clearInterval(findInsertPlaceHook);
+        return;
     } else {
-        //生成警告
-        var showAlert = document.createElement("h1");
-        showAlert.className = "pubd-alert-" + pubd.cssVersion;
-        showAlert.innerHTML = '你没有正确安装用户样式，或用户样式已过期，或用户样式没过期但脚本过期，请访问<a href="https://github.com/Mapaler/PixivUserBatchDownload" target="_blank">PUBD发布页</a>更新版本。';
-
-        pubd.auth = new Auth();
-        try {
-            pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
-        } catch (e) {
-            console.error("脚本初始化时，读取登录信息失败", e);
-        }
-        pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0));
-
-        var btnStartInsertPlace = document.querySelector("._user-profile-card") || document.querySelector(".ui-layout-west div");
-        var btnStartBox = document.createElement("div");
+        var btnStartInsertPlace = document.querySelector("._user-profile-card") || document.querySelector("#root div div aside section") || document.querySelector(".ui-layout-west aside");
         if (!loggedIn) {
             btnStartInsertPlace = document.querySelector(".introduction");
         }
+        if (btnStartInsertPlace == undefined)
+        {
+            console.error("未找到开始按钮插入点");
+            return;
+        }else
+        {
+            clearInterval(findInsertPlaceHook);
+        }
 
-        btnStartInsertPlace.appendChild(showAlert); //添加警告
-
-        pubd.start = buildbtnStart(touch);
-        pubd.menu = buildbtnMenu(touch);
-        btnStartBox.appendChild(pubd.start);
-        btnStartBox.appendChild(pubd.menu);
-        btnStartInsertPlace.appendChild(btnStartBox);
-
+        //生成警告
+        var showAlert = btnStartInsertPlace.appendChild(document.createElement("h1"));
+        showAlert.className = "pubd-alert-" + pubd.cssVersion;
+        showAlert.innerHTML = '你没有正确安装用户样式，或用户样式已过期，或用户样式没过期但脚本过期，请访问<a href="https://github.com/Mapaler/PixivUserBatchDownload" target="_blank">PUBD发布页</a>更新版本。';
+        //操作按钮
+        var btnStartBox = btnStartInsertPlace.appendChild(document.createElement("div"));
+        btnStartBox.className = "pubd-btnStartInsertPlace";
+        pubd.start = btnStartBox.appendChild(buildbtnStart(touch));
+        pubd.menu = btnStartBox.appendChild(buildbtnMenu(touch));
+        //所有视窗
         var btnDlgInsertPlace = document.body;
-        pubd.dialog.config = buildDlgConfig(touch);
-        btnDlgInsertPlace.appendChild(pubd.dialog.config);
-        pubd.dialog.login = buildDlgLogin(touch);
-        btnDlgInsertPlace.appendChild(pubd.dialog.login);
-        pubd.dialog.downthis = buildDlgDownThis(touch);
-        btnDlgInsertPlace.appendChild(pubd.dialog.downthis);
+        pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig(touch));
+        pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
+        pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch));
     }
 }
+//开始主程序
+function start() {
+    //载入设置
+    pubd.auth = new Auth();
+    try {
+        pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
+    } catch (e) {
+        console.error("脚本初始化时，读取登录信息失败", e);
+    }
+    pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0));
 
-startBuild(pubd.touch, pubd.loggedIn); //开始主程序
+    //循环寻找插入点
+    findInsertPlaceHook = setInterval(function(){
+        findInsertPlace(pubd.touch, pubd.loggedIn);
+    }, 1000);
+}
+start();   //开始主程序
