@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.4.28
+// @version		5.4.29
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2342,7 +2342,7 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
 //作品每页循环递归输出
 function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
     if (pubd.downbreak) {
-        spawnNotification("下载已停止", "中断下载");
+        spawnNotification("已中断向Aria2发送下载信息", scriptIcon, scriptName);
         pubd.downbreak = false;
         return;
     }
