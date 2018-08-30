@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.4.29
+// @version		5.4.30
 // @copyright	2017+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -2008,14 +2008,20 @@ function buildDlgDownThis(touch, userid) {
                     function(jore) { //onload_haserror_Cb //返回错误消息
                         dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     },
                     function(re) { //onload_notjson_Cb //返回不是JSON
                         dlg.log("错误：返回不是JSON，或程序异常");
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     },
                     function(re) { //onerror_Cb //AJAX发送失败
                         dlg.log("错误：AJAX发送失败");
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     }
                 )
             }
@@ -2101,6 +2107,8 @@ function buildDlgDownThis(touch, userid) {
                     dlg.log("检测到 " + contentName + " 中断进程命令");
                     works.break = false;
                     works.runing = false;
+                    dlg.textdown.disabled = false; //中断暂停时，可以操作目前的进度。
+                    dlg.startdown.disabled = false;
                     return;
                 }
 
@@ -2156,14 +2164,20 @@ function buildDlgDownThis(touch, userid) {
                     function(jore) { //onload_haserror_Cb //返回错误消息
                         dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     },
                     function(re) { //onload_notjson_Cb //返回不是JSON
                         dlg.log("错误：返回不是JSON，或程序异常");
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     },
                     function(re) { //onerror_Cb //AJAX发送失败
                         dlg.log("错误：AJAX发送失败");
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     }
                 )
             }
@@ -2182,6 +2196,8 @@ function buildDlgDownThis(touch, userid) {
                     dlg.log("检测到中断进程命令");
                     works.break = false;
                     works.runing = false;
+                    dlg.textdown.disabled = false; //中断暂停时，可以操作目前的进度。
+                    dlg.startdown.disabled = false;
                     return;
                 }
 
@@ -2209,16 +2225,23 @@ function buildDlgDownThis(touch, userid) {
                             };
                             dlg.log("跳过本条，获取下一条");
                             analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
+                            return;
                         }
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     },
                     function(re) { //onload_notjson_Cb //返回不是JSON
                         dlg.log("错误：返回不是JSON，或程序异常");
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     },
                     function(re) { //onerror_Cb //AJAX发送失败
                         dlg.log("错误：AJAX发送失败");
                         works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
                     }
                 )
             }
