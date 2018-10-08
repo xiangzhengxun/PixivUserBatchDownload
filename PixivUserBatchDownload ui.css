@@ -1,7 +1,7 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-.display-none,.pubd-alert-6
+.display-none,.pubd-alert-7
 {/*任何需要隐藏的*/
 	display:none !important;
 }
@@ -55,16 +55,17 @@
 	text-indent: -999px;
 	white-space: nowrap;
 	vertical-align: middle;
-	background: transparent url('https://source.pixiv.net/www/images/sprites-s30f7c00f21.png') no-repeat 0 20px;
+	height: 20px;
+	width: 20px;
+    background-size: 20px;
+    background-repeat: no-repeat;
 }
 .pubd-start .pubd-icon
 {/*开始按钮图标*/
 	position: absolute;
-	top: 3px;
+	top: 0px;
 	left: 3px;
-	height: 14px;
-	width: 14px;
-	background-position-y: -797px;
+	background-image: url('https://material.io/tools/icons/static/icons/baseline-image_search-24px.svg');
 }
 .pubd-menu
 {/*菜单*/
@@ -118,12 +119,16 @@
 {/*菜单项链接*/
 	padding-left: 2px;
 	padding-right: 9px;
-	line-height: 2;
 	font-size: 12px;
 	cursor: pointer;
 	display: block;
 	color: black !important;
 	text-decoration: none !important;
+}
+.pubd-menu-item-a .text
+{/*菜单项链接文字部分*/
+    vertical-align: middle;
+	line-height: 2;
 }
 .pubd-menu-line
 {/*菜单项，线*/
@@ -137,13 +142,16 @@
 }
 .pubd-menu-item .pubd-icon
 {/*菜单项图标*/
-	height: 16px;
-	width: 16px;
 	margin: 0 2px;
+	line-height: 2;
+}
+.pubd-menu-this-user .pubd-icon
+{/*菜单项-选项的图标*/
+	background-image: url('https://material.io/tools/icons/static/icons/baseline-get_app-24px.svg');
 }
 .pubd-menu-setting .pubd-icon
 {/*菜单项-选项的图标*/
-	background-position-y: -1597px;
+	background: url('https://material.io/tools/icons/static/icons/baseline-settings-20px.svg');
 }
 .pubd-menu-close .pubd-icon
 {/*菜单项-关闭的图标*/
@@ -449,19 +457,19 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 }
 .pubd-user-info-dl .pubd-user-info-id-dt,.pubd-user-info-dl .pubd-user-info-name-dt
 {/*用户信息前两个标题*/
-	width : 40px;
+	width : 45px;
 }
 .pubd-user-info-dl .pubd-user-info-illusts-dt,.pubd-user-info-dl .pubd-user-info-bookmarks-dt
 {/*用户信息后两个标题*/
-	width : 75px;
+	width : 85px;
 }
 .pubd-user-info-dl .pubd-user-info-id-dd,.pubd-user-info-dl .pubd-user-info-name-dd
 {/*用户信息前两个内容*/
-	width : calc(100% - 160px);
+	width : calc(100% - 185px);
 }
 .pubd-user-info-dl .pubd-user-info-illusts-dd,.pubd-user-info-dl .pubd-user-info-bookmarks-dd
 {/*用户信息后两个内容*/
-	width : 45px;
+	width : 55px;
 }
 /*▼选项对话框相关*/
 .pubd-config
@@ -481,10 +489,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-icon
 {/*选项对话框图标*/
-	background-image: url('http://source.pixiv.net/www/images/notification/setting.png');
-	background-position-y: -18px;
-	width: 18px;
-	height: 18px;
+	background: url('https://material.io/tools/icons/static/icons/baseline-settings-20px.svg');
 }
 .pubd-tologin,.pubd-downscheme-new,.pubd-downscheme-remove,.pubd-rpcchk,.pubd-reset,.pubd-save
 {/*选项面板按钮*/
@@ -716,6 +721,14 @@ border: 1px solid #becad7;
 	left: calc(50vw - 240px);
 	top: 180px;
 	width: 400px;
+}
+.pubd-downthis .pubd-icon
+{/*选项对话框图标*/
+	background: url('https://material.io/tools/icons/static/icons/baseline-get_app-24px.svg');
+}
+.pubd-dialog label
+{/*下载内容单选框*/
+    display: inline-block;
 }
 .pubd-downthis .pubd-down-content
 {/*下载内容单选框*/

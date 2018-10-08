@@ -10,8 +10,8 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.4.30
-// @copyright	2017+, Mapaler <mapaler@163.com>
+// @version		5.4.33
+// @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
 // @grant       GM_getValue
@@ -26,7 +26,7 @@
  */
 var pubd = { //储存设置
     configVersion: 0, //当前设置版本，用于提醒是否需要重置
-    cssVersion: 6, //当前需求CSS版本，用于提醒是否需要更新CSS
+    cssVersion: 7, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
     start: null, //开始按钮
@@ -979,7 +979,7 @@ function buildbtnMenu(touch) {
         */
         var menu = new pubdMenu(touch, "pubd-menu-main");
         menu.id = "pubd-menu";
-        menu.add("下载该画师", "", function() {
+        menu.add("下载该画师", "pubd-menu-this-user", function() {
             pubd.dialog.downthis.show();
             menu.hide();
         });
@@ -1380,7 +1380,7 @@ function buildDlgConfig(touch) {
     dt.innerHTML = "下载目录"
     var dd = document.createElement("dd");
     var savedir = document.createElement("input");
-    savedir.type = "url";
+    savedir.type = "text";
     savedir.className = "pubd-savedir";
     savedir.name = "pubd-savedir";
     savedir.id = savedir.name;
@@ -2497,13 +2497,15 @@ function findInsertPlace(touch, loggedIn) {
         clearInterval(findInsertPlaceHook);
         return;
     } else {
-        var btnStartInsertPlace = document.querySelector("._user-profile-card") || document.querySelector("#root div div aside section") || document.querySelector(".ui-layout-west aside");
-        if (!loggedIn) {
-            btnStartInsertPlace = document.querySelector(".introduction");
-        }
+        var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(3)") //2018年10月8日 新版用户资料首页
+                                ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
+                                ||document.querySelector("._user-profile-card") //老版用户资料页
+                                ||document.querySelector(".ui-layout-west aside") //老版作品页
+                                ||document.querySelector(".introduction") //未登录页面
+                                ;
         if (btnStartInsertPlace == undefined)
         {
-            console.error("未找到开始按钮插入点");
+            console.error("PUBD未找到开始按钮插入点。");
             return;
         }else
         {
