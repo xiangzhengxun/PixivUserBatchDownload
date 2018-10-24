@@ -10,7 +10,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.4.33
+// @version		5.4.34
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       GM_xmlhttpRequest
@@ -68,12 +68,12 @@ if (typeof(pixiv) == "undefined" && typeof(globalInitData) == "undefined")
 }
 else
 {
-    if (typeof(globalInitData) != "undefined")  //新版的插画页面信息
+    if (typeof(globalInitData) != "undefined") //新版的插画页面信息
     {
         pubd.loggedIn = true;
         thisPageUserid = Object.keys(globalInitData.preload.user)[0];
     }
-    else if (typeof(pixiv) != "undefined")  //原来的信息
+    else if (typeof(pixiv) != "undefined") //原来的信息
     {
         thisPageUserid = pixiv.context.userId;
         if (pixiv.user.loggedIn)
@@ -393,10 +393,11 @@ var DownScheme = (function() {
                     obj.masklist.splice(index, 1);
                 },
             },
-            loadFromJson: function(json) {
-                if (typeof(json) == "string") {
+            loadFromJson: function(ojson) {
+                var json = ojson;
+                if (typeof(ojson) == "string") {
                     try {
-                        var json = JSON.parse(json);
+                        json = JSON.parse(ojson);
                     } catch (e) {
                         console.error(e);
                         return false;
@@ -576,14 +577,17 @@ var Dialog = (function() {
                 this.cptBtns.close.click;
             }
             //添加鼠标拖拽移动
-        dlg.drag = { disX: 0, disY: 0 };
+        dlg.drag = [0, 0]; //[X,Y]
+        var drag = dlg.drag;
         //startDrag(cpt, dlg);
         cpt.addEventListener("mousedown", function(e) {
-            dlg.drag.disX = e.pageX - dlg.offsetLeft;
-            dlg.drag.disY = e.pageY - dlg.offsetTop;
+            var eX = e.pageX>0?e.pageX:0, eY = e.pageY>0?e.pageY:0;
+            drag[0] = eX - dlg.offsetLeft;
+            drag[1] = eY - dlg.offsetTop;
             var handler_mousemove = function(e) {
-                dlg.style.left = (e.pageX - dlg.drag.disX) + 'px';
-                dlg.style.top = (e.pageY - dlg.drag.disY) + 'px';
+                var eX = e.pageX>0?e.pageX:0, eY = e.pageY>0?e.pageY:0;
+                dlg.style.left = (eX - drag[0]) + 'px';
+                dlg.style.top = (eY - drag[1]) + 'px';
             };
             var handler_mouseup = function(e) {
                 document.removeEventListener("mousemove", handler_mousemove);
@@ -712,13 +716,13 @@ var LabelInput = (function() {
 
 //创建进度条类
 var Progress = (function() {
-    //强制保留pos位小数，如：2，会在2后面补上00.即2.00 
+    //强制保留pos位小数，如：2，会在2后面补上00.即2.00
     function toDecimal2(num, pos) {
         var f = parseFloat(num);
         if (isNaN(f)) {
             return false;
         }
-        var f = Math.round(num * Math.pow(10, pos)) / Math.pow(10, pos);
+        f = Math.round(num * Math.pow(10, pos)) / Math.pow(10, pos);
         var s = f.toString();
         var rs = s.indexOf('.');
         if (pos > 0 && rs < 0) {
@@ -1006,7 +1010,7 @@ function buildbtnMenu(touch) {
         {
         menu.add("收藏作者","",function()
         		{
-        			
+
         			pubd.staruser.push(pixiv.context.userId);
         			var starStr = JSON.stringify(pubd.staruser);
         			GM_setValue("pubd-staruser",starStr); //下载方案
@@ -2489,9 +2493,9 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 function findInsertPlace(touch, loggedIn) {
     if (touch ||  //手机版
         self.frameElement && self.frameElement.tagName == "IFRAME" ||    //属于内嵌iframe
-        window.frames.length != parent.frames.length || 
+        window.frames.length != parent.frames.length ||
         self != top
-    ) 
+    )
     {
         //alert("PUBD暂不支持手机版");
         clearInterval(findInsertPlaceHook);
@@ -2544,4 +2548,4 @@ function start() {
         findInsertPlace(pubd.touch, pubd.loggedIn);
     }, 1000);
 }
-start();   //开始主程序
+start(); //开始主程序
