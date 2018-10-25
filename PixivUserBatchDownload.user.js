@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.5.37
+// @version		5.5.38
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -227,6 +227,9 @@ if (typeof(GM_notification) == "undefined") {
 //留空函数
 if (typeof(GM_addValueChangeListener) == "undefined") {
     var GM_listValues = function() {return;}
+}
+if (typeof(GM_registerMenuCommand) == "undefined") {
+    var GM_registerMenuCommand = function() {return;}
 }
 
 /*
