@@ -1,7 +1,7 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-.display-none,.pubd-alert-7
+.display-none,.pubd-alert-8
 {/*任何需要隐藏的*/
 	display:none !important;
 }
@@ -57,8 +57,8 @@
 	vertical-align: middle;
 	height: 20px;
 	width: 20px;
-    background-size: 20px;
-    background-repeat: no-repeat;
+	background-size: 20px;
+	background-repeat: no-repeat;
 }
 .pubd-start .pubd-icon
 {/*开始按钮图标*/
@@ -127,7 +127,7 @@
 }
 .pubd-menu-item-a .text
 {/*菜单项链接文字部分*/
-    vertical-align: middle;
+	vertical-align: middle;
 	line-height: 2;
 }
 .pubd-menu-line
@@ -514,11 +514,16 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-token-expires
 {/*token进度条*/
+    top: 5px;
 	width: calc(100% - 87px);
 }
-.pubd-config .pubd-frmdownthis label
-{/*下载该画师窗口s设置*/
+.pubd-config .pubd-frm-downthis label
+{/*下载该画师窗口设置*/
 	width: 50%;
+}
+.pubd-config .pubd-frm-clicknotification label
+{/*点击通知设置*/
+	width: 33.333%;
 }
 
 .pubd-config .pubd-downscheme
@@ -528,7 +533,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 260px);
+	height: calc(100% - 291px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/
@@ -728,7 +733,7 @@ border: 1px solid #becad7;
 }
 .pubd-dialog label
 {/*下载内容单选框*/
-    display: inline-block;
+	display: inline-block;
 }
 .pubd-downthis .pubd-down-content
 {/*下载内容单选框*/

@@ -4,20 +4,32 @@
 // @namespace	http://www.mapaler.com/
 // @description	Batch download pixiv user's images in one key.
 // @description:zh-CN	一键批量下载P站画师的全部作品
+// @homepage    https://github.com/Mapaler/PixivUserBatchDownload
+// @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
+// @updateURL   https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
+// @downloadURL https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
 // @include		*://www.pixiv.net/*
-// @include		*://touch.pixiv.net/*
 // @exclude		*://www.pixiv.net/*mode=manga&illust_id*
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.4.34
+// @version		5.5.37
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
+// @grant       unsafeWindow
+// @grant       window.close
+// @grant       window.focus
 // @grant       GM_xmlhttpRequest
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_listValues
+// @grant       GM_addValueChangeListener
+// @grant       GM_notification
+// @grant       GM_registerMenuCommand
+// @connect     localhost
+// @connect     pixiv.net
+// @connect     127.0.0.1
 // ==/UserScript==
 
 //console.log(GM_xmlhttpRequest, GM_getValue, GM_setValue, GM_deleteValue, GM_listValues);
@@ -26,7 +38,7 @@
  */
 var pubd = { //储存设置
     configVersion: 0, //当前设置版本，用于提醒是否需要重置
-    cssVersion: 7, //当前需求CSS版本，用于提醒是否需要更新CSS
+    cssVersion: 8, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
     start: null, //开始按钮
@@ -160,6 +172,63 @@ if (typeof(GM_listValues) == "undefined") {
     }
 }
 
+//仿GM_notification函数v1.0，发送网页通知
+if (typeof(GM_notification) == "undefined") {
+    var GM_notification = function(text, title, image, onclick) {
+        var options = {},rTitle,rText;
+        if (typeof(text) == "string")
+        { //普通模式
+            rTitle = title;
+            rText = text;
+            options.body = text;
+            options.icon = image;
+        }else
+        { //选项模式
+            var details = text, ondone = title;
+            rTitle = details.title;
+            rText = details.text;
+            if (details.text) options.body = details.text;
+            if (details.image) options.icon = details.image;
+            if (details.timeout) options.timestamp = details.timeout;
+            //if (details.highlight) options.highlight = details.highlight; //没找到这个功能
+        }
+
+        function sendNotification(){
+            var n = new Notification(rTitle, options);
+            if (typeof(text) == "string")
+            { //普通模式
+                if (onclick) n.onclick = onclick;
+            }else
+            { //选项模式
+                if (ondone) n.onclick = n.onclose = ondone;
+            }
+        }
+        // 先检查浏览器是否支持
+        if (!("Notification" in window)) {
+            alert(rTitle + "\r\n" + rText);
+        // 检查用户是否同意接受通知
+        } else if (Notification.permission === "granted") {
+            Notification.requestPermission(function(permission) {
+                sendNotification();
+            });
+        }
+        // 否则我们需要向用户获取权限
+        else if (Notification.permission !== 'denied') {
+            Notification.requestPermission(function(permission) {
+                // 如果用户同意，就可以向他们发送通知
+                if (permission === "granted") {
+                    sendNotification();
+                }
+            });
+        }
+    }
+}
+
+//留空函数
+if (typeof(GM_addValueChangeListener) == "undefined") {
+    var GM_listValues = function() {return;}
+}
+
 /*
  * 现成函数库
  */
@@ -170,30 +239,6 @@ String.prototype.format = function() {
         s = s.replace(new RegExp("\\{" + i + "\\}", "g"), arguments[i]);
     return s;
 };
-//发送网页通知
-function spawnNotification(theBody, theIcon, theTitle) {
-    var options = {
-        body: theBody,
-        icon: theIcon
-    }
-    if (!("Notification" in window)) {
-        alert(theBody);
-    } else if (Notification.permission === "granted") {
-        Notification.requestPermission(function(permission) {
-            // If the user is okay, let's create a notification
-            var n = new Notification(theTitle, options);
-        });
-    }
-    // Otherwise, we need to ask the user for permission
-    else if (Notification.permission !== 'denied') {
-        Notification.requestPermission(function(permission) {
-            // If the user is okay, let's create a notification
-            if (permission === "granted") {
-                var n = new Notification(theTitle, options);
-            }
-        });
-    }
-}
 
 /*
  * 自定义对象区
@@ -1144,16 +1189,27 @@ function buildDlgConfig(touch) {
     dl.appendChild(dt);
     var dd = document.createElement("dd");
 
-    var frm = new Frame("“下载该画师”窗口", "pubd-frmdownthis");
+    var frm = new Frame("“下载该画师”窗口", "pubd-frm-downthis");
     var chk_autoanalyse = new LabelInput("打开窗口时自动获取", "pubd-autoanalyse", "pubd-autoanalyse", "checkbox", "1", true);
     dlg.autoanalyse = chk_autoanalyse.input;
-    var chk_autodownload = new LabelInput("获取完成后自动下载", "pubd-autodownload", "pubd-autodownload", "checkbox", "1", true);
+    var chk_autodownload = new LabelInput("获取完成后自动发送", "pubd-autodownload", "pubd-autodownload", "checkbox", "1", true);
     dlg.autodownload = chk_autodownload.input;
 
     frm.content.appendChild(chk_autoanalyse);
     frm.content.appendChild(chk_autodownload);
     dd.appendChild(frm);
     dl.appendChild(dd);
+
+    //“发送完成后，点击通知”窗口选项
+    var dt = dl.appendChild(document.createElement("dt"));
+    var dd = dl.appendChild(document.createElement("dd"));
+
+    var frm = dd.appendChild(new Frame("点击、关闭作品发送完成的通知，或其自然消失时", "pubd-frm-clicknotification"));
+    var radio0 = frm.content.appendChild(new LabelInput("什么也不做", "pubd-clicknotification", "pubd-clicknotification", "radio", "0", true));
+    var radio1 = frm.content.appendChild(new LabelInput("激活该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "1", true));
+    var radio2 = frm.content.appendChild(new LabelInput("关闭该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "2", true));
+    //var radio3 = frm.content.appendChild(new LabelInput("通知自动消失关闭该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "3", true));
+    dlg.noticeType = [radio0.input, radio1.input, radio2.input];
 
     /*
     	//选项卡栏
@@ -1531,7 +1587,7 @@ function buildDlgConfig(touch) {
     var ipt = document.createElement("input");
     ipt.type = "button";
     ipt.className = "pubd-reset";
-    ipt.value = "重置选项"
+    ipt.value = "清空选项"
     ipt.onclick = function() {
         dlg.reset();
     }
@@ -1550,15 +1606,22 @@ function buildDlgConfig(touch) {
     dlg.save = function() {
             pubd.auth.needlogin = dlg.needlogin.checked;
             pubd.auth.save();
+
+            //作品发送完成后，如何处理通知
+            var noticeTypeRadio = dlg.noticeType.filter(function(item){
+                return item.checked;
+            });
+            var noticeTypeI = noticeTypeRadio[0].value||0;
+
             GM_setValue("pubd-getugoiraframe", dlg.getugoiraframe.checked); //获取动图帧数
             GM_setValue("pubd-autoanalyse", dlg.autoanalyse.checked); //自动分析
             GM_setValue("pubd-autodownload", dlg.autodownload.checked); //自动下载
-            var schemesStr = JSON.stringify(dlg.schemes);
-            GM_setValue("pubd-downschemes", schemesStr); //下载方案
+            GM_setValue("pubd-noticeType", noticeTypeI); //处理通知
+            GM_setValue("pubd-downschemes", JSON.stringify(dlg.schemes)); //下载方案
             GM_setValue("pubd-defaultscheme", dlg.downScheme.selectedIndex); //默认方案
             GM_setValue("pubd-configversion", pubd.configVersion); //设置版本
 
-            spawnNotification("设置已保存", scriptIcon, scriptName);
+            GM_notification({text:"设置已保存", title:scriptName, image:scriptIcon});
             pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
             pubd.dialog.downthis.reloadSchemes();
         }
@@ -1568,10 +1631,11 @@ function buildDlgConfig(touch) {
             GM_deleteValue("pubd-getugoiraframe"); //获取动图帧数
             GM_deleteValue("pubd-autoanalyse"); //自动分析
             GM_deleteValue("pubd-autodownload"); //自动下载
+            GM_deleteValue("pubd-noticeType", dlg.noticeType); //处理通知
             GM_deleteValue("pubd-downschemes"); //下载方案
             GM_deleteValue("pubd-defaultscheme"); //默认方案
             GM_deleteValue("pubd-configversion"); //设置版本
-            spawnNotification("设置已重置", scriptIcon, scriptName);
+            GM_notification({text:"已清空重置设置", title:scriptName, image:scriptIcon});
         }
         //窗口关闭
     dlg.close = function() {
@@ -1593,7 +1657,9 @@ function buildDlgConfig(touch) {
         dlg.getugoiraframe.checked = getValueDefault("pubd-getugoiraframe", true);
         dlg.autoanalyse.checked = getValueDefault("pubd-autoanalyse", false);
         dlg.autodownload.checked = getValueDefault("pubd-autodownload", false);
+        (dlg.noticeType[parseInt(getValueDefault("pubd-noticeType", 0))] || dlg.noticeType[0]).checked = true;
 
+        //pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0)); //重新读取下载方案（可能被其他页面修改的）
         dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
         dlg.reloadSchemes();
         dlg.selectScheme(getValueDefault("pubd-defaultscheme", 0));
@@ -1862,7 +1928,7 @@ function buildDlgDownThis(touch, userid) {
     var startdown = document.createElement("input");
     startdown.type = "button";
     startdown.className = "pubd-startdown";
-    startdown.value = "开始下载";
+    startdown.value = "发送到Aria2";
     startdown.onclick = function() {
         dlg.startdownload();
     }
@@ -1970,7 +2036,7 @@ function buildDlgDownThis(touch, userid) {
 
     //分析
     dlg.analyse = function(contentType, userid) {
-            if (!userid) { dlg.log("错误：没有用户ID"); return; }
+            if (!userid) {dlg.log("错误：没有用户ID。"); return;}
             contentType = contentType == undefined ? 0 : parseInt(contentType);
             var works = contentType == 0 ? dlg.user.illusts : dlg.user.bookmarks; //将需要分析的数据储存到works里
             dlg.works = works;
@@ -2102,7 +2168,7 @@ function buildDlgDownThis(touch, userid) {
                     dlg.textdown.disabled = false;
                     dlg.startdown.disabled = false;
                     if (getValueDefault("pubd-autodownload",false)) { //自动开始
-                        dlg.log("自动开始下载");
+                        dlg.log("自动开始发送");
                         dlg.startdownload();
                     }
                     return;
@@ -2289,11 +2355,46 @@ function buildDlgDownThis(touch, userid) {
             var contentType = dlg.dcType[1].checked ? 1 : 0;
             var userInfo = dlg.user.info;
             var illustsItems = contentType == 0 ? dlg.user.illusts.item : dlg.user.bookmarks.item; //将需要分析的数据储存到works里
-            dlg.log("开始逐项发送到Aria2，此过程请勿进行其他操作，请耐心等待");
+            //计算一下总页数
+            var pageCount = illustsItems.reduce(function(pV,cItem){
+                var page = cItem.page_count;
+                if (cItem.type == "ugoira" && cItem.ugoira_metadata) //动图
+                {
+                    page = cItem.ugoira_metadata.frames.length;
+                }
+                return pV+=page;
+            },0);
+            
+            dlg.log("约 " + pageCount + " 张图片，开始逐项发送到Aria2，请耐心等待");
             var downP = { progress: dlg.progress, current: 0, max: 0 };
             downloadWork(scheme, userInfo, illustsItems, downP, function() {
-                dlg.log("下载信息发送完毕");
-                spawnNotification("" + userInfo.user.name + " 的相关插画已全部发送到指定的Aria2", userInfo.user.profile_image_urls.medium, "发送完毕");
+                var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
+                var bodyText = "" + userInfo.user.name + " 的相关插画已全部发送到指定的Aria2";
+                if (ntype == 1)
+                    bodyText += "\r\n\r\n点击此通知🔙返回页面。";
+                else if (ntype == 2)
+                    bodyText += "\r\n\r\n通知结束页面将❎自动关闭。";
+                
+                dlg.log(userInfo.user.name + " 下载信息发送完毕😄");
+                GM_notification(
+                    {
+                        text:bodyText,
+                        title:"下载信息发送完毕",
+                        image:userInfo.user.profile_image_urls.medium
+                    },
+                    function(){ //点击了通知
+                        var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
+                        if (ntype == 1)
+                            window.focus();
+                        else if (ntype == 2)
+                            window.close();
+                    },
+                    function(){ //关闭了通知
+                        var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
+                        if (ntype == 3)
+                            window.close();
+                    },
+                );
             }); //调用公用下载窗口
         }
         //启动初始化
@@ -2306,9 +2407,13 @@ function buildDlgDownThis(touch, userid) {
 
         dlg.dcType[dcType].checked = true;
         if (getValueDefault("pubd-autoanalyse",false)) {
+            if (!dlg.uinfo.userid) {
+                dlg.uinfo.userid = parseInt(prompt("没有用户ID，请手动输入。", "ID错误"));
+            }    
             dlg.analyse(dcType, dlg.uinfo.userid);
         }
 
+        //pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0)); //重新读取下载方案（可能被其他页面修改的）
         dlg.reloadSchemes();
     };
 
@@ -2369,7 +2474,7 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
 //作品每页循环递归输出
 function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
     if (pubd.downbreak) {
-        spawnNotification("已中断向Aria2发送下载信息", scriptIcon, scriptName);
+        GM_notification({text:"已中断向Aria2发送下载信息。", title:scriptName, image:scriptIcon});
         pubd.downbreak = false;
         return;
     }
@@ -2470,10 +2575,13 @@ function returnLogicValue(logic, user, illust, page) {
 
 function replacePathSafe(str, type) //去除Windows下无法作为文件名的字符，目前为了支持Linux暂不替换两种斜杠吧。
 { //keepTree表示是否要保留目录树的字符（\、/和:）
-    var nstr; //新字符
-    if (typeof(str) == "undefined") return "";
-    str = str.toString();
-    str = str.replace(/\u0000-\u001F\u007F-\u00A0/ig, ""); //替换所有的控制字符
+    if (typeof(str) == "undefined")
+    {
+        return new String();
+    }
+    var nstr = str; //新字符
+    nstr = nstr.toString();
+    nstr = nstr.replace(/\u0000-\u001F\u007F-\u00A0/ig, ""); //替换所有的控制字符
     var patternStrs = [
         "[\\*\\?\"<>\\|]",                 //只替换路径中完全不能出现的特殊字符
         "[\\*\\?\"<>\\|\\r\\n]",           //上述字符加冒号:，用于非驱动器路径
@@ -2481,12 +2589,9 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
     ];
     if (patternStrs[type] != undefined)
     {
-        nstr = str.replace(new RegExp(patternStrs[type],"ig"), "_"); //只替换路径中完全不能出现的特殊字符
-        return nstr;
-    }else
-    {
-        return str; //不替换字符
+        nstr = nstr.replace(new RegExp(patternStrs[type],"ig"), "_"); //只替换路径中完全不能出现的特殊字符
     }
+    return nstr;
 }
 
 //开始构建UI
@@ -2525,15 +2630,10 @@ function findInsertPlace(touch, loggedIn) {
         btnStartBox.className = "pubd-btnStartInsertPlace";
         pubd.start = btnStartBox.appendChild(buildbtnStart(touch));
         pubd.menu = btnStartBox.appendChild(buildbtnMenu(touch));
-        //所有视窗
-        var btnDlgInsertPlace = document.body;
-        pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig(touch));
-        pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
-        pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch));
     }
 }
 //开始主程序
-function start() {
+function start(touch) {
     //载入设置
     pubd.auth = new Auth();
     try {
@@ -2543,9 +2643,22 @@ function start() {
     }
     pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0));
 
+    //对下载方案的修改添加监听
+    GM_addValueChangeListener("pubd-downschemes", function(name, old_value, new_value, remote) {
+        pubd.downSchemes = NewDownSchemeArrayFromJson(new_value); //重新读取下载方案（可能被其他页面修改的）
+    })
+
+    //添加所有视窗
+    var btnDlgInsertPlace = document.body;
+    pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig(touch));
+    pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
+    pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch));
+
+    GM_registerMenuCommand("PUBD-下载该画师", function(){pubd.dialog.downthis.show();});
+    GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show();});
     //循环寻找插入点
     findInsertPlaceHook = setInterval(function(){
-        findInsertPlace(pubd.touch, pubd.loggedIn);
+        findInsertPlace(touch, pubd.loggedIn);
     }, 1000);
 }
-start(); //开始主程序
+start(pubd.touch); //开始主程序

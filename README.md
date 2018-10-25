@@ -14,7 +14,9 @@
 ![程序运行图](https://raw.githubusercontent.com/wiki/Mapaler/PixivUserBatchDownload/images/preview.png)
 
 ## 程序结构
-PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离了用户界面到单独的用户样式文件。
+PUBD主体部分是采用JavaScript语言编写的用户脚本，为了方便编写，分离了用户界面到单独的CSS文件。
+
+PUBD通过P站官方手机APP的后台API获取作者的作品列表，然后发送到指定的Aria2下载器下载。可选用第三方管理器对Aria2状态进行管理。
 
 下载流程的结构如下图<br>
 ![结构图](https://raw.githubusercontent.com/wiki/Mapaler/PixivUserBatchDownload/images/structure.jpg)
@@ -27,6 +29,8 @@ PUBD主体部分是采用JavaScript语言编写的用户脚本，v5.0版分离�
 - [ ] Tab选项卡式面板
 - [ ] 仅下载当前一幅作品
 - [x] 下载过滤器
+- [x] 点击通知自动关闭页面
+- [x] 扩展菜单内直接打开程序
 
 ## License|许可协议
 PixivUserBatchDownload v5.x Copyright(C) 2017 by Mapaler
