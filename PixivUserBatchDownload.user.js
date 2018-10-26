@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.6.41
+// @version		5.6.42
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -2190,7 +2190,7 @@ function buildDlgDownThis(touch, userid) {
                         dlg.log("可能因为权限原因，无法获取到所有 " + contentName);
 
                     //计算一下总页数
-                    var pageCount = illustsItems.reduce(function(pV,cItem){
+                    var pageCount = works.item.reduce(function(pV,cItem){
                         var page = cItem.page_count;
                         if (cItem.type == "ugoira" && cItem.ugoira_metadata) //动图
                         {
