@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.5.38
+// @version		5.6.40
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -61,6 +61,7 @@ var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
 
+var UA = "PixivAndroidApp/5.0.96 (Android 8.1.0; Android SDK built for x86)"; //向P站请求数据时的UA
 var thisPageUserid = 0; //当前页面的画师ID
 var findInsertPlaceHook; //储存循环钩子
 var btnStartInsertPlace; //储存开始按钮插入点
@@ -76,7 +77,7 @@ if (typeof(unsafeWindow) != "undefined")
 //2、获取是否为登录状态与当前页面画师ID
 if (typeof(pixiv) == "undefined" && typeof(globalInitData) == "undefined")
 {
-        console.error("当前网页没有找到 pixiv 对象和 globalInitData 对象");
+        console.error("PUBD：当前网页没有找到 pixiv 对象和 globalInitData 对象");
 }
 else
 {
@@ -98,9 +99,9 @@ else
 if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
 {
     pubd.touch = true;
-    console.info("当前访问的是P站触屏手机版，我没开发。");
+    console.info("PUBD：当前访问的是P站触屏手机版，我没开发。");
 } else {
-    console.info("当前访问的是P站桌面版");
+    console.info("PUBD：当前访问的是P站桌面版");
 }
 
 /*
@@ -307,7 +308,7 @@ var HeadersObject = function(obj) {
         'App-OS': 'android',
         'App-OS-Version': '8.1.0',
         'App-Version': '5.0.96',
-        'User-Agent': 'PixivAndroidApp/5.0.96 (Android 8.1.0; Android SDK built for x86)',
+        'User-Agent': UA,
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
         "Referer": "https://app-api.pixiv.net/",
     }
@@ -928,7 +929,21 @@ var Aria2 = (function() {
             id: priority ? "1" : (new Date()).getTime().toString(),
         };
         if (params) request_obj['params'] = params;
-        if (auth && auth.indexOf('token:') == 0) params.unshift(auth);
+        
+        if (auth && auth.indexOf('token:') == 0)
+        {
+            if (method == "system.multicall")
+            { //多项目操作时单独设置token
+                params.forEach(function(param){
+                    param.forEach(function(method){
+                        method.params.unshift(auth);
+                    })
+                })
+            }else
+            {
+                params.unshift(auth);
+            }
+        }
 
         var headers = { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", }
         if (auth && auth.indexOf('token:') != 0) {
@@ -957,20 +972,26 @@ var Aria2 = (function() {
     };
 
     return function(jsonrpc_path) {
-        this.jsonrpc_path = jsonrpc_path;
-        this.addUri = function(uri, options, callback) {
-            request(this.jsonrpc_path, 'aria2.addUri', [
+        _this = this;
+        _this.jsonrpc_path = jsonrpc_path;
+        _this.addUri = function(uri, options, callback) {
+            request(_this.jsonrpc_path, 'aria2.addUri', [
                 [uri, ], options
             ], callback);
         };
-        this.addTorrent = function(base64txt, options, callback) {
-            request(this.jsonrpc_path, 'aria2.addTorrent', [base64txt, [], options], callback);
+        _this.addTorrent = function(base64txt, options, callback) {
+            request(_this.jsonrpc_path, 'aria2.addTorrent', [base64txt, [], options], callback);
         };
-        this.getVersion = function(callback) {
-            request(this.jsonrpc_path, 'aria2.getVersion', [], callback, true);
+        _this.getVersion = function(callback) {
+            request(_this.jsonrpc_path, 'aria2.getVersion', [], callback, true);
         };
-        this.getGlobalOption = function(callback) {
-            request(this.jsonrpc_path, 'aria2.getGlobalOption', [], callback, true);
+        _this.getGlobalOption = function(callback) {
+            request(_this.jsonrpc_path, 'aria2.getGlobalOption', [], callback, true);
+        };
+        _this.system = {
+            multicall:function(params,callback){
+                request(_this.jsonrpc_path, 'system.multicall', params, callback, true);
+            },
         };
         return this;
     }
@@ -2319,7 +2340,7 @@ function buildDlgDownThis(touch, userid) {
                 )
             }
         }
-        //开始下载按钮
+    //输出文本按钮
     dlg.textdownload = function() {
             if (dlg.downScheme.selectedOptions.length < 1) { alert("没有选中方案"); return; }
             var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
@@ -2350,7 +2371,7 @@ function buildDlgDownThis(touch, userid) {
                 console.log(error)
             }
         }
-        //开始下载按钮
+    //开始下载按钮
     dlg.startdownload = function() {
             dlg.textoutTextarea.classList.add("display-none");
             if (dlg.downScheme.selectedOptions.length < 1) { alert("没有选中方案"); return; }
@@ -2374,9 +2395,9 @@ function buildDlgDownThis(touch, userid) {
                 var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
                 var bodyText = "" + userInfo.user.name + " 的相关插画已全部发送到指定的Aria2";
                 if (ntype == 1)
-                    bodyText += "\r\n\r\n点击此通知🔙返回页面。";
+                    bodyText += "\n\n点击此通知🔙返回页面。";
                 else if (ntype == 2)
-                    bodyText += "\r\n\r\n通知结束页面将❎自动关闭。";
+                    bodyText += "\n\n通知结束页面将❎自动关闭。";
                 
                 dlg.log(userInfo.user.name + " 下载信息发送完毕😄");
                 GM_notification(
@@ -2429,7 +2450,7 @@ function NewDownSchemeArrayFromJson(jsonarr) {
         try {
             var jsonarr = JSON.parse(jsonarr);
         } catch (e) {
-            console.error("拷贝新下载方案数组时失败", e);
+            console.error("PUBD：拷贝新下载方案数组时失败", e);
             return false;
         }
     }
@@ -2458,7 +2479,7 @@ function downloadWork(scheme, userInfo, illustsItems, downP, callback) {
 
         sendToAria2_illust(nillusts, userInfo, scheme, downP, callback);
     } catch (e) {
-        console.error(e);
+        console.error("PUBD：未知错误",e);
     }
 }
 //作品循环递归输出
@@ -2468,62 +2489,64 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
         callback();
         return;
     }
-
-    sendToAria2_Page(illusts[0], 0, userInfo, scheme, downP, function() {
-        illusts.shift(); //删掉第一个元素
-        sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //递归调用自身
-    })
-}
-//作品每页循环递归输出
-function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
-    if (pubd.downbreak) {
-        GM_notification({text:"已中断向Aria2发送下载信息。", title:scriptName, image:scriptIcon});
+    if (pubd.downbreak)
+    {
+        GM_notification({text:"已中断向Aria2发送下载信息。但Aria2本身仍未停止下载已添加内容，请手动停止。", title:scriptName, image:scriptIcon});
         pubd.downbreak = false;
         return;
     }
-    var page_count = illust.page_count;
-    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
+
+    var illust = illusts.shift(); //读取首个作品
+    var page_count = illust.page_count; //作品页数
+    if (illust.type == "ugoira" && illust.ugoira_metadata) //修改动图的页数
     {
         page_count = illust.ugoira_metadata.frames.length;
     }
 
-    if (page >= page_count || illust.filename == "limit_mypixiv") //无法查看的文件
+    if (illust.filename == "limit_mypixiv") //无法查看的文件
     {
-        if (illust.filename == "limit_mypixiv")
-            downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
-        callback();
+        downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+        sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
         return;
     }
-    var url = (scheme.https2http ? illust.url_without_page.replace(/^https:\/\//igm, "http://") : illust.url_without_page) //https替换成http
-        +
-        page + "." + illust.extention;
-
-    //console.log(scheme.downfilter, returnLogicValue(scheme.downfilter, userInfo, illust, page));
-    if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
-        //跳过此次下载
-        downP.progress.set(++downP.current / downP.max); //设置进度
-        sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
-        console.info("符合下载过滤器定义，跳过下载：", illust);
-    } else {
-        var aria2 = new Aria2(scheme.rpcurl);
-        var srtObj = {
-            "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
-            "referer": "https://app-api.pixiv.net/",
-            "user-agent": "PixivAndroidApp/5.0.96 (Android 8.1.0; Android SDK built for x86)",
-        }
-        if (scheme.savedir.length > 0) {
-            srtObj.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
-        }
-        aria2.addUri(url, srtObj, function(res) {
-            if (res === false) {
-                alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
-                return;
-            }
+    var params = [];
+    for (page=0;page<page_count;page++)
+    {
+        if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
+            //跳过此次下载
             downP.progress.set(++downP.current / downP.max); //设置进度
             sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
-        });
+            console.info("符合下载过滤器定义，跳过下载：", illust);
+        } else {
+            var aMethod = {'methodName':'aria2.addUri','params':[]}
+            var url = (scheme.https2http //https替换成http
+                        ? illust.url_without_page.replace(/^https:\/\//igm, "http://")
+                        : illust.url_without_page)
+                + page + "." + illust.extention;
+            aMethod.params.push([url]); //添加下载链接
+            var options = {
+                "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+                "referer": "https://app-api.pixiv.net/",
+                "user-agent": UA,
+            }
+            if (scheme.savedir.length > 0) {
+                options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+            }
+            aMethod.params.push(options);
+            params.push(aMethod);
+        }
     }
+    var aria2 = new Aria2(scheme.rpcurl);
+    aria2.system.multicall([params],function(res){
+        if (res === false) {
+            alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
+            return;
+        }
+        downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+        sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
+    });
 }
+
 //返回掩码值
 function showMask(str, masklist, user, illust, page) {
     var newTxt = str;
@@ -2568,11 +2591,12 @@ function showMask(str, masklist, user, illust, page) {
 //返回逻辑值
 function returnLogicValue(logic, user, illust, page) {
     try {
+        if (logic.length == 0) return false;
         var evTemp = eval("(" + logic + ")");
         return evTemp;
     } catch (e) {
+        console.error("下载过滤器出现了异常情况，逻辑内容：","(" + logic + ")", e);
         return false;
-        console.error("下载过滤器出现了异常情况", e);
     }
 }
 
@@ -2617,7 +2641,7 @@ function findInsertPlace(touch, loggedIn) {
                                 ;
         if (btnStartInsertPlace == undefined)
         {
-            console.error("PUBD未找到开始按钮插入点。");
+            console.error("PUBD：未找到开始按钮插入点。");
             return;
         }else
         {
@@ -2642,7 +2666,7 @@ function start(touch) {
     try {
         pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
     } catch (e) {
-        console.error("脚本初始化时，读取登录信息失败", e);
+        console.error("PUBD：脚本初始化时，读取登录信息失败。", e);
     }
     pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0));
 
