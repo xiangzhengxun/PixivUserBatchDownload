@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.6.40
+// @version		5.6.41
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -1333,12 +1333,15 @@ function buildDlgConfig(touch) {
     ipt.value = "新建"
     ipt.onclick = function() {
         var schemName = prompt("请输入方案名", "我的方案");
-        var scheme = new DownScheme(schemName);
-        var length = dlg.schemes.push(scheme);
-        dlg.downScheme.add(scheme.name, length - 1);
-        dlg.downScheme.selectedIndex = length - 1;
-        dlg.loadScheme(scheme);
-        //dlg.reloadSchemes();
+        if (schemName)
+        {
+            var scheme = new DownScheme(schemName);
+            var length = dlg.schemes.push(scheme);
+            dlg.downScheme.add(scheme.name, length - 1);
+            dlg.downScheme.selectedIndex = length - 1;
+            dlg.loadScheme(scheme);
+            //dlg.reloadSchemes();
+        }
     }
     dd.appendChild(ipt);
 
@@ -2185,7 +2188,18 @@ function buildDlgDownThis(touch, userid) {
                     //没有动图则继续
                     if (works.item.length < total)
                         dlg.log("可能因为权限原因，无法获取到所有 " + contentName);
-                    dlg.log(contentName + " 共 " + works.item.length + " 件已获取完毕");
+
+                    //计算一下总页数
+                    var pageCount = illustsItems.reduce(function(pV,cItem){
+                        var page = cItem.page_count;
+                        if (cItem.type == "ugoira" && cItem.ugoira_metadata) //动图
+                        {
+                            page = cItem.ugoira_metadata.frames.length;
+                        }
+                        return pV+=page;
+                    },0);
+            
+                    dlg.log(contentName + " 共 " + works.item.length + " 件（约 " + pageCount + " 张图片）已获取完毕。");
                     dlg.progress.set(1);
                     works.runing = false;
                     works.next_url = "";
@@ -2379,17 +2393,8 @@ function buildDlgDownThis(touch, userid) {
             var contentType = dlg.dcType[1].checked ? 1 : 0;
             var userInfo = dlg.user.info;
             var illustsItems = contentType == 0 ? dlg.user.illusts.item : dlg.user.bookmarks.item; //将需要分析的数据储存到works里
-            //计算一下总页数
-            var pageCount = illustsItems.reduce(function(pV,cItem){
-                var page = cItem.page_count;
-                if (cItem.type == "ugoira" && cItem.ugoira_metadata) //动图
-                {
-                    page = cItem.ugoira_metadata.frames.length;
-                }
-                return pV+=page;
-            },0);
-            
-            dlg.log("约 " + pageCount + " 张图片，开始逐项发送到Aria2，请耐心等待");
+
+            dlg.log("开始将作品逐项发送到Aria2，请耐心等待。");
             var downP = { progress: dlg.progress, current: 0, max: 0 };
             downloadWork(scheme, userInfo, illustsItems, downP, function() {
                 var ntype = parseInt(getValueDefault("pubd-noticeType", 0));

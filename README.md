@@ -48,3 +48,6 @@ PixivUserBatchDownload 5 Copyright(C) 2018 by Mapaler
 - [x] 下载过滤器
 - [x] 点击通知自动关闭页面
 - [x] 扩展菜单内直接打开程序
+- [x] 使用system.multicall加快Aria2请求速度
+- [ ] 自动清除Aria2下载完成项目
+- [ ] WebSocket协议
