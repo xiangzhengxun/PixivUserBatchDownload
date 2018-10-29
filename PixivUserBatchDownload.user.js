@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.47
+// @version		5.7.48
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -60,7 +60,7 @@ var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
 
-var UA = "PixivAndroidApp/5.0.96 (Android 8.1.0; Android SDK built for x86)"; //向P站请求数据时的UA
+var UA = "PixivAndroidApp/5.0.115 (Android 9.0.0; Android SDK built for x86)"; //向P站请求数据时的UA
 var thisPageUserid = 0; //当前页面的画师ID
 var findInsertPlaceHook; //储存循环钩子
 var btnStartInsertPlace; //储存开始按钮插入点
@@ -306,8 +306,8 @@ var PostDataObject = (function() {
 var HeadersObject = function(obj) {
     var headers = {
         'App-OS': 'android',
-        'App-OS-Version': '8.1.0',
-        'App-Version': '5.0.96',
+        'App-OS-Version': '9.0.0',
+        'App-Version': '5.0.115',
         'User-Agent': UA,
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
         "Referer": "https://app-api.pixiv.net/",
@@ -2369,7 +2369,7 @@ function buildDlgDownThis(touch, userid) {
                     "https://app-api.pixiv.net/v1/ugoira/metadata?illust_id=" + work.id,
                     function(jore) { //onload_suceess_Cb
                         works.runing = true;
-                        var illusts = jore.illusts;
+                        //var illusts = jore.illusts;
                         work = Object.assign(work, jore);
                         dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
                         dlg.progress.set(1 - dealItems.length / ugoirasItems.length); //设置当前下载进度
