@@ -516,13 +516,11 @@ border: 1px solid #becad7;
     top: 5px;
 	width: calc(100% - 87px);
 }
-.pubd-config .pubd-frm-downthis label
-{/*下载该画师窗口设置*/
+.pubd-config .pubd-frm-downthis label,
+.pubd-config .pubd-frm-clicknotification label,
+.pubd-config .pubd-frm-termwisetype label
+{/*下载该画师窗口设置,点击通知设置,逐项发送设置*/
 	width: 50%;
-}
-.pubd-config .pubd-frm-clicknotification label
-{/*点击通知设置*/
-	width: 33.333%;
 }
 
 .pubd-config .pubd-downscheme

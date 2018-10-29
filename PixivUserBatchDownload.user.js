@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.6.45
+// @version		5.7.45
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -25,7 +25,7 @@
 // @grant       GM_deleteValue
 // @grant       GM_listValues
 // @grant       GM_addValueChangeListener
-// @grant       GM_notification
+// -@grant       GM_notification
 // @grant       GM_registerMenuCommand
 // @connect     localhost
 // @connect     pixiv.net
@@ -172,7 +172,7 @@ if (typeof(GM_listValues) == "undefined") {
     }
 }
 
-//仿GM_notification函数v1.0，发送网页通知
+//仿GM_notification函数v1.1，发送网页通知
 if (typeof(GM_notification) == "undefined") {
     var GM_notification = function(text, title, image, onclick) {
         var options = {},rTitle,rText;
@@ -184,7 +184,7 @@ if (typeof(GM_notification) == "undefined") {
             options.icon = image;
         }else
         { //选项模式
-            var details = text, ondone = title;
+            var details = text, ondone = title, onclose = image;
             rTitle = details.title;
             rText = details.text;
             if (details.text) options.body = details.text;
@@ -199,8 +199,9 @@ if (typeof(GM_notification) == "undefined") {
             { //普通模式
                 if (onclick) n.onclick = onclick;
             }else
-            { //选项模式
-                if (ondone) n.onclick = n.onclose = ondone;
+            { //选项模式，这里和TamperMonkey API不一样，区分了关闭和点击。
+                if (ondone) n.onclick = ondone;
+                if (onclose) n.onclose = onclose;
             }
         }
         // 先检查浏览器是否支持
@@ -1223,16 +1224,26 @@ function buildDlgConfig(touch) {
     dd.appendChild(frm);
     dl.appendChild(dd);
 
+    //向Aria2的发送模式
+    var dt = dl.appendChild(document.createElement("dt"));
+    var dd = dl.appendChild(document.createElement("dd"));
+
+    var frm = dd.appendChild(new Frame("向Aria2逐项发送模式", "pubd-frm-termwisetype"));
+    var radio0 = frm.content.appendChild(new LabelInput("完全逐项（按图片）", "pubd-termwisetype", "pubd-termwisetype", "radio", "0", true));
+    var radio1 = frm.content.appendChild(new LabelInput("半逐项（按作品）", "pubd-termwisetype", "pubd-termwisetype", "radio", "1", true));
+    var radio2 = frm.content.appendChild(new LabelInput("不逐项（按作者）", "pubd-termwisetype", "pubd-termwisetype", "radio", "2", true));
+    dlg.termwiseType = [radio0.input, radio1.input, radio2.input];
+
     //“发送完成后，点击通知”窗口选项
     var dt = dl.appendChild(document.createElement("dt"));
     var dd = dl.appendChild(document.createElement("dd"));
 
-    var frm = dd.appendChild(new Frame("发送完成通知关闭时", "pubd-frm-clicknotification"));
-    var radio0 = frm.content.appendChild(new LabelInput("什么也不做", "pubd-clicknotification", "pubd-clicknotification", "radio", "0", true));
-    var radio1 = frm.content.appendChild(new LabelInput("激活该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "1", true));
-    var radio2 = frm.content.appendChild(new LabelInput("关闭该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "2", true));
-    //var radio3 = frm.content.appendChild(new LabelInput("通知自动消失关闭该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "3", true));
-    dlg.noticeType = [radio0.input, radio1.input, radio2.input];
+    var frm = dd.appendChild(new Frame("发送完成通知", "pubd-frm-clicknotification"));
+    var radio0 = frm.content.appendChild(new LabelInput("点击通知什么也不做", "pubd-clicknotification", "pubd-clicknotification", "radio", "0", true));
+    var radio1 = frm.content.appendChild(new LabelInput("点击通知激活该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "1", true));
+    var radio2 = frm.content.appendChild(new LabelInput("点击通知关闭该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "2", true));
+    var radio3 = frm.content.appendChild(new LabelInput("通知自动消失关闭该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "3", true));
+    dlg.noticeType = [radio0.input, radio1.input, radio2.input, radio3.input];
 
     /*
     	//选项卡栏
@@ -1635,15 +1646,23 @@ function buildDlgConfig(touch) {
             pubd.auth.save();
 
             //作品发送完成后，如何处理通知
-            var noticeTypeRadio = dlg.noticeType.filter(function(item){
+            var noticeType = 0;
+            dlg.noticeType.some(function(item){
+                if (item.checked) noticeType = item.value;
                 return item.checked;
             });
-            var noticeTypeI = noticeTypeRadio[0].value||0;
+            //逐项发送模式
+            var termwiseType = 0;
+            dlg.termwiseType.some(function(item){
+                if (item.checked) termwiseType = item.value;
+                return item.checked;
+            });
 
             GM_setValue("pubd-getugoiraframe", dlg.getugoiraframe.checked); //获取动图帧数
             GM_setValue("pubd-autoanalyse", dlg.autoanalyse.checked); //自动分析
             GM_setValue("pubd-autodownload", dlg.autodownload.checked); //自动下载
-            GM_setValue("pubd-noticeType", noticeTypeI); //处理通知
+            GM_setValue("pubd-noticeType", noticeType); //处理通知
+            GM_setValue("pubd-termwiseType", termwiseType); //逐项发送
             GM_setValue("pubd-downschemes", JSON.stringify(dlg.schemes)); //下载方案
             GM_setValue("pubd-defaultscheme", dlg.downScheme.selectedIndex); //默认方案
             GM_setValue("pubd-configversion", pubd.configVersion); //设置版本
@@ -1658,7 +1677,8 @@ function buildDlgConfig(touch) {
             GM_deleteValue("pubd-getugoiraframe"); //获取动图帧数
             GM_deleteValue("pubd-autoanalyse"); //自动分析
             GM_deleteValue("pubd-autodownload"); //自动下载
-            GM_deleteValue("pubd-noticeType", dlg.noticeType); //处理通知
+            GM_deleteValue("pubd-noticeType"); //处理通知
+            GM_deleteValue("pubd-termwiseType"); //逐项发送
             GM_deleteValue("pubd-downschemes"); //下载方案
             GM_deleteValue("pubd-defaultscheme"); //默认方案
             GM_deleteValue("pubd-configversion"); //设置版本
@@ -1685,6 +1705,7 @@ function buildDlgConfig(touch) {
         dlg.autoanalyse.checked = getValueDefault("pubd-autoanalyse", false);
         dlg.autodownload.checked = getValueDefault("pubd-autodownload", false);
         (dlg.noticeType[parseInt(getValueDefault("pubd-noticeType", 0))] || dlg.noticeType[0]).checked = true;
+        (dlg.termwiseType[parseInt(getValueDefault("pubd-termwiseType", 0))] || dlg.termwiseType[0]).checked = true;
 
         //pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0)); //重新读取下载方案（可能被其他页面修改的）
         dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
@@ -2439,11 +2460,25 @@ function buildDlgDownThis(touch, userid) {
             var works = (contentType == 0 ? dlg.user.illusts : dlg.user.bookmarks);
             var illustsItems = works.item.concat(); //为了不改变原数组，新建一个数组
 
-            dlg.log("开始将作品逐项发送到Aria2，请耐心等待。");
+            var termwiseType = parseInt(getValueDefault("pubd-termwiseType", 0));
+            if (termwiseType == 0)
+                dlg.log("开始按图片逐项发送（约 "+works.picCount+" 次请求），请耐心等待。");
+            else if (termwiseType == 1)
+                dlg.log("开始按作品逐项发送（约 "+illustsItems.length+" 次请求），请耐心等待。");
+            else if (termwiseType == 2)
+                dlg.log("开始按作者发送（1次请求），单次数据量可能较大。");
+            else
+            {
+                alert("错误：未知的逐项模式" + termwiseType);
+                console.error("PUBD：错误：未知的逐项模式：", termwiseType);
+                return;
+            }
             var downP = { progress: dlg.progress, current: 0, max: 0 };
             downP.max = works.picCount; //获取总需要下载发送的页数
     
-            sendToAria2_illust(illustsItems, userInfo, scheme, downP, function() {
+            var aria2 = new Aria2(scheme.rpcurl); //生成一个aria2对象
+            sendToAria2_illust(aria2, termwiseType, illustsItems, userInfo, scheme, downP, function() {
+                aria2 = null;
                 dlg.log(userInfo.user.name + " 下载信息发送完毕😄");
                 
                 var ntype = parseInt(getValueDefault("pubd-noticeType", 0)); //获取结束后如何处理通知
@@ -2517,7 +2552,7 @@ function NewDownSchemeArrayFromJson(jsonarr) {
     return sarr;
 }
 //作品循环递归输出
-function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
+function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback) {
     if (illusts.length < 1) //做完了
     {
         callback();
@@ -2530,13 +2565,11 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
         return;
     }
 
-    var aria2 = new Aria2(scheme.rpcurl); //生成一个aria2对象
-    var termwiseType = 2;
     if (termwiseType == 0) //完全逐项
     {
         var illust = illusts.shift(); //读取首个作品
-        sendToAria2_Page(illust, 0, userInfo, scheme, downP, function() {
-            sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //发送下一个作品
+        sendToAria2_Page(aria2, illust, 0, userInfo, scheme, downP, function() {
+            sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback); //发送下一个作品
         })
         return; //不再继续执行
     }else if (termwiseType == 1) //部分逐项（每作品合并）
@@ -2551,7 +2584,7 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
         if (illust.filename == "limit_mypixiv") //无法查看的文件
         {
             downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
-            sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
+            sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback); //调用自身
             return;
         }
         var aria2_params = [];
@@ -2587,10 +2620,10 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
                 return;
             }
             downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
-            sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
+            sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback); //调用自身
         });
         return;
-    }else(termwiseType == 2) //不逐项，每作者合并
+    }else if(termwiseType == 2) //不逐项，每作者合并
     {
         var aria2_params = [];
         for (var illustIndex = 0; illustIndex < illusts.length; illustIndex++)
@@ -2626,21 +2659,19 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
                 }
             }
         }
-        console.log(aria2_params);
         aria2.system.multicall([aria2_params],function(res){
-            console.log(res);
             if (res === false) {
                 alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
                 return;
             }
             downP.progress.set((downP.current = downP.max) / downP.max); //直接加上所有页数
-            sendToAria2_illust([], userInfo, scheme, downP, callback); //调用自身
+            sendToAria2_illust(aria2, termwiseType, [], userInfo, scheme, downP, callback); //调用自身
         });
         return;
     }
 }
 //作品每页循环递归输出
-function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
+function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback) {
     if (pubd.downbreak) {
         GM_notification({text:"已中断向Aria2发送下载信息。但Aria2本身仍未停止下载已添加内容，请手动停止。", title:scriptName, image:scriptIcon});
         pubd.downbreak = false;
@@ -2669,7 +2700,6 @@ function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
         sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
         console.info("符合下载过滤器定义，跳过下载：", illust);
     } else {
-        var aria2 = new Aria2(scheme.rpcurl);
         var options = {
             "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
             "referer": "https://app-api.pixiv.net/",
