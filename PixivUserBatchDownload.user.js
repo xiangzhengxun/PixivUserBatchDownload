@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.52
+// @version		5.7.54
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -2482,7 +2482,7 @@ function buildDlgDownThis(touch, userid) {
             else if (termwiseType == 1)
                 dlg.log("开始按作品逐项发送（约 "+illustsItems.length+" 次请求），⏳请耐心等待。");
             else if (termwiseType == 2)
-                dlg.log("开始按作者发送，数据量较大时⏱️有较高延迟。\n-- ⏳请耐心等待，勿多次点击。");
+                dlg.log("开始按作者发送，数据量较大时有较高延迟。\n⏳请耐心等待完成通知，勿多次点击。");
             else
             {
                 alert("错误：未知的逐项模式" + termwiseType);
@@ -2495,16 +2495,16 @@ function buildDlgDownThis(touch, userid) {
             var aria2 = new Aria2(scheme.rpcurl); //生成一个aria2对象
             sendToAria2_illust(aria2, termwiseType, illustsItems, userInfo, scheme, downP, function() {
                 aria2 = null;
-                dlg.log(userInfo.user.name + " 下载信息发送完毕😄");
+                dlg.log("😄 " + userInfo.user.name + " 下载信息发送完毕");
                 
                 var ntype = parseInt(getValueDefault("pubd-noticeType", 0)); //获取结束后如何处理通知
                 var bodyText = "" + userInfo.user.name + " 的相关插画已全部发送到指定的Aria2";
                 if (ntype == 1)
-                    bodyText += "\n\n点击此通知🔙返回页面。";
+                    bodyText += "\n\n点击此通知 🔙返回 页面。";
                 else if (ntype == 2)
-                    bodyText += "\n\n点击此通知❌关闭页面。";
+                    bodyText += "\n\n点击此通知 ❌关闭 页面。";
                 else if (ntype == 3)
-                    bodyText += "\n\n通知结束时页面将🅰️❌自动关闭。";
+                    bodyText += "\n\n通知结束时页面将 🅰️自动❌关闭。";
                 GM_notification(
                     {
                         text:bodyText,
@@ -2679,7 +2679,13 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
         }
         aria2.system.multicall([aria2_params],function(res){
             if (res === false) {
-                alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
+                alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。不排除数据过大，可考虑使用逐项或半逐项模式。");
+                var l= JSON.stringify(aria2_params).length/1024;
+                console.error("Aria2接受失败。数据量在未添加token的情况下有" + (
+                    (l>1024)?
+                    ((l/1024)+"MB"):
+                    (l+"KB")
+                ),aria2_params);
                 return;
             }
             downP.progress.set((downP.current = downP.max) / downP.max); //直接加上所有页数
