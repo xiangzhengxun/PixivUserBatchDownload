@@ -169,6 +169,7 @@ dt:first-child
 .pubd-dialog
 {/*对话框*/
 	position: absolute;
+	overflow: auto;
 	left: calc(50vw - 210px);
 	top: 120px;
 	z-index: 9000;
@@ -530,7 +531,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 291px);
+	height: calc(100% - 369px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/
@@ -785,7 +786,7 @@ resize:none;
 	min-height: 40px;
 	width : calc(100% - 10px);
 	height : 100%;
-resize:none;
+	resize:none;
 }
 /*▲下载当前画师窗口内容*/
 }
