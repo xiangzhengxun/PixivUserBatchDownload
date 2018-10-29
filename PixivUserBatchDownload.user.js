@@ -1227,7 +1227,7 @@ function buildDlgConfig(touch) {
     var dt = dl.appendChild(document.createElement("dt"));
     var dd = dl.appendChild(document.createElement("dd"));
 
-    var frm = dd.appendChild(new Frame("点击、关闭作品发送完成的通知，或其自然消失时", "pubd-frm-clicknotification"));
+    var frm = dd.appendChild(new Frame("发送完成通知关闭时", "pubd-frm-clicknotification"));
     var radio0 = frm.content.appendChild(new LabelInput("什么也不做", "pubd-clicknotification", "pubd-clicknotification", "radio", "0", true));
     var radio1 = frm.content.appendChild(new LabelInput("激活该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "1", true));
     var radio2 = frm.content.appendChild(new LabelInput("关闭该窗口", "pubd-clicknotification", "pubd-clicknotification", "radio", "2", true));
@@ -1556,6 +1556,7 @@ function buildDlgConfig(touch) {
         if (dlg.downScheme.selectedOptions.length < 1) { alert("没有选中下载方案"); return; }
         if (dlg.mask_name.value.length < 1) { alert("掩码名称为空"); return; }
         if (dlg.mask_logic.value.length < 1) { alert("执行条件为空"); return; }
+        if (dlg.mask_content.value.indexOf("%{" + dlg.mask_logic.value + "}")>=0) { alert("该掩码调用自身，会形成死循环。"); return; }
         var schemeIndex = dlg.downScheme.selectedIndex;
         dlg.schemes[schemeIndex].mask.add(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
         dlg.addMask(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
@@ -2044,7 +2045,10 @@ function buildDlgDownThis(touch, userid) {
                 try {
                     var jo = JSON.parse(response.responseText);
                     if (jo.error) {
-                        console.error("错误：返回错误消息", jo, response);
+                        console.error(
+                            jo.error.message.indexOf("Error occurred at the OAuth process.") >= 0?
+                            "Token过期或错误":"错误：返回错误消息",
+                            jo, response);
                         //jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
                         //jo.error.user_message 是单行文本的错误信息
                         onload_hasError_Cb(jo);
@@ -2075,13 +2079,22 @@ function buildDlgDownThis(touch, userid) {
                 dlg.log("已经在进行分析操作了");
                 return;
             }
-            works.break = false;
-            works.runing = true;
+            works.break = false; //暂停flag为false
+            works.runing = true; //运行状态为true
 
-            dlg.textdown.disabled = true;
-            dlg.startdown.disabled = true;
-            dlg.progress.set(0);
-            dlg.logClear();
+            dlg.textdown.disabled = true; //禁用下载按钮
+            dlg.startdown.disabled = true; //禁用输出文本按钮
+            dlg.progress.set(0); //进度条归零
+            dlg.logClear(); //清空日志
+
+            //根据用户信息是否存在，决定分析用户还是图像
+            if (!dlg.user.done) {
+                startAnalyseUser(userid, contentType);
+            } else {
+                dlg.log("ID：" + userid + " 用户信息已存在");
+                startAnalyseWorks(dlg.user, contentType); //开始获取第一页
+            }
+
             function startAnalyseUser(userid, contentType) {
                 try { //为了避免不同网页重复获取Token，开始分析前先读取储存的Token。
                     pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
@@ -2102,7 +2115,7 @@ function buildDlgDownThis(touch, userid) {
                             illusts: jore.profile.total_illusts + jore.profile.total_manga,
                             bookmarks: jore.profile.total_illust_bookmarks_public,
                         });
-                        startAnalyseWorks(dlg.user, contentType); //开始获取第一页
+                        startAnalyseWorks(dlg.user, contentType); //分析完成后开始获取第一页
                     },
                     function(jore) { //onload_haserror_Cb //返回错误消息
                         works.runing = false;
@@ -2121,6 +2134,7 @@ function buildDlgDownThis(touch, userid) {
                             dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                             dlg.startdown.disabled = false;
                         }
+                        return;
                     },
                     function(re) { //onload_notjson_Cb //返回不是JSON
                         dlg.log("错误：返回不是JSON，或程序异常");
@@ -2134,15 +2148,7 @@ function buildDlgDownThis(touch, userid) {
                         dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                         dlg.startdown.disabled = false;
                     }
-                )
-            }
-
-            //根据用户信息是否存在，决定分析用户还是图像
-            if (!dlg.user.done) {
-                startAnalyseUser(userid, contentType);
-            } else {
-                dlg.log("ID：" + userid + " 用户信息已存在");
-                startAnalyseWorks(dlg.user, contentType); //开始获取第一页
+                );
             }
 
             //开始分析作品的前置操作
@@ -2198,13 +2204,13 @@ function buildDlgDownThis(touch, userid) {
                             });
                             return;
                         }
-                    }
-                    //没有动图则继续
+                    }//没有动图则继续
+                    
                     if (works.item.length < total)
                         dlg.log("可能因为权限原因，无法获取到所有 " + contentName);
 
                     //计算一下总页数
-                    var pageCount = works.item.reduce(function(pV,cItem){
+                    works.picCount = works.item.reduce(function(pV,cItem){
                         var page = cItem.page_count;
                         if (cItem.type == "ugoira" && cItem.ugoira_metadata) //动图
                         {
@@ -2212,8 +2218,8 @@ function buildDlgDownThis(touch, userid) {
                         }
                         return pV+=page;
                     },0);
-            
-                    dlg.log(contentName + " 共 " + works.item.length + " 件（约 " + pageCount + " 张图片）已获取完毕。");
+
+                    dlg.log(contentName + " 共 " + works.item.length + " 件（约 " + works.picCount + " 张图片）已获取完毕。");
                     dlg.progress.set(1);
                     works.runing = false;
                     works.next_url = "";
@@ -2229,7 +2235,7 @@ function buildDlgDownThis(touch, userid) {
                     dlg.log("检测到 " + contentName + " 中断进程命令");
                     works.break = false;
                     works.runing = false;
-                    dlg.textdown.disabled = false; //中断暂停时，可以操作目前的进度。
+                    dlg.textdown.disabled = false; //启用按钮，中断暂停时，可以操作目前的进度。
                     dlg.startdown.disabled = false;
                     return;
                 }
@@ -2284,10 +2290,23 @@ function buildDlgDownThis(touch, userid) {
                         analyseWorks(user, contentType, jore.next_url); //开始获取下一页
                     },
                     function(jore) { //onload_haserror_Cb //返回错误消息
-                        dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
                         works.runing = false;
-                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-                        dlg.startdown.disabled = false;
+                        //下面开始自动登陆
+                        if (jore.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
+                            dlg.log("Token过期或错误，需要重新登录");
+                            reLogin(
+                                function(){
+                                    dlg.log("重新登录成功。");
+                                    analyseWorks(user, contentType, apiurl);
+                                }
+                            );
+                        }else
+                        {
+                            dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+                            dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                            dlg.startdown.disabled = false;
+                        }
+                        return;
                     },
                     function(re) { //onload_notjson_Cb //返回不是JSON
                         dlg.log("错误：返回不是JSON，或程序异常");
@@ -2336,8 +2355,17 @@ function buildDlgDownThis(touch, userid) {
                         analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
                     },
                     function(jore) { //onload_haserror_Cb //返回错误消息
-                        dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
-                        if (work.restrict > 0) //非公共权限
+                        works.runing = false;
+                        //下面开始自动登陆
+                        if (jore.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
+                            dlg.log("Token过期或错误，需要重新登录");
+                            reLogin(
+                                function(){
+                                    dlg.log("重新登录成功。");
+                                    analyseUgoira(works, ugoirasItems, callback);
+                                }
+                            );
+                        }else if(work.restrict > 0) //非公共权限
                         { //添加一条空信息
                             work.ugoira_metadata = {
                                 frames: [],
@@ -2345,13 +2373,15 @@ function buildDlgDownThis(touch, userid) {
                                     medium: "",
                                 },
                             };
-                            dlg.log("跳过本条，获取下一条");
+                            dlg.log("无访问权限，跳过本条。");
                             analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
-                            return;
+                        }else
+                        {
+                            dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+                            dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                            dlg.startdown.disabled = false;
                         }
-                        works.runing = false;
-                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-                        dlg.startdown.disabled = false;
+                        return;
                     },
                     function(re) { //onload_notjson_Cb //返回不是JSON
                         dlg.log("错误：返回不是JSON，或程序异常");
@@ -2406,11 +2436,14 @@ function buildDlgDownThis(touch, userid) {
             var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
             var contentType = dlg.dcType[1].checked ? 1 : 0;
             var userInfo = dlg.user.info;
-            var illustsItems = contentType == 0 ? dlg.user.illusts.item : dlg.user.bookmarks.item; //将需要分析的数据储存到works里
+            var works = (contentType == 0 ? dlg.user.illusts : dlg.user.bookmarks);
+            var illustsItems = works.item.concat(); //为了不改变原数组，新建一个数组
 
             dlg.log("开始将作品逐项发送到Aria2，请耐心等待。");
             var downP = { progress: dlg.progress, current: 0, max: 0 };
-            downloadWork(scheme, userInfo, illustsItems, downP, function() {
+            downP.max = works.picCount; //获取总需要下载发送的页数
+    
+            sendToAria2_illust(illustsItems, userInfo, scheme, downP, function() {
                 dlg.log(userInfo.user.name + " 下载信息发送完毕😄");
                 
                 var ntype = parseInt(getValueDefault("pubd-noticeType", 0)); //获取结束后如何处理通知
@@ -2438,7 +2471,7 @@ function buildDlgDownThis(touch, userid) {
                             window.close();
                     },
                 );
-            }); //调用公用下载窗口
+            });
         }
         //启动初始化
     dlg.initialise = function() {
@@ -2483,26 +2516,8 @@ function NewDownSchemeArrayFromJson(jsonarr) {
     }
     return sarr;
 }
-//下载具体内容
-function downloadWork(scheme, userInfo, illustsItems, downP, callback) {
-    try {
-        var nillusts = illustsItems.concat(); //为了不改变原数组，新建一个数组
-        downP.max = nillusts.reduce(function(previous, current, index, array) {
-            var page_count = current.page_count;
-            if (current.type == "ugoira" && current.ugoira_metadata) //动图
-            {
-                page_count = current.ugoira_metadata.frames.length;
-            }
-            return previous + page_count;
-        }, 0); //获取总需要下载发送的页数
-
-        sendToAria2_illust(nillusts, userInfo, scheme, downP, callback);
-    } catch (e) {
-        console.error("PUBD：未知错误",e);
-    }
-}
 //作品循环递归输出
-function sendToAria2_illust(illusts, user, scheme, downP, callback) {
+function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
     if (illusts.length < 1) //做完了
     {
         callback();
@@ -2515,78 +2530,187 @@ function sendToAria2_illust(illusts, user, scheme, downP, callback) {
         return;
     }
 
-    var illust = illusts.shift(); //读取首个作品
-    var page_count = illust.page_count; //作品页数
-    if (illust.type == "ugoira" && illust.ugoira_metadata) //修改动图的页数
+    var aria2 = new Aria2(scheme.rpcurl); //生成一个aria2对象
+    var termwiseType = 2;
+    if (termwiseType == 0) //完全逐项
+    {
+        var illust = illusts.shift(); //读取首个作品
+        sendToAria2_Page(illust, 0, userInfo, scheme, downP, function() {
+            sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //发送下一个作品
+        })
+        return; //不再继续执行
+    }else if (termwiseType == 1) //部分逐项（每作品合并）
+    {
+        var illust = illusts.shift(); //读取首个作品
+        var page_count = illust.page_count; //作品页数
+        if (illust.type == "ugoira" && illust.ugoira_metadata) //修改动图的页数
+        {
+            page_count = illust.ugoira_metadata.frames.length;
+        }
+    
+        if (illust.filename == "limit_mypixiv") //无法查看的文件
+        {
+            downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+            sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
+            return;
+        }
+        var aria2_params = [];
+        for (page=0;page<page_count;page++)
+        {
+            if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
+                //跳过此次下载
+                downP.progress.set(++downP.current / downP.max); //设置进度
+                sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
+                console.info("符合下载过滤器定义，跳过下载：", illust);
+            } else {
+                var aria2_method = {'methodName':'aria2.addUri','params':[]}
+                var url = (scheme.https2http //https替换成http
+                            ? illust.url_without_page.replace(/^https:\/\//igm, "http://")
+                            : illust.url_without_page)
+                    + page + "." + illust.extention;
+                    aria2_method.params.push([url]); //添加下载链接
+                var options = {
+                    "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+                    "referer": "https://app-api.pixiv.net/",
+                    "user-agent": UA,
+                }
+                if (scheme.savedir.length > 0) {
+                    options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+                }
+                aria2_method.params.push(options);
+                aria2_params.push(aria2_method);
+            }
+        }
+        aria2.system.multicall([aria2_params],function(res){
+            if (res === false) {
+                alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
+                return;
+            }
+            downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+            sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
+        });
+        return;
+    }else(termwiseType == 2) //不逐项，每作者合并
+    {
+        var aria2_params = [];
+        for (var illustIndex = 0; illustIndex < illusts.length; illustIndex++)
+        {
+            var illust = illusts[illustIndex];
+            var page_count = illust.page_count; //作品页数
+            if (illust.type == "ugoira" && illust.ugoira_metadata) //修改动图的页数
+            {
+                page_count = illust.ugoira_metadata.frames.length;
+            }
+            for (page=0;page<page_count;page++)
+            {
+                if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
+                    //跳过此次下载
+                    console.info("符合下载过滤器定义，跳过下载：", illust);
+                } else {
+                    var aria2_method = {'methodName':'aria2.addUri','params':[]}
+                    var url = (scheme.https2http //https替换成http
+                                ? illust.url_without_page.replace(/^https:\/\//igm, "http://")
+                                : illust.url_without_page)
+                        + page + "." + illust.extention;
+                        aria2_method.params.push([url]); //添加下载链接
+                    var options = {
+                        "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+                        "referer": "https://app-api.pixiv.net/",
+                        "user-agent": UA,
+                    }
+                    if (scheme.savedir.length > 0) {
+                        options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+                    }
+                    aria2_method.params.push(options);
+                    aria2_params.push(aria2_method);
+                }
+            }
+        }
+        console.log(aria2_params);
+        aria2.system.multicall([aria2_params],function(res){
+            console.log(res);
+            if (res === false) {
+                alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
+                return;
+            }
+            downP.progress.set((downP.current = downP.max) / downP.max); //直接加上所有页数
+            sendToAria2_illust([], userInfo, scheme, downP, callback); //调用自身
+        });
+        return;
+    }
+}
+//作品每页循环递归输出
+function sendToAria2_Page(illust, page, userInfo, scheme, downP, callback) {
+    if (pubd.downbreak) {
+        GM_notification({text:"已中断向Aria2发送下载信息。但Aria2本身仍未停止下载已添加内容，请手动停止。", title:scriptName, image:scriptIcon});
+        pubd.downbreak = false;
+        return;
+    }
+    var page_count = illust.page_count;
+    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
     {
         page_count = illust.ugoira_metadata.frames.length;
     }
-
-    if (illust.filename == "limit_mypixiv") //无法查看的文件
+    if (page >= page_count || illust.filename == "limit_mypixiv") //无法查看的文件
     {
-        downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
-        sendToAria2_illust(illusts, user, scheme, downP, callback); //调用自身
+        if (illust.filename == "limit_mypixiv")
+            downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+        callback();
         return;
     }
-    var aria2_params = [];
-    for (page=0;page<page_count;page++)
-    {
-        if (returnLogicValue(scheme.downfilter, user, illust, page)) {
-            //跳过此次下载
-            downP.progress.set(++downP.current / downP.max); //设置进度
-            sendToAria2_Page(illust, ++page, user, scheme, downP, callback); //递归调用自身
-            console.info("符合下载过滤器定义，跳过下载：", illust);
-        } else {
-            var aria2_method = {'methodName':'aria2.addUri','params':[]}
-            var url = (scheme.https2http //https替换成http
-                        ? illust.url_without_page.replace(/^https:\/\//igm, "http://")
-                        : illust.url_without_page)
-                + page + "." + illust.extention;
-                aria2_method.params.push([url]); //添加下载链接
-            var options = {
-                "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, user, illust, page), 1),
-                "referer": "https://app-api.pixiv.net/",
-                "user-agent": UA,
-            }
-            if (scheme.savedir.length > 0) {
-                options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, user, illust, page), 0);
-            }
-            aria2_method.params.push(options);
-            aria2_params.push(aria2_method);
-        }
-    }
-    var aria2 = new Aria2(scheme.rpcurl);
-    aria2.system.multicall([aria2_params],function(res){
-        if (res === false) {
-            alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
-            return;
-        }
-        downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
-        sendToAria2_illust(illusts, user, scheme, downP, callback); //调用自身
-    });
-}
+    var url = (scheme.https2http ? illust.url_without_page.replace(/^https:\/\//igm, "http://") : illust.url_without_page) //https替换成http
+        +
+        page + "." + illust.extention;
 
+    //console.log(scheme.downfilter, returnLogicValue(scheme.downfilter, userInfo, illust, page));
+    if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
+        //跳过此次下载
+        downP.progress.set(++downP.current / downP.max); //设置进度
+        sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
+        console.info("符合下载过滤器定义，跳过下载：", illust);
+    } else {
+        var aria2 = new Aria2(scheme.rpcurl);
+        var options = {
+            "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+            "referer": "https://app-api.pixiv.net/",
+            "user-agent": UA,
+        }
+        if (scheme.savedir.length > 0) {
+            options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+        }
+        aria2.addUri(url, options, function(res) {
+            if (res === false) {
+                alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
+                return;
+            }
+            downP.progress.set(++downP.current / downP.max); //设置进度
+            sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
+        });
+    }
+}
 //返回掩码值
-function showMask(str, masklist, user, illust, page) {
-    var newTxt = str;
-    //var pattern = "%{([^}]+)}"; //旧的简单匹配
-    var pattern = "%{(.*?(?:[^\\\\](?:\\\\{2})+|[^\\\\]))}"; //新的支持转义符的
-    var rs = null;
-    while ((rs = new RegExp(pattern).exec(newTxt)) != null) {
-        var mskO = rs[0], //包含括号的原始掩码
-            mskN = rs[1]; //去掉掩码括号
+function showMask(oldStr, maskList, user, illust, page) {
+    var newStr = oldStr;
+    //var pattern = "%{([^}]+)}"; //旧的，简单匹配
+    var regPattern = "%{(.*?(?:[^\\\\](?:\\\\{2})+|[^\\\\]))}"; //新的，支持转义符
+    var regResult = null;
+
+    //不断循环直到没有掩码
+    while ((regResult = new RegExp(regPattern).exec(newStr)) != null) {
+        var mskO = regResult[0], //包含括号的原始掩码
+            mskN = regResult[1]; //去掉掩码括号
         if (mskN != undefined) {
             //去掉转义符的掩码名
             mskN = (mskN != undefined) ? mskN.replace(/\\{/ig, "{").replace(/\\}/ig, "}").replace(/\\\\/ig, "\\") : null;
             //搜寻自定义掩码
-            var mymask = masklist.filter(function(mask) { return mask.name == mskN; });
-            if (mymask.length > 0) { //如果有对应的自定义掩码
-                var mask = mymask[0];
+            var cusMasks = maskList.filter(function(mask) { return mask.name == mskN; });
+            if (cusMasks.length > 0) { //如果有对应的自定义掩码
+                var cusMask = cusMasks[0];
                 try {
-                    if (returnLogicValue(mask.logic, user, illust, page)) //mask的逻辑判断
-                        newTxt = newTxt.replace(mskO, mask.content);
+                    if (returnLogicValue(cusMask.logic, user, illust, page)) //mask的逻辑判断
+                        newStr = newStr.replace(mskO, cusMask.content);
                     else
-                        newTxt = newTxt.replace(mskO, "");
+                        newStr = newStr.replace(mskO, "");
                 } catch (e) {
                     console.error(mskO + " 自定义掩码出现了异常情况", e);
                 }
@@ -2594,18 +2718,18 @@ function showMask(str, masklist, user, illust, page) {
                 try {
                     var evTemp = eval(mskN);
                     if (evTemp != undefined)
-                        newTxt = newTxt.replace(mskO, evTemp.toString());
+                        newStr = newStr.replace(mskO, evTemp.toString());
                     else
-                        newTxt = newTxt.replace(mskO, "");
+                        newStr = newStr.replace(mskO, "");
                 } catch (e) {
-                    newTxt = newTxt.replace(mskO, "");
+                    newStr = newStr.replace(mskO, "");
                     console.error(mskO + " 掩码出现了异常情况", e);
                 }
             }
         }
     }
 
-    return newTxt;
+    return newStr;
 }
 //返回逻辑值
 function returnLogicValue(logic, user, illust, page) {
