@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.45
+// @version		5.7.46
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -2247,7 +2247,7 @@ function buildDlgDownThis(touch, userid) {
                     dlg.textdown.disabled = false;
                     dlg.startdown.disabled = false;
                     if (getValueDefault("pubd-autodownload",false)) { //自动开始
-                        dlg.log("自动开始发送");
+                        dlg.log("🅰️自动开始发送");
                         dlg.startdownload();
                     }
                     return;
@@ -2462,11 +2462,11 @@ function buildDlgDownThis(touch, userid) {
 
             var termwiseType = parseInt(getValueDefault("pubd-termwiseType", 0));
             if (termwiseType == 0)
-                dlg.log("开始按图片逐项发送（约 "+works.picCount+" 次请求），请耐心等待。");
+                dlg.log("开始按图片逐项发送（约 "+works.picCount+" 次请求），⏳请耐心等待。");
             else if (termwiseType == 1)
-                dlg.log("开始按作品逐项发送（约 "+illustsItems.length+" 次请求），请耐心等待。");
+                dlg.log("开始按作品逐项发送（约 "+illustsItems.length+" 次请求），⏳请耐心等待。");
             else if (termwiseType == 2)
-                dlg.log("开始按作者发送（1次请求），单次数据量可能较大。");
+                dlg.log("开始按作者发送，数据量较大时⏱️有较高延迟。\n-- ⏳请耐心等待，勿多次点击。");
             else
             {
                 alert("错误：未知的逐项模式" + termwiseType);
