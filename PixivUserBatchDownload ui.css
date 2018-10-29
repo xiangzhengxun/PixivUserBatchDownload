@@ -1,7 +1,7 @@
 ﻿@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
-.display-none,.pubd-alert-8
+.display-none,.pubd-alert-9
 {/*任何需要隐藏的*/
 	display:none !important;
 }
