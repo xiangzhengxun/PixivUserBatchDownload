@@ -571,7 +571,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-textout-bar
 {/*文本输出模式格式-dd*/
-	height: calc(100% - 360px);
+	height: calc(100% - 338px);
 	min-height: 32px;
 }
 .pubd-config .pubd-mask-list-bar
