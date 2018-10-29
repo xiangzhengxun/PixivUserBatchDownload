@@ -173,7 +173,6 @@ dt:first-child
 	top: 120px;
 	z-index: 9000;
 	min-width: 210px;
-overflow: auto;
 	resize:both;
 	padding: 30px 8px 8px 8px;
 	background-color: RGBA(191,214,236,0.7);

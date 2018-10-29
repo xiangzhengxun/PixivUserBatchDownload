@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.6.42
+// @version		5.6.45
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -32,7 +32,6 @@
 // @connect     127.0.0.1
 // ==/UserScript==
 
-//console.log(GM_xmlhttpRequest, GM_getValue, GM_setValue, GM_deleteValue, GM_listValues);
 /*
  * 公共变量区
  */
@@ -1694,6 +1693,43 @@ function buildDlgConfig(touch) {
     };
     return dlg;
 }
+
+//重新登陆
+function reLogin(onload_suceess_Cb)
+{
+    var dlgLogin = pubd.dialog.login;
+    if (pubd.auth.save_account) {
+        dlgLogin.show();
+        dlgLogin.error.replace("正在自动登陆");
+
+        pubd.auth.login(
+            function(jore) { //onload_suceess_Cb
+                dlgLogin.error.replace("登录成功");
+                //pubd.dialog.config.start_token_animate();
+                dlgLogin.cptBtns.close.click();
+
+                //如果设置窗口运行着的话还启动动画
+                if (!pubd.dialog.config.classList.contains("display-none"))
+                    pubd.dialog.config.start_token_animate();
+                //调用成功后函数
+                onload_suceess_Cb(jore);
+            },
+            function(jore) { //onload_haserror_Cb //返回错误消息
+                dlgLogin.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
+            },
+            function(re) { //onload_notjson_Cb //返回不是JSON
+                dlgLogin.error.replace("返回不是JSON，或程序异常");
+            },
+            function(re) { //onerror_Cb //AJAX发送失败
+                dlgLogin.error.replace("AJAX发送失败");
+            }
+        );
+    }else
+    {
+        dlgLogin.error.replace("请手动登陆后重新执行");
+    }
+}
+
 //构建登陆对话框
 function buildDlgLogin(touch) {
     var dlg = new Dialog("登陆账户", "pubd-login", "pubd-login");
@@ -2012,39 +2048,6 @@ function buildDlgDownThis(touch, userid) {
                         //jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
                         //jo.error.user_message 是单行文本的错误信息
                         onload_hasError_Cb(jo);
-                        //下面开始自动登陆
-                        if (jo.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
-                            dlg.log("Token过期或错误，需要重新登录");
-                            if (pubd.auth.save_account) {
-                                dlg.log("检测到已保存账户密码，开始自动登录");
-                                var dlgLogin = pubd.dialog.login;
-                                dlgLogin.show();
-
-                                pubd.auth.login(
-                                    function(jore) { //onload_suceess_Cb
-                                        dlgLogin.error.replace("登录成功");
-                                        //pubd.dialog.config.start_token_animate();
-                                        dlgLogin.cptBtns.close.click();
-                                        dlg.log("登录成功");
-
-                                        //如果设置窗口运行着的话还启动动画
-                                        if (!pubd.dialog.config.classList.contains("display-none"))
-                                            pubd.dialog.config.start_token_animate();
-                                        //回调自身
-                                        xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
-                                    },
-                                    function(jore) { //onload_haserror_Cb //返回错误消息
-                                        dlgLogin.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
-                                    },
-                                    function(re) { //onload_notjson_Cb //返回不是JSON
-                                        dlgLogin.error.replace("返回不是JSON，或程序异常");
-                                    },
-                                    function(re) { //onerror_Cb //AJAX发送失败
-                                        dlgLogin.error.replace("AJAX发送失败");
-                                    }
-                                );
-                            }
-                        }
                     } else { //登陆成功
                         //console.info("JSON返回成功",jo);
                         onload_suceess_Cb(jo);
@@ -2079,7 +2082,6 @@ function buildDlgDownThis(touch, userid) {
             dlg.startdown.disabled = true;
             dlg.progress.set(0);
             dlg.logClear();
-
             function startAnalyseUser(userid, contentType) {
                 try { //为了避免不同网页重复获取Token，开始分析前先读取储存的Token。
                     pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
@@ -2103,10 +2105,22 @@ function buildDlgDownThis(touch, userid) {
                         startAnalyseWorks(dlg.user, contentType); //开始获取第一页
                     },
                     function(jore) { //onload_haserror_Cb //返回错误消息
-                        dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
                         works.runing = false;
-                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-                        dlg.startdown.disabled = false;
+                        //下面开始自动登陆
+                        if (jore.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
+                            dlg.log("Token过期或错误，需要重新登录");
+                            reLogin(
+                                function(){
+                                    dlg.log("重新登录成功。");
+                                    startAnalyseUser(userid, contentType);
+                                }
+                            );
+                        }else
+                        {
+                            dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+                            dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                            dlg.startdown.disabled = false;
+                        }
                     },
                     function(re) { //onload_notjson_Cb //返回不是JSON
                         dlg.log("错误：返回不是JSON，或程序异常");
@@ -2397,14 +2411,14 @@ function buildDlgDownThis(touch, userid) {
             dlg.log("开始将作品逐项发送到Aria2，请耐心等待。");
             var downP = { progress: dlg.progress, current: 0, max: 0 };
             downloadWork(scheme, userInfo, illustsItems, downP, function() {
-                var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
+                dlg.log(userInfo.user.name + " 下载信息发送完毕😄");
+                
+                var ntype = parseInt(getValueDefault("pubd-noticeType", 0)); //获取结束后如何处理通知
                 var bodyText = "" + userInfo.user.name + " 的相关插画已全部发送到指定的Aria2";
                 if (ntype == 1)
                     bodyText += "\n\n点击此通知🔙返回页面。";
                 else if (ntype == 2)
                     bodyText += "\n\n通知结束页面将❎自动关闭。";
-                
-                dlg.log(userInfo.user.name + " 下载信息发送完毕😄");
                 GM_notification(
                     {
                         text:bodyText,
@@ -2488,7 +2502,7 @@ function downloadWork(scheme, userInfo, illustsItems, downP, callback) {
     }
 }
 //作品循环递归输出
-function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
+function sendToAria2_illust(illusts, user, scheme, downP, callback) {
     if (illusts.length < 1) //做完了
     {
         callback();
@@ -2511,44 +2525,44 @@ function sendToAria2_illust(illusts, userInfo, scheme, downP, callback) {
     if (illust.filename == "limit_mypixiv") //无法查看的文件
     {
         downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
-        sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
+        sendToAria2_illust(illusts, user, scheme, downP, callback); //调用自身
         return;
     }
-    var params = [];
+    var aria2_params = [];
     for (page=0;page<page_count;page++)
     {
-        if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
+        if (returnLogicValue(scheme.downfilter, user, illust, page)) {
             //跳过此次下载
             downP.progress.set(++downP.current / downP.max); //设置进度
-            sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
+            sendToAria2_Page(illust, ++page, user, scheme, downP, callback); //递归调用自身
             console.info("符合下载过滤器定义，跳过下载：", illust);
         } else {
-            var aMethod = {'methodName':'aria2.addUri','params':[]}
+            var aria2_method = {'methodName':'aria2.addUri','params':[]}
             var url = (scheme.https2http //https替换成http
                         ? illust.url_without_page.replace(/^https:\/\//igm, "http://")
                         : illust.url_without_page)
                 + page + "." + illust.extention;
-            aMethod.params.push([url]); //添加下载链接
+                aria2_method.params.push([url]); //添加下载链接
             var options = {
-                "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
+                "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, user, illust, page), 1),
                 "referer": "https://app-api.pixiv.net/",
                 "user-agent": UA,
             }
             if (scheme.savedir.length > 0) {
-                options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+                options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, user, illust, page), 0);
             }
-            aMethod.params.push(options);
-            params.push(aMethod);
+            aria2_method.params.push(options);
+            aria2_params.push(aria2_method);
         }
     }
     var aria2 = new Aria2(scheme.rpcurl);
-    aria2.system.multicall([params],function(res){
+    aria2.system.multicall([aria2_params],function(res){
         if (res === false) {
             alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。");
             return;
         }
         downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
-        sendToAria2_illust(illusts, userInfo, scheme, downP, callback); //调用自身
+        sendToAria2_illust(illusts, user, scheme, downP, callback); //调用自身
     });
 }
 
@@ -2609,7 +2623,7 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 { //keepTree表示是否要保留目录树的字符（\、/和:）
     if (typeof(str) == "undefined")
     {
-        return new String();
+        return "";
     }
     var nstr = str; //新字符
     nstr = nstr.toString();
