@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.50
+// @version		5.7.52
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -227,7 +227,7 @@ if (typeof(GM_notification) == "undefined") {
 
 //留空函数
 if (typeof(GM_addValueChangeListener) == "undefined") {
-    var GM_listValues = function() {return;}
+    var GM_addValueChangeListener = function() {return;}
 }
 if (typeof(GM_registerMenuCommand) == "undefined") {
     var GM_registerMenuCommand = function() {return;}
@@ -1057,7 +1057,7 @@ function buildbtnMenu(touch) {
         menu.add("下载该画师", "pubd-menu-this-user", function(e) {
             pubd.dialog.downthis.show(
                 (document.body.clientWidth - 440)/2,
-                (e.pageY>100?e.pageY - 100:0)
+                window.pageYOffset+100
             );
             menu.hide();
         });
@@ -1098,7 +1098,7 @@ function buildbtnMenu(touch) {
         menu.add("选项", "pubd-menu-setting", function(e) {
             pubd.dialog.config.show(
                 (document.body.clientWidth - 400)/2,
-                (e.pageY>150?e.pageY - 150:0)
+                window.pageYOffset+50
             );
             menu.hide();
         });
@@ -1201,7 +1201,7 @@ function buildDlgConfig(touch) {
     ipt.onclick = function(e) {
         pubd.dialog.login.show(
             (document.body.clientWidth - 370)/2,
-            (e.pageY>50?e.pageY - 50:0)
+            window.pageYOffset+200
         );
     }
     dd.appendChild(ipt);
@@ -1737,7 +1737,7 @@ function reLogin(onload_suceess_Cb)
 {
     var dlgLogin = pubd.dialog.login;
     if (pubd.auth.save_account) {
-        dlgLogin.show((document.body.clientWidth - 370)/2, window.pageYOffset+150);
+        dlgLogin.show((document.body.clientWidth - 370)/2, window.pageYOffset+200);
         dlgLogin.error.replace("正在自动登陆");
 
         pubd.auth.login(
@@ -2826,6 +2826,7 @@ function findInsertPlace(touch, loggedIn) {
     } else {
         var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)>div") //2018年10月8日 新版用户资料首页
                                 ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
+                                //||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
                                 ||document.querySelector("._user-profile-card") //老版用户资料页
                                 ||document.querySelector(".ui-layout-west aside") //老版作品页
                                 ||document.querySelector(".introduction") //未登录页面
