@@ -2486,7 +2486,9 @@ function buildDlgDownThis(touch, userid) {
                 if (ntype == 1)
                     bodyText += "\n\n点击此通知🔙返回页面。";
                 else if (ntype == 2)
-                    bodyText += "\n\n通知结束页面将❎自动关闭。";
+                    bodyText += "\n\n点击此通知❌关闭页面。";
+                else if (ntype == 3)
+                    bodyText += "\n\n通知结束时页面将🅰️❌自动关闭。";
                 GM_notification(
                     {
                         text:bodyText,
