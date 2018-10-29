@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.48
+// @version		5.7.50
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -616,7 +616,9 @@ var Dialog = (function() {
                 return;
             }
             //窗口显示
-        dlg.show = function() {
+        dlg.show = function(posX, posY) {
+                if (posX) dlg.style.left = posX + "px";
+                if (posY) dlg.style.top = posY + "px";
                 this.initialise();
                 this.classList.remove("display-none");
                 this.active();
@@ -1052,8 +1054,11 @@ function buildbtnMenu(touch) {
         */
         var menu = new pubdMenu(touch, "pubd-menu-main");
         menu.id = "pubd-menu";
-        menu.add("下载该画师", "pubd-menu-this-user", function() {
-            pubd.dialog.downthis.show();
+        menu.add("下载该画师", "pubd-menu-this-user", function(e) {
+            pubd.dialog.downthis.show(
+                (document.body.clientWidth - 440)/2,
+                (e.pageY>100?e.pageY - 100:0)
+            );
             menu.hide();
         });
         /*
@@ -1090,8 +1095,11 @@ function buildbtnMenu(touch) {
         }
         */
         menu.add(0);
-        menu.add("选项", "pubd-menu-setting", function() {
-            pubd.dialog.config.show();
+        menu.add("选项", "pubd-menu-setting", function(e) {
+            pubd.dialog.config.show(
+                (document.body.clientWidth - 400)/2,
+                (e.pageY>150?e.pageY - 150:0)
+            );
             menu.hide();
         });
     }
@@ -1190,8 +1198,11 @@ function buildDlgConfig(touch) {
     ipt.type = "button";
     ipt.className = "pubd-tologin";
     ipt.value = "账户登陆"
-    ipt.onclick = function() {
-        pubd.dialog.login.show();
+    ipt.onclick = function(e) {
+        pubd.dialog.login.show(
+            (document.body.clientWidth - 370)/2,
+            (e.pageY>50?e.pageY - 50:0)
+        );
     }
     dd.appendChild(ipt);
 
@@ -1627,7 +1638,12 @@ function buildDlgConfig(touch) {
     ipt.className = "pubd-reset";
     ipt.value = "清空选项"
     ipt.onclick = function() {
-        dlg.reset();
+        if (confirm("您确定要将PUBD保存的所有设置，以及方案全部删除吗？\n（⚠️不可恢复）")==true){
+            dlg.reset();
+            return true;
+        }else{
+            return false;
+        }
     }
     dd.appendChild(ipt);
     var ipt = document.createElement("input");
@@ -1721,7 +1737,7 @@ function reLogin(onload_suceess_Cb)
 {
     var dlgLogin = pubd.dialog.login;
     if (pubd.auth.save_account) {
-        dlgLogin.show();
+        dlgLogin.show((document.body.clientWidth - 370)/2, window.pageYOffset+150);
         dlgLogin.error.replace("正在自动登陆");
 
         pubd.auth.login(
@@ -2808,7 +2824,7 @@ function findInsertPlace(touch, loggedIn) {
         clearInterval(findInsertPlaceHook);
         return;
     } else {
-        var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(3)") //2018年10月8日 新版用户资料首页
+        var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)>div") //2018年10月8日 新版用户资料首页
                                 ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
                                 ||document.querySelector("._user-profile-card") //老版用户资料页
                                 ||document.querySelector(".ui-layout-west aside") //老版作品页
@@ -2824,7 +2840,7 @@ function findInsertPlace(touch, loggedIn) {
         }
 
         //生成警告
-        var showAlert = btnStartInsertPlace.appendChild(document.createElement("h1"));
+        var showAlert = btnStartInsertPlace.appendChild(document.createElement("span"));
         showAlert.className = "pubd-alert-" + pubd.cssVersion;
         showAlert.innerHTML = '你没有正确安装用户样式，或用户样式已过期，或用户样式没过期但脚本过期，请访问<a href="https://github.com/Mapaler/PixivUserBatchDownload" target="_blank">PUBD发布页</a>更新版本。';
         //操作按钮
@@ -2856,8 +2872,8 @@ function start(touch) {
     pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
     pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch));
 
-    GM_registerMenuCommand("PUBD-下载该画师", function(){pubd.dialog.downthis.show();});
-    GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show();});
+    GM_registerMenuCommand("PUBD-下载该画师", function(){pubd.dialog.downthis.show((document.body.clientWidth - 440)/2, window.pageYOffset+100)});
+    GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show((document.body.clientWidth - 400)/2, window.pageYOffset+50);});
     //循环寻找插入点
     findInsertPlaceHook = setInterval(function(){
         findInsertPlace(touch, pubd.loggedIn);

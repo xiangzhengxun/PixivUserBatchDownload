@@ -13,6 +13,8 @@
 .pubd-btnStartInsertPlace
 {
 	position: relative;
+	flex: 1;
+	text-align: right;
 }
 .pubd-start
 {/*开始按钮*/
