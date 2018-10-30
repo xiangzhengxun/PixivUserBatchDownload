@@ -51,3 +51,10 @@ PixivUserBatchDownload 5 Copyright(C) 2018 by Mapaler
 - [x] 使用system.multicall加快Aria2请求速度
 - [ ] 自动清除Aria2下载完成项目
 - [ ] WebSocket协议
+
+## 友情链接
+[仙尊 Pixiv 图片批量下载器](https://github.com/xuejianxianzun/XZPixivDownloader)  
+功能介绍：  
+* 支持搜索页面、相关作品等的按类型下载功能。（PUBD专做按作者下载）
+* 调用浏览器自身下载，不需要第三方软件。
+* 还增加了一些辅助功能，如去除广告、快速收藏、看图模式等。
