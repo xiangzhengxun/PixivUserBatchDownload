@@ -55,6 +55,7 @@ PixivUserBatchDownload 5 Copyright(C) 2018 by Mapaler
 ## 友情链接
 [仙尊 Pixiv 图片批量下载器](https://github.com/xuejianxianzun/XZPixivDownloader)  
 功能介绍：  
-* 支持搜索页面、相关作品等的按类型下载功能。（PUBD专做按作者下载）
-* 调用浏览器自身下载，不需要第三方软件。
-* 还增加了一些辅助功能，如去除广告、快速收藏、看图模式等。
+* 支持多种页面里的批量下载，可以设置多种筛选条件
+* 有一些辅助功能，如去除广告、快速收藏、看图模式等
+* 下载不依赖第三方工具
+* 支持多语言（机翻）
