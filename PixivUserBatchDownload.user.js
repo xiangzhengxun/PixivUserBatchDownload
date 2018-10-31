@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.55
+// @version		5.7.56
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -2539,8 +2539,8 @@ function buildDlgDownThis(touch, userid) {
         if (getValueDefault("pubd-autoanalyse",false)) {
             if (!dlg.uinfo.userid) {
                 dlg.uinfo.userid = parseInt(prompt("没有用户ID，请手动输入。", "ID错误"));
+                dlg.uinfo.set({id: dlg.uinfo.userid});
             }
-            dlg.uinfo.set({id: userid});  
             dlg.analyse(dcType, dlg.uinfo.userid);
         }
 
