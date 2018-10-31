@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.54
+// @version		5.7.55
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -1668,7 +1668,7 @@ function buildDlgConfig(touch) {
                 return item.checked;
             });
             //逐项发送模式
-            var termwiseType = 0;
+            var termwiseType = 2;
             dlg.termwiseType.some(function(item){
                 if (item.checked) termwiseType = item.value;
                 return item.checked;
@@ -1721,7 +1721,7 @@ function buildDlgConfig(touch) {
         dlg.autoanalyse.checked = getValueDefault("pubd-autoanalyse", false);
         dlg.autodownload.checked = getValueDefault("pubd-autodownload", false);
         (dlg.noticeType[parseInt(getValueDefault("pubd-noticeType", 0))] || dlg.noticeType[0]).checked = true;
-        (dlg.termwiseType[parseInt(getValueDefault("pubd-termwiseType", 0))] || dlg.termwiseType[0]).checked = true;
+        (dlg.termwiseType[parseInt(getValueDefault("pubd-termwiseType", 0))] || dlg.termwiseType[2]).checked = true;
 
         //pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0)); //重新读取下载方案（可能被其他页面修改的）
         dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
@@ -2147,6 +2147,7 @@ function buildDlgDownThis(touch, userid) {
                         dlg.user.done = true;
                         dlg.user.info = Object.assign(dlg.user.info, jore);
                         dlg.uinfo.set({
+                            id: userid,
                             head: jore.user.profile_image_urls.medium,
                             name: jore.user.name,
                             illusts: jore.profile.total_illusts + jore.profile.total_manga,
@@ -2476,7 +2477,7 @@ function buildDlgDownThis(touch, userid) {
             var works = (contentType == 0 ? dlg.user.illusts : dlg.user.bookmarks);
             var illustsItems = works.item.concat(); //为了不改变原数组，新建一个数组
 
-            var termwiseType = parseInt(getValueDefault("pubd-termwiseType", 0));
+            var termwiseType = parseInt(getValueDefault("pubd-termwiseType", 2));
             if (termwiseType == 0)
                 dlg.log("开始按图片逐项发送（约 "+works.picCount+" 次请求），⏳请耐心等待。");
             else if (termwiseType == 1)
@@ -2538,7 +2539,8 @@ function buildDlgDownThis(touch, userid) {
         if (getValueDefault("pubd-autoanalyse",false)) {
             if (!dlg.uinfo.userid) {
                 dlg.uinfo.userid = parseInt(prompt("没有用户ID，请手动输入。", "ID错误"));
-            }    
+            }
+            dlg.uinfo.set({id: userid});  
             dlg.analyse(dcType, dlg.uinfo.userid);
         }
 
