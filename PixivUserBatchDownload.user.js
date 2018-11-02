@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.58
+// @version		5.7.59
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -1712,7 +1712,7 @@ function buildDlgConfig(touch) {
         dlg.autoanalyse.checked = getValueDefault("pubd-autoanalyse", false);
         dlg.autodownload.checked = getValueDefault("pubd-autodownload", false);
         (dlg.noticeType[parseInt(getValueDefault("pubd-noticeType", 0))] || dlg.noticeType[0]).checked = true;
-        (dlg.termwiseType[parseInt(getValueDefault("pubd-termwiseType", 0))] || dlg.termwiseType[2]).checked = true;
+        (dlg.termwiseType[parseInt(getValueDefault("pubd-termwiseType", 2))] || dlg.termwiseType[2]).checked = true;
 
         //pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0)); //重新读取下载方案（可能被其他页面修改的）
         dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
@@ -2575,7 +2575,6 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
         pubd.downbreak = false;
         return;
     }
-
     if (termwiseType == 0) //完全逐项
     {
         var illust = illusts.shift(); //读取首个作品
@@ -2603,8 +2602,8 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
         {
             if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
                 //跳过此次下载
-                sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
                 //console.info("符合下载过滤器定义，跳过下载：", illust);
+                continue;
             } else {
                 var aria2_method = {'methodName':'aria2.addUri','params':[]};
                 var url = (scheme.https2http //https替换成http
@@ -2683,7 +2682,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
         {
             aria2.system.multicall([aria2_params],function(res){
                 if (res === false) {
-                    alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。不排除数据过大，可考虑使用逐项或半逐项模式。");
+                    alert("发送到指定的Aria2失败，请检查到Aria2连接是否正常。不排除数据过大，可考虑临时使用逐项或半逐项模式。");
                     var l= JSON.stringify(aria2_params).length/1024;
                     console.error("Aria2接受失败。数据量在未添加token的情况下有" + (
                         (l>1024)?
@@ -2715,7 +2714,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
     {
         page_count = illust.ugoira_metadata.frames.length;
     }
-    if (page >= page_count || illust.filename == "limit_mypixiv") //无法查看的文件和页数到达
+    if (page >= page_count || illust.filename == "limit_mypixiv") //无法查看的文件和本作品页数已经完毕
     {
         if (illust.filename == "limit_mypixiv")
             downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
@@ -2730,7 +2729,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
     if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
         //跳过此次下载
         downP.progress.set(++downP.current / downP.max); //设置进度
-        sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
+        sendToAria2_Page(aria2, illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
         //console.info("符合下载过滤器定义，跳过下载：", illust);
     } else {
         var options = {
@@ -2738,6 +2737,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
             "referer": "https://app-api.pixiv.net/",
             "user-agent": UA,
         }
+
         if (scheme.savedir.length > 0) {
             options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
         }
@@ -2747,7 +2747,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
                 return;
             }
             downP.progress.set(++downP.current / downP.max); //设置进度
-            sendToAria2_Page(illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
+            sendToAria2_Page(aria2, illust, ++page, userInfo, scheme, downP, callback); //递归调用自身
         });
     }
 }
