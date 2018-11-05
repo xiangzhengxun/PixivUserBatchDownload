@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.59
+// @version		5.7.60
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -25,11 +25,12 @@
 // @grant       GM_deleteValue
 // @grant       GM_listValues
 // @grant       GM_addValueChangeListener
-// -@grant       GM_notification
+//-@grant       GM_notification
 // @grant       GM_registerMenuCommand
 // @connect     localhost
 // @connect     pixiv.net
 // @connect     127.0.0.1
+// @connect     *
 // ==/UserScript==
 
 /*
