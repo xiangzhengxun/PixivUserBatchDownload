@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.60
+// @version		5.7.61
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -59,7 +59,8 @@ var scriptVersion = typeof(GM_info) != "undefined" ? GM_info.script.version : "L
 var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
 
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
-var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
+var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
+var limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 
 var UA = "PixivAndroidApp/5.0.115 (Android 9.0.0; Android SDK built for x86)"; //向P站请求数据时的UA
 var thisPageUserid = 0; //当前页面的画师ID
@@ -985,7 +986,7 @@ var Aria2 = (function() {
         };
         _this.system = {
             multicall:function(params,callback){
-                request(_this.jsonrpc_path, 'system.multicall', params, callback, true);
+                request(_this.jsonrpc_path, 'system.multicall', params, callback);
             },
         };
         return this;
@@ -2438,16 +2439,16 @@ function buildDlgDownThis(touch, userid) {
             dlg.log("正在生成文本信息");
 
             try {
-                var outTxtArr = illustsItems.map(function(item) {
-                    var page_count = item.page_count;
-                    if (item.type == "ugoira" && item.ugoira_metadata) //动图
+                var outTxtArr = illustsItems.map(function(illust) {
+                    var page_count = illust.page_count;
+                    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
                     {
-                        page_count = item.ugoira_metadata.frames.length;
+                        page_count = illust.ugoira_metadata.frames.length;
                     }
                     var outArr = []; //输出内容
                     for (var pi = 0; pi < page_count; pi++) {
-                        if (item.filename != "limit_mypixiv")
-                            outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
+                        if (!new RegExp(limitingFilenamePattern, "ig").exec(illust.filename))
+                            outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, illust, pi));
                     }
                     return outArr.join("");
                 });
@@ -2592,7 +2593,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
             page_count = illust.ugoira_metadata.frames.length;
         }
     
-        if (illust.filename == "limit_mypixiv") //无权查看的文件
+        if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) //无权查看的文件
         {
             downP.progress.set((downP.current += page_count) / downP.max); //直接加上一个作品所有页数
             sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback); //调用自身
@@ -2646,7 +2647,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
         for (var illustIndex = 0; illustIndex < illusts.length; illustIndex++)
         {
             var illust = illusts[illustIndex];
-            if (illust.filename == "limit_mypixiv") continue; //无权查看的文件，直接继续
+            if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) continue; //无权查看的文件，直接继续
 
             var page_count = illust.page_count; //作品页数
             if (illust.type == "ugoira" && illust.ugoira_metadata) //修改动图的页数
@@ -2711,14 +2712,17 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
         return;
     }
     var page_count = illust.page_count;
-    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
+    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图的帧数当页数
     {
         page_count = illust.ugoira_metadata.frames.length;
     }
-    if (page >= page_count || illust.filename == "limit_mypixiv") //无法查看的文件和本作品页数已经完毕
+    if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) //无法查看的文件，直接把page加到顶
     {
-        if (illust.filename == "limit_mypixiv")
-            downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+        page = page_count;
+        downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+    }
+    if (page >= page_count) //本作品页数已经完毕
+    {
         callback();
         return;
     }
