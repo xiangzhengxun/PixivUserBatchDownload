@@ -13,7 +13,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.61
+// @version		5.7.62
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -2447,8 +2447,12 @@ function buildDlgDownThis(touch, userid) {
                     }
                     var outArr = []; //输出内容
                     for (var pi = 0; pi < page_count; pi++) {
-                        if (!new RegExp(limitingFilenamePattern, "ig").exec(illust.filename))
+                        if (returnLogicValue(scheme.downfilter, userInfo, illust, pi) || new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) {
+                            //跳过此次输出
+                            continue;
+                        }else{
                             outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, illust, pi));
+                        }
                     }
                     return outArr.join("");
                 });
