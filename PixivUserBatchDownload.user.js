@@ -831,6 +831,102 @@ var Progress = (function() {
     };
 })();
 
+//创建 卡片类
+var InfoCard = (function() {
+
+    return function(datas,className) {
+        function Card (datas) {
+            var cardDiv = document.createElement("div");
+            cardDiv.className = "pubd-infoCard";
+            var thumbnailDiv = cardDiv.appendChild(document.createElement("div"));
+            thumbnailDiv.className = "pubd-infoCard-thumbnail";
+            var thumbnailImg = thumbnailDiv.appendChild(document.createElement("img"));
+            var infos = cardDiv.infos = cardDiv.appendChild(document.createElement("dl"));
+            
+            Object.defineProperty(cardDiv , "thumbnail", {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    return thumbnailImg.src;
+                },
+                set(url) {
+                    thumbnailImg.src = url;
+                }
+            });
+            return cardDiv;
+        }
+
+
+        var cardDiv = dcE("div");
+        cardDiv.className = "pubd-infoCard";
+        var thumbnailDiv = cardDiv.appendChild(dcE("div"));
+        thumbnailDiv.className = "pubd-infoCard-thumbnail";
+        var thumbnailImg = cardDiv.thumbnailImg = thumbnailDiv.appendChild(dcE("img"));
+        Object.defineProperty(cardDiv, "thumbnail", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return this.thumbnail;
+            },
+            set(url) {
+                this.thumbnail = url;
+            }
+        });
+        var propertiesObject = {};
+        datas.forEach(function(item){
+
+        });
+
+
+
+        var card = Object.create(cardDiv);
+
+        var uhead = uinfo.appendChild(dcE("div"));
+        uhead.className = "pubd-user-info-head";
+        var uhead_img = uinfo.uhead = uhead.appendChild(dcE("img"));
+
+        var infos = uinfo.infos = uinfo.appendChild(dcE("dl"));
+        infos.className = "pubd-user-info-dl";
+        //ID
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-user-info-id-dt";
+        dt.innerHTML = "ID";
+        var dd = uinfo.uid = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-user-info-id-dd";
+        dd.innerHTML = uinfo.userid;
+        //作品数
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-user-info-illusts-dt";
+        dt.innerHTML = "作品投稿数";
+        var dd = uinfo.uillusts = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-user-info-illusts-dd";
+        //昵称
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-user-info-name-dt";
+        dt.innerHTML = "昵称";
+        var dd = uinfo.uname = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-user-info-name-dd";
+        //收藏数
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-user-info-bookmarks-dt";
+        dt.innerHTML = "公开收藏数";
+        var dd = uinfo.ubookmarks = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-user-info-bookmarks-dd";
+
+        uinfo.set = function(obj) {
+            if (obj.id) {
+                uinfo.userid = obj.id;
+                uinfo.uid.innerHTML = obj.id;
+            }
+            if (obj.head) uinfo.uhead.src = obj.head;
+            if (obj.name) uinfo.uname.innerHTML = obj.name;
+            if (obj.illusts >= 0) uinfo.uillusts.innerHTML = obj.illusts;
+            if (obj.bookmarks >= 0) uinfo.ubookmarks.innerHTML = obj.bookmarks;
+        }
+        return uinfo;
+    };
+})();
+
 //创建用户卡片类
 var UserCard = (function() {
 
@@ -879,6 +975,59 @@ var UserCard = (function() {
             if (obj.name) uinfo.uname.innerHTML = obj.name;
             if (obj.illusts >= 0) uinfo.uillusts.innerHTML = obj.illusts;
             if (obj.bookmarks >= 0) uinfo.ubookmarks.innerHTML = obj.bookmarks;
+        }
+        return uinfo;
+    };
+})();
+
+//创建作品卡片类
+var IllustCard = (function() {
+
+    return function(illustid) {
+        var iinfo = dcE("div");
+        iinfo.illustid = illustid;
+        iinfo.className = "pubd-illust-info";
+        var ithumb = uinfo.appendChild(dcE("div"));
+        ithumb.className = "pubd-illust-info-thumbnail";
+        var ithumb_img = iinfo.thumbnail = ithumb.appendChild(dcE("img"));
+
+        var infos = iinfo.infos = iinfo.appendChild(dcE("dl"));
+        infos.className = "pubd-illust-info-dl";
+        //ID
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-illust-info-id-dt";
+        dt.innerHTML = "ID";
+        var dd = iinfo.id = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-illust-info-id-dd";
+        dd.innerHTML = iinfo.illustid;
+        //作品名称
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-illust-info-title-dt";
+        dt.innerHTML = "作品名称";
+        var dd = iinfo.title = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-illust-info-title-dd";
+        //作品类型
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-illust-info-type-dt";
+        dt.innerHTML = "作品类型";
+        var dd = iinfo.type = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-illust-info-type-dd";
+        //作品页数
+        var dt = infos.appendChild(dcE("dt"));
+        dt.className = "pubd-illust-info-pageCount-dt";
+        dt.innerHTML = "作品页数";
+        var dd = iinfo.pageCount = infos.appendChild(dcE("dd"));
+        dd.className = "pubd-illust-info-pageCount-dd";
+
+        iinfo.set = function(obj) {
+            if (obj.id) {
+                iinfo.illustid = obj.id;
+                iinfo.id.innerHTML = obj.id;
+            }
+            if (obj.thumbnail) iinfo.thumbnail.src = obj.thumbnail;
+            if (obj.title) iinfo.title.innerHTML = obj.title;
+            if (obj.type >= 0) iinfo.type.innerHTML = obj.type;
+            if (obj.pageCount >= 0) iinfo.pageCount.innerHTML = obj.pageCount;
         }
         return uinfo;
     };
@@ -1045,8 +1194,15 @@ function buildbtnMenu(touch) {
         */
         var menu = new pubdMenu(touch, "pubd-menu-main");
         menu.id = "pubd-menu";
-        menu.add("下载该画师", "pubd-menu-this-user", function(e) {
+        menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
             pubd.dialog.downthis.show(
+                (dBd.clientWidth - 440)/2,
+                window.pageYOffset+100
+            );
+            menu.hide();
+        });
+        menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
+            pubd.dialog.downillust.show(
                 (dBd.clientWidth - 440)/2,
                 window.pageYOffset+100
             );
@@ -2541,6 +2697,634 @@ function buildDlgDownThis(touch, userid) {
 
     return dlg;
 }
+//构建当前作品下载对话框
+function buildDlgDownIllust(touch) {
+    var dlg = new Dialog("下载当前作品", "pubd-downillust", "pubd-downillust");
+    dlg.illust = null; //当前处理对象
+
+    var dlgc = dlg.content;
+
+    var dl = dlgc.appendChild(dcE("dl"));
+
+    var dt = dl.appendChild(dcE("dt"));
+    var dd = dcE("dd");
+
+    var uinfo = new UserCard(userid ? userid : thisPageUserid); //创建当前用户信息卡
+
+    dlg.uinfo = uinfo;
+    dd.appendChild(uinfo);
+    dl.appendChild(dd);
+
+    var dt = dcE("dt");
+    dl.appendChild(dt);
+    dt.innerHTML = "";
+    var dd = dcE("dd");
+
+    var dt = dcE("dt");
+    dl.appendChild(dt);
+    dt.innerHTML = "信息获取进度";
+    var dd = dcE("dd");
+    var progress = new Progress("pubd-downthis-progress");
+    dlg.progress = progress;
+    dd.appendChild(progress);
+    dl.appendChild(dd);
+
+    var dt = dcE("dt");
+    dl.appendChild(dt);
+    dt.innerHTML = "进程日志";
+
+    var btnBreak = dcE("input");
+    btnBreak.type = "button";
+    btnBreak.className = "pubd-breakdown";
+    btnBreak.value = "中断操作";
+    btnBreak.onclick = function() {
+        dlg.user.illusts.break = true; //使作品中断
+        dlg.user.bookmarks.break = true; //使收藏中断
+        pubd.downbreak = true; //使下载中断
+    }
+    dt.appendChild(btnBreak);
+    var dd = dcE("dd");
+    var ipt = dcE("textarea");
+    ipt.readOnly = true;
+    ipt.className = "pubd-downthis-log";
+    ipt.wrap = "off";
+    dlg.logTextarea = ipt;
+    dd.appendChild(ipt);
+    dl.appendChild(dd);
+
+    //下载方案
+    dlg.schemes = null;
+
+    dlg.reloadSchemes = function() { //重新读取所有下载方案
+        dlg.schemes = pubd.downSchemes;
+
+        dlg.downScheme.options.length = 0;
+        dlg.schemes.forEach(function(item, index) {
+            dlg.downScheme.add(item.name, index);
+        })
+        if (getValueDefault("pubd-defaultscheme",0) >= 0)
+            dlg.selectScheme(getValueDefault("pubd-defaultscheme",0));
+        else if (dlg.downScheme.options.length > 0)
+            dlg.selectScheme(0);
+    }
+
+    //选择一个方案，同时读取设置
+    dlg.selectScheme = function(index) {
+        if (index == undefined) index = 0;
+        if (dlg.downScheme.options.length < 1 || dlg.downScheme.selectedOptions.length < 1) { return; }
+        dlg.downScheme.selectedIndex = index;
+    }
+
+    var dt = dcE("dt");
+    dl.appendChild(dt);
+    dt.innerHTML = "选择下载方案";
+    var dd = dcE("dd");
+    var slt = new Select("pubd-downscheme");
+    dlg.downScheme = slt;
+    dd.appendChild(slt);
+    dl.appendChild(dd);
+
+    //下载按钮栏
+    var dt = dcE("dt");
+    dl.appendChild(dt);
+    var dd = dcE("dd");
+    dd.className = "pubd-downthis-downbar"
+
+    var textdown = dcE("input");
+    textdown.type = "button";
+    textdown.className = "pubd-textdown";
+    textdown.value = "输出\n文本";
+    textdown.onclick = function() {
+        dlg.textdownload();
+    }
+    textdown.disabled = true;
+    dlg.textdown = textdown;
+    dd.appendChild(textdown);
+
+    var startdown = dcE("input");
+    startdown.type = "button";
+    startdown.className = "pubd-startdown";
+    startdown.value = "发送到Aria2";
+    startdown.onclick = function() {
+        dlg.startdownload();
+    }
+    startdown.disabled = true;
+    dlg.startdown = startdown;
+    dd.appendChild(startdown);
+    dl.appendChild(dd);
+
+    //文本输出栏
+    var dt = dcE("dt");
+    dl.appendChild(dt);
+    var dd = dcE("dd");
+    dd.className = "pubd-downthis-textout-bar"
+    dl.appendChild(dd);
+
+    var ipt = dcE("textarea");
+    ipt.readOnly = true;
+    ipt.className = "pubd-downthis-textout display-none";
+    ipt.wrap = "off";
+    dlg.textoutTextarea = ipt;
+    dd.appendChild(ipt);
+
+    //显示日志相关
+    dlg.logArr = []; //用于储存一行一行的日志信息。
+    dlg.logClear = function() {
+        dlg.logArr.length = 0;
+        this.logTextarea.value = "";
+    };
+    dlg.log = function(text) {
+        dlg.logArr.push(text);
+        this.logTextarea.value = this.logArr.join("\n");
+        this.logTextarea.scrollTop = this.logTextarea.scrollHeight;
+    };
+
+    function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
+        var headersObj = new HeadersObject();
+        var auth = pubd.auth;
+        if (auth.needlogin) {
+            var token_type = auth.response.token_type.substring(0, 1).toUpperCase() + auth.response.token_type.substring(1);
+            headersObj.Authorization = token_type + " " + auth.response.access_token;
+        } else {
+            console.info("非登录模式获取信息");
+        }
+        GM_xmlhttpRequest({
+            url: url,
+            method: "get",
+            responseType: "text",
+            headers: headersObj,
+            onload: function(response) {
+                try {
+                    var jo = JSON.parse(response.responseText);
+                    if (jo.error) {
+                        console.error(
+                            jo.error.message.indexOf("Error occurred at the OAuth process.") >= 0?
+                            "Token过期或错误":"错误：返回错误消息",
+                            jo, response);
+                        //jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
+                        //jo.error.user_message 是单行文本的错误信息
+                        onload_hasError_Cb(jo);
+                    } else { //登陆成功
+                        //console.info("JSON返回成功",jo);
+                        onload_suceess_Cb(jo);
+                    }
+                } catch (e) {
+                    console.error("错误：返回可能不是JSON，或程序异常", e, response);
+                    onload_notJson_Cb(response);
+                }
+            },
+            onerror: function(response) {
+                console.error("错误：AJAX发送失败", response);
+                onerror_Cb(response);
+            }
+        })
+    }
+
+    //分析
+    dlg.analyse = function(contentType, userid) {
+            if (!userid) {dlg.log("错误：没有用户ID。"); return;}
+            contentType = contentType == undefined ? 0 : parseInt(contentType);
+            var works = contentType == 0 ? dlg.user.illusts : dlg.user.bookmarks; //将需要分析的数据储存到works里
+            dlg.works = works;
+
+            if (works.runing) {
+                dlg.log("已经在进行分析操作了");
+                return;
+            }
+            works.break = false; //暂停flag为false
+            works.runing = true; //运行状态为true
+
+            dlg.textdown.disabled = true; //禁用下载按钮
+            dlg.startdown.disabled = true; //禁用输出文本按钮
+            dlg.progress.set(0); //进度条归零
+            dlg.logClear(); //清空日志
+
+            //根据用户信息是否存在，决定分析用户还是图像
+            if (!dlg.user.done) {
+                startAnalyseUser(userid, contentType);
+            } else {
+                dlg.log("ID：" + userid + " 用户信息已存在");
+                startAnalyseWorks(dlg.user, contentType); //开始获取第一页
+            }
+
+            function startAnalyseUser(userid, contentType) {
+                try { //为了避免不同网页重复获取Token，开始分析前先读取储存的Token。
+                    pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
+                } catch (e) {
+                    console.error("开始分析前，重新读取登录信息失败", e);
+                }
+
+                dlg.log("开始获取ID为 " + userid + " 的用户信息");
+                xhrGenneral(
+                    "https://app-api.pixiv.net/v1/user/detail?user_id=" + userid,
+                    function(jore) { //onload_suceess_Cb
+                        works.runing = true;
+                        dlg.user.done = true;
+                        dlg.user.info = Object.assign(dlg.user.info, jore);
+                        dlg.uinfo.set({
+                            id: userid,
+                            head: jore.user.profile_image_urls.medium,
+                            name: jore.user.name,
+                            illusts: jore.profile.total_illusts + jore.profile.total_manga,
+                            bookmarks: jore.profile.total_illust_bookmarks_public,
+                        });
+                        startAnalyseWorks(dlg.user, contentType); //分析完成后开始获取第一页
+                    },
+                    function(jore) { //onload_haserror_Cb //返回错误消息
+                        works.runing = false;
+                        //下面开始自动登陆
+                        if (jore.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
+                            dlg.log("Token过期或错误，需要重新登录");
+                            reLogin(
+                                function(){
+                                    dlg.log("重新登录成功。");
+                                    startAnalyseUser(userid, contentType);
+                                }
+                            );
+                        }else
+                        {
+                            dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+                            dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                            dlg.startdown.disabled = false;
+                        }
+                        return;
+                    },
+                    function(re) { //onload_notjson_Cb //返回不是JSON
+                        dlg.log("错误：返回不是JSON，或程序异常");
+                        works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
+                    },
+                    function(re) { //onerror_Cb //AJAX发送失败
+                        dlg.log("错误：AJAX发送失败");
+                        works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
+                    }
+                );
+            }
+
+            //开始分析作品的前置操作
+            function startAnalyseWorks(user, contentType) {
+                var uInfo = user.info;
+                var works, total, contentName, apiurl;
+                //获取作品,contentType == 0，获取收藏,contentType == 1
+                if (contentType == 0) {
+                    works = user.illusts;
+                    total = uInfo.profile.total_illusts + uInfo.profile.total_manga;
+                    contentName = "作品";
+                    apiurl = "https://app-api.pixiv.net/v1/user/illusts?user_id=" + uInfo.user.id;
+                } else {
+                    works = user.bookmarks;
+                    total = uInfo.profile.total_illust_bookmarks_public;
+                    contentName = "收藏";
+                    apiurl = "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=" + uInfo.user.id + "&restrict=public";
+                }
+                if (works.item.length > 0) { //断点续传
+                    dlg.log(contentName + " 断点续传进度 " + works.item.length + "/" + total);
+                    dlg.progress.set(works.item.length / total); //设置当前下载进度
+                    apiurl = works.next_url;
+                }
+                analyseWorks(user, contentType, apiurl); //开始获取第一页
+            }
+            //分析作品递归函数
+            function analyseWorks(user, contentType, apiurl) {
+                var uInfo = user.info;
+                var works, total, contentName;
+                if (contentType == 0) {
+                    works = user.illusts;
+                    total = uInfo.profile.total_illusts + uInfo.profile.total_manga;
+                    contentName = "作品";
+                } else {
+                    works = user.bookmarks;
+                    total = uInfo.profile.total_illust_bookmarks_public;
+                    contentName = "收藏";
+                }
+                if (works.done) {
+                    //返回所有动图
+                    var ugoiras = works.item.filter(function(item) {
+                        return item.type == "ugoira";
+                    })
+                    dlg.log("共存在 " + ugoiras.length + " 件动图");
+                    if (ugoiras.some(function(item) { //如果有没有帧数据的动图
+                            return item.ugoira_metadata == undefined;
+                        })) {
+                        if (!getValueDefault("pubd-getugoiraframe",true)) {
+                            dlg.log("由于用户设置，跳过获取动图帧数。");
+                        } else {
+                            analyseUgoira(works, ugoiras, function() { //开始分析动图
+                                analyseWorks(user, contentType, apiurl) //开始获取下一页
+                            });
+                            return;
+                        }
+                    }//没有动图则继续
+                    
+                    if (works.item.length < total)
+                        dlg.log("可能因为权限原因，无法获取到所有 " + contentName);
+
+                    //计算一下总页数
+                    works.picCount = works.item.reduce(function(pV,cItem){
+                        var page = cItem.page_count;
+                        if (cItem.type == "ugoira" && cItem.ugoira_metadata) //动图
+                        {
+                            page = cItem.ugoira_metadata.frames.length;
+                        }
+                        return pV+=page;
+                    },0);
+
+                    dlg.log(contentName + " 共 " + works.item.length + " 件（约 " + works.picCount + " 张图片）已获取完毕。");
+                    dlg.progress.set(1);
+                    works.runing = false;
+                    works.next_url = "";
+                    dlg.textdown.disabled = false;
+                    dlg.startdown.disabled = false;
+                    if (getValueDefault("pubd-autodownload",false)) { //自动开始
+                        dlg.log("🅰️自动开始发送");
+                        dlg.startdownload();
+                    }
+                    return;
+                }
+                if (works.break) {
+                    dlg.log("检测到 " + contentName + " 中断进程命令");
+                    works.break = false;
+                    works.runing = false;
+                    dlg.textdown.disabled = false; //启用按钮，中断暂停时，可以操作目前的进度。
+                    dlg.startdown.disabled = false;
+                    return;
+                }
+
+                xhrGenneral(
+                    apiurl,
+                    function(jore) { //onload_suceess_Cb
+                        works.runing = true;
+                        var illusts = jore.illusts;
+                        for (var ii = 0, ii_len = illusts.length; ii < ii_len; ii++) {
+                            var work = illusts[ii];
+                            var original;
+                            if (work.page_count > 1) { /*漫画多图*/
+                                original = work.meta_pages[0].image_urls.original;
+                            } else { /*单张图片或动图，含漫画单图*/
+                                original = work.meta_single_page.original_image_url;
+                            }
+                            var regSrc = new RegExp(illustPattern, "ig");
+                            var regRes = regSrc.exec(original);
+                            if (regRes) {
+                                //然后添加扩展名等
+                                work.url_without_page = regRes[1];
+                                work.domain = regRes[2];
+                                work.filename = regRes[3];
+                                work.token = regRes[4];
+                                work.extention = regRes[5];
+                            } else {
+                                var regSrcL = new RegExp(limitingPattern, "ig");
+                                var regResL = regSrcL.exec(original);
+                                if (regResL) {
+                                    dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
+                                    //console.log(work);
+                                    work.url_without_page = regResL[1];
+                                    work.domain = regResL[2];
+                                    work.filename = regResL[3];
+                                    work.token = regResL[4];
+                                    work.extention = regResL[5];
+                                } else {
+                                    dlg.log(contentName + " " + work.id + " 原图格式未知。");
+                                }
+                            }
+
+                            works.item.push(work);
+                        }
+                        dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
+                        if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
+                        if (jore.next_url) { //还有下一页
+                            works.next_url = jore.next_url;
+                        } else { //没有下一页
+                            works.done = true;
+                        }
+                        analyseWorks(user, contentType, jore.next_url); //开始获取下一页
+                    },
+                    function(jore) { //onload_haserror_Cb //返回错误消息
+                        works.runing = false;
+                        //下面开始自动登陆
+                        if (jore.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
+                            dlg.log("Token过期或错误，需要重新登录");
+                            reLogin(
+                                function(){
+                                    dlg.log("重新登录成功。");
+                                    analyseWorks(user, contentType, apiurl);
+                                }
+                            );
+                        }else
+                        {
+                            dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+                            dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                            dlg.startdown.disabled = false;
+                        }
+                        return;
+                    },
+                    function(re) { //onload_notjson_Cb //返回不是JSON
+                        dlg.log("错误：返回不是JSON，或程序异常");
+                        works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
+                    },
+                    function(re) { //onerror_Cb //AJAX发送失败
+                        dlg.log("错误：AJAX发送失败");
+                        works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
+                    }
+                )
+            }
+
+            function analyseUgoira(works, ugoirasItems, callback) {
+                var dealItems = ugoirasItems.filter(function(item) {
+                    return (item.type == "ugoira" && item.ugoira_metadata == undefined);
+                })
+                if (dealItems.length < 1) {
+                    dlg.log("动图获取完毕");
+                    dlg.progress.set(1); //设置当前下载进度
+                    callback();
+                    return;
+                }
+                if (works.break) {
+                    dlg.log("检测到中断进程命令");
+                    works.break = false;
+                    works.runing = false;
+                    dlg.textdown.disabled = false; //中断暂停时，可以操作目前的进度。
+                    dlg.startdown.disabled = false;
+                    return;
+                }
+
+                var work = dealItems[0]; //当前处理的图
+
+                xhrGenneral(
+                    "https://app-api.pixiv.net/v1/ugoira/metadata?illust_id=" + work.id,
+                    function(jore) { //onload_suceess_Cb
+                        works.runing = true;
+                        //var illusts = jore.illusts;
+                        work = Object.assign(work, jore);
+                        dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
+                        dlg.progress.set(1 - dealItems.length / ugoirasItems.length); //设置当前下载进度
+                        analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
+                    },
+                    function(jore) { //onload_haserror_Cb //返回错误消息
+                        works.runing = false;
+                        //下面开始自动登陆
+                        if (jore.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
+                            dlg.log("Token过期或错误，需要重新登录");
+                            reLogin(
+                                function(){
+                                    dlg.log("重新登录成功。");
+                                    analyseUgoira(works, ugoirasItems, callback);
+                                }
+                            );
+                        }else if(work.restrict > 0) //非公共权限
+                        { //添加一条空信息
+                            work.ugoira_metadata = {
+                                frames: [],
+                                zip_urls: {
+                                    medium: "",
+                                },
+                            };
+                            dlg.log("无访问权限，跳过本条。");
+                            analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
+                        }else
+                        {
+                            dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+                            dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                            dlg.startdown.disabled = false;
+                        }
+                        return;
+                    },
+                    function(re) { //onload_notjson_Cb //返回不是JSON
+                        dlg.log("错误：返回不是JSON，或程序异常");
+                        works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
+                    },
+                    function(re) { //onerror_Cb //AJAX发送失败
+                        dlg.log("错误：AJAX发送失败");
+                        works.runing = false;
+                        dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+                        dlg.startdown.disabled = false;
+                    }
+                )
+            }
+        }
+    //输出文本按钮
+    dlg.textdownload = function() {
+            if (dlg.downScheme.selectedOptions.length < 1) { alert("没有选中方案"); return; }
+            var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+            var contentType = dlg.dcType[1].checked ? 1 : 0;
+            var userInfo = dlg.user.info;
+            var illustsItems = contentType == 0 ? dlg.user.illusts.item : dlg.user.bookmarks.item; //将需要分析的数据储存到works里
+            dlg.log("正在生成文本信息");
+
+            try {
+                var outTxtArr = illustsItems.map(function(item) {
+                    var page_count = item.page_count;
+                    if (item.type == "ugoira" && item.ugoira_metadata) //动图
+                    {
+                        page_count = item.ugoira_metadata.frames.length;
+                    }
+                    var outArr = []; //输出内容
+                    for (var pi = 0; pi < page_count; pi++) {
+                        if (item.filename != "limit_mypixiv")
+                            outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
+                    }
+                    return outArr.join("");
+                });
+                var outTxt = outTxtArr.join("");
+                dlg.textoutTextarea.value = outTxt;
+                dlg.textoutTextarea.classList.remove("display-none");
+                dlg.log("文本信息输出成功");
+            } catch (error) {
+                console.log(error)
+            }
+        }
+    //开始下载按钮
+    dlg.startdownload = function() {
+            dlg.textoutTextarea.classList.add("display-none");
+            if (dlg.downScheme.selectedOptions.length < 1) { alert("没有选中方案"); return; }
+            var scheme = dlg.schemes[dlg.downScheme.selectedIndex];
+            var contentType = dlg.dcType[1].checked ? 1 : 0;
+            var userInfo = dlg.user.info;
+            var works = (contentType == 0 ? dlg.user.illusts : dlg.user.bookmarks);
+            var illustsItems = works.item.concat(); //为了不改变原数组，新建一个数组
+
+            var termwiseType = parseInt(getValueDefault("pubd-termwiseType", 2));
+            if (termwiseType == 0)
+                dlg.log("开始按图片逐项发送（约 "+works.picCount+" 次请求），⏳请耐心等待。");
+            else if (termwiseType == 1)
+                dlg.log("开始按作品逐项发送（约 "+illustsItems.length+" 次请求），⏳请耐心等待。");
+            else if (termwiseType == 2)
+                dlg.log("开始按作者发送，数据量较大时有较高延迟。\n⏳请耐心等待完成通知，勿多次点击。");
+            else
+            {
+                alert("错误：未知的逐项模式" + termwiseType);
+                console.error("PUBD：错误：未知的逐项模式：", termwiseType);
+                return;
+            }
+            var downP = { progress: dlg.progress, current: 0, max: 0 };
+            downP.max = works.picCount; //获取总需要下载发送的页数
+    
+            var aria2 = new Aria2(scheme.rpcurl); //生成一个aria2对象
+            sendToAria2_illust(aria2, termwiseType, illustsItems, userInfo, scheme, downP, function() {
+                aria2 = null;
+                dlg.log("😄 " + userInfo.user.name + " 下载信息发送完毕");
+                
+                var ntype = parseInt(getValueDefault("pubd-noticeType", 0)); //获取结束后如何处理通知
+                var bodyText = "" + userInfo.user.name + " 的相关插画已全部发送到指定的Aria2";
+                if (ntype == 1)
+                    bodyText += "\n\n点击此通知 🔙返回 页面。";
+                else if (ntype == 2)
+                    bodyText += "\n\n点击此通知 ❌关闭 页面。";
+                else if (ntype == 3)
+                    bodyText += "\n\n通知结束时页面将 🅰️自动❌关闭。";
+                GM_notification(
+                    {
+                        text:bodyText,
+                        title:"下载信息发送完毕",
+                        image:userInfo.user.profile_image_urls.medium
+                    },
+                    function(){ //点击了通知
+                        var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
+                        if (ntype == 1)
+                            window.focus();
+                        else if (ntype == 2)
+                            window.close();
+                    },
+                    function(){ //关闭了通知
+                        var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
+                        if (ntype == 3)
+                            window.close();
+                    },
+                );
+            });
+        }
+        //启动初始化
+    dlg.initialise = function() {
+        var dcType = 0;
+        if (dlg.user.bookmarks.runing) //如果有程序正在运行，则覆盖设置。
+            dcType = 1;
+        else if (dlg.user.illusts.runing)
+            dcType = 0;
+
+        dlg.dcType[dcType].checked = true;
+        if (getValueDefault("pubd-autoanalyse",false)) {
+            if (!dlg.uinfo.userid) {
+                dlg.uinfo.userid = parseInt(prompt("没有用户ID，请手动输入。", "ID错误"));
+                dlg.uinfo.set({id: dlg.uinfo.userid});
+            }
+            dlg.analyse(dcType, dlg.uinfo.userid);
+        }
+
+        //pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0)); //重新读取下载方案（可能被其他页面修改的）
+        dlg.reloadSchemes();
+    };
+
+    return dlg;
+}
 //为了区分设置窗口和保存的设置，产生一个新的下载方案数组
 function NewDownSchemeArrayFromJson(jsonarr) {
 
@@ -2893,6 +3677,7 @@ function start(touch) {
     pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig(touch));
     pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
     pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch));
+    pubd.dialog.downillust = btnDlgInsertPlace.appendChild(buildDlgDownIllust(touch));
     //添加Tampermonkey扩展菜单内的入口
     GM_registerMenuCommand("PUBD-下载该画师", function(){pubd.dialog.downthis.show((dBd.clientWidth - 440)/2, window.pageYOffset+100)});
     GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show((dBd.clientWidth - 400)/2, window.pageYOffset+50);});
