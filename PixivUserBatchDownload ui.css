@@ -1,4 +1,4 @@
-﻿@namespace url(http://www.w3.org/1999/xhtml);
+@namespace url(http://www.w3.org/1999/xhtml);
 
 @-moz-document domain("www.pixiv.net") {
 .display-none,.pubd-alert-9
@@ -532,7 +532,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 369px);
+	height: calc(100% - 389px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/
@@ -571,7 +571,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-textout-bar
 {/*文本输出模式格式-dd*/
-	height: calc(100% - 338px);
+	height: calc(100% - 360px);
 	min-height: 32px;
 }
 .pubd-config .pubd-mask-list-bar
@@ -779,7 +779,7 @@ resize:none;
 }
 .pubd-downthis .pubd-downthis-textout-bar
 {
-	height : calc(100% - 394px);
+	height : calc(100% - 400px);
 }
 .pubd-downthis .pubd-downthis-textout
 {/*文本输出*/
