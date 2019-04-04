@@ -1,11 +1,15 @@
 ﻿// ==UserScript==
 // @name		PixivUserBatchDownload
 // @name:zh-CN	P站画师个人作品批量下载工具
+// @name:zh-TW	P站畫師個人作品批量下載工具
+// @name:zh-HK	P站畫師個人作品批量下載工具
 // @namespace	http://www.mapaler.com/
 // @homepage	https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @description	Batch download pixiv user's images in one key.
-// @description:zh-CN	一键批量下载P站画师的全部作品
+// @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
+// @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
+// @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @homepage    https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @updateURL   https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
