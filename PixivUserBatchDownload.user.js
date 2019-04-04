@@ -2,6 +2,8 @@
 // @name		PixivUserBatchDownload
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @namespace	http://www.mapaler.com/
+// @homepage	https://github.com/Mapaler/PixivUserBatchDownload
+// @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @description	Batch download pixiv user's images in one key.
 // @description:zh-CN	一键批量下载P站画师的全部作品
 // @homepage    https://github.com/Mapaler/PixivUserBatchDownload
@@ -13,7 +15,8 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.64
+// @version		5.7.65
+// @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -31,6 +34,7 @@
 // @connect     pixiv.net
 // @connect     127.0.0.1
 // @connect     *
+// @noframes
 // ==/UserScript==
 
 //非顶级页面退出程序
@@ -63,9 +67,16 @@ var pubd = { //储存设置
     staruser: [],
 };
 
-var scriptName = typeof(GM_info) != "undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
-var scriptVersion = typeof(GM_info) != "undefined" ? GM_info.script.version : "LocalDebug"; //本程序的版本
-var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
+var lang = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
+var scriptVersion = "LocalDebug"; //本程序的版本
+var scriptName = "PixivUserBatchDownload"; //本程序的名称
+var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
+if (typeof(GM_info)!="undefined")
+{
+	scriptVersion = GM_info.script.version.replace(/(^\s*)|(\s*$)/g, "");
+	scriptName = GM_info.script.localizedName || GM_info.script.name_i18n[lang] || GM_info.script.name;
+    scriptIcon = GM_info.script.icon || scriptIcon; //本程序的图标
+}
 
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
