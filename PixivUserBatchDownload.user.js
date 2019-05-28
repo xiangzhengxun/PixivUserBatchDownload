@@ -19,7 +19,7 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.65
+// @version		5.7.66
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -78,8 +78,16 @@ var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
 if (typeof(GM_info)!="undefined")
 {
 	scriptVersion = GM_info.script.version.replace(/(^\s*)|(\s*$)/g, "");
-	scriptName = GM_info.script.localizedName || GM_info.script.name_i18n[lang] || GM_info.script.name;
-    scriptIcon = GM_info.script.icon || scriptIcon; //本程序的图标
+	if (GM_info.script.name_i18n)
+	{
+		var i18n = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
+		scriptName = GM_info.script.name_i18n[i18n]; //支持Tampermonkey
+	}
+	else
+	{
+		scriptName = GM_info.script.localizedName || //支持Greasemonkey 油猴子 3.x
+					GM_info.script.name; //支持Violentmonkey 暴力猴
+	}
 }
 
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
