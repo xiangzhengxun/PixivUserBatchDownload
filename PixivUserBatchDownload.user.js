@@ -19,7 +19,8 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.66
+// @resource    pubd-style      https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
+// @version		5.8.67
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -31,6 +32,8 @@
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_listValues
+// @grant       GM_addStyle
+// @grant       GM_getResourceText
 // @grant       GM_addValueChangeListener
 //-@grant       GM_notification
 // @grant       GM_registerMenuCommand
@@ -41,15 +44,16 @@
 // @noframes
 // ==/UserScript==
 
-//非顶级页面退出程序
+//非顶级页面退出程序，iframe退出执行
 if (
     self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
     window.frames.length != parent.frames.length || //iframe判断方式2
     self != top //iframe判断方式3
-)
-{ //iframe退出执行
-    return;
-}
+){return;}
+
+//获取当前是否是本地开发状态
+var mdev = Boolean(localStorage.getItem("mapaler-development"));
+
 /*
  * 公共变量区
  */
@@ -3712,6 +3716,7 @@ function start(touch) {
         clearInterval(findInsertPlaceHook);
         return;
     }
+    if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载资源
     //载入设置
     pubd.auth = new Auth();
     try {
