@@ -1,9 +1,15 @@
 ﻿// ==UserScript==
 // @name		PixivUserBatchDownload
 // @name:zh-CN	P站画师个人作品批量下载工具
+// @name:zh-TW	P站畫師個人作品批量下載工具
+// @name:zh-HK	P站畫師個人作品批量下載工具
 // @namespace	http://www.mapaler.com/
+// @homepage	https://github.com/Mapaler/PixivUserBatchDownload
+// @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @description	Batch download pixiv user's images in one key.
-// @description:zh-CN	一键批量下载P站画师的全部作品
+// @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
+// @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
+// @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @homepage    https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @updateURL   https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
@@ -13,7 +19,8 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.59
+// @version		5.7.66
+// @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -25,13 +32,24 @@
 // @grant       GM_deleteValue
 // @grant       GM_listValues
 // @grant       GM_addValueChangeListener
-// -@grant       GM_notification
+//-@grant       GM_notification
 // @grant       GM_registerMenuCommand
 // @connect     localhost
 // @connect     pixiv.net
 // @connect     127.0.0.1
+// @connect     *
+// @noframes
 // ==/UserScript==
 
+//非顶级页面退出程序
+if (
+    self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
+    window.frames.length != parent.frames.length || //iframe判断方式2
+    self != top //iframe判断方式3
+)
+{ //iframe退出执行
+    return;
+}
 /*
  * 公共变量区
  */
@@ -53,12 +71,28 @@ var pubd = { //储存设置
     staruser: [],
 };
 
-var scriptName = typeof(GM_info) != "undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
-var scriptVersion = typeof(GM_info) != "undefined" ? GM_info.script.version : "LocalDebug"; //本程序的版本
-var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
+var lang = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
+var scriptVersion = "LocalDebug"; //本程序的版本
+var scriptName = "PixivUserBatchDownload"; //本程序的名称
+var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
+if (typeof(GM_info)!="undefined")
+{
+	scriptVersion = GM_info.script.version.replace(/(^\s*)|(\s*$)/g, "");
+	if (GM_info.script.name_i18n)
+	{
+		var i18n = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
+		scriptName = GM_info.script.name_i18n[i18n]; //支持Tampermonkey
+	}
+	else
+	{
+		scriptName = GM_info.script.localizedName || //支持Greasemonkey 油猴子 3.x
+					GM_info.script.name; //支持Violentmonkey 暴力猴
+	}
+}
 
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
-var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片地址正则匹配式
+var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
+var limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 
 var UA = "PixivAndroidApp/5.0.115 (Android 9.0.0; Android SDK built for x86)"; //向P站请求数据时的UA
 var thisPageUserid = 0; //当前页面的画师ID
@@ -1133,7 +1167,7 @@ var Aria2 = (function() {
         };
         _this.system = {
             multicall:function(params,callback){
-                request(_this.jsonrpc_path, 'system.multicall', params, callback, true);
+                request(_this.jsonrpc_path, 'system.multicall', params, callback);
             },
         };
         return this;
@@ -1610,9 +1644,13 @@ function buildDlgConfig(touch) {
     dl_ss.appendChild(dd);
 
     //下载过滤
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "下载过滤器";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E4%B8%8B%E8%BD%BD%E8%BF%87%E6%BB%A4%E5%99%A8";
+    dta.target = "_blank";
     var dd = dcE("dd");
     var downfilter = dcE("input");
     downfilter.type = "text";
@@ -1650,9 +1688,13 @@ function buildDlgConfig(touch) {
     dl_ss.appendChild(dd);
 
     //保存路径
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "保存路径";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E6%8E%A9%E7%A0%81";
+    dta.target = "_blank";
     var dd = dcE("dd");
     var savepath = dcE("input");
     savepath.type = "text";
@@ -1670,9 +1712,13 @@ function buildDlgConfig(touch) {
     dl_ss.appendChild(dd);
 
     //输出文本
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "文本输出模式格式";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%e9%80%89%e9%a1%b9%e7%aa%97%e5%8f%a3#%E6%96%87%E6%9C%AC%E8%BE%93%E5%87%BA%E6%A8%A1%E5%BC%8F%E6%A0%BC%E5%BC%8F";
+    dta.target = "_blank";
     var dd = dcE("dd");
     dd.className = "pubd-textout-bar";
     var textout = dcE("textarea");
@@ -1692,9 +1738,13 @@ function buildDlgConfig(touch) {
 
 
     //自定义掩码
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "自定义掩码";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A9%E7%A0%81";
+    dta.target = "_blank";
     var dd = dcE("dd");
     dl_ss.appendChild(dd);
     //▼掩码名
@@ -2593,16 +2643,20 @@ function buildDlgDownThis(touch, userid) {
             dlg.log("正在生成文本信息");
 
             try {
-                var outTxtArr = illustsItems.map(function(item) {
-                    var page_count = item.page_count;
-                    if (item.type == "ugoira" && item.ugoira_metadata) //动图
+                var outTxtArr = illustsItems.map(function(illust) {
+                    var page_count = illust.page_count;
+                    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
                     {
-                        page_count = item.ugoira_metadata.frames.length;
+                        page_count = illust.ugoira_metadata.frames.length;
                     }
                     var outArr = []; //输出内容
                     for (var pi = 0; pi < page_count; pi++) {
-                        if (item.filename != "limit_mypixiv")
-                            outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, item, pi));
+                        if (returnLogicValue(scheme.downfilter, userInfo, illust, pi) || new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) {
+                            //跳过此次输出
+                            continue;
+                        }else{
+                            outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, illust, pi));
+                        }
                     }
                     return outArr.join("");
                 });
@@ -3375,7 +3429,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
             page_count = illust.ugoira_metadata.frames.length;
         }
     
-        if (illust.filename == "limit_mypixiv") //无权查看的文件
+        if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) //无权查看的文件
         {
             downP.progress.set((downP.current += page_count) / downP.max); //直接加上一个作品所有页数
             sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback); //调用自身
@@ -3429,7 +3483,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
         for (var illustIndex = 0; illustIndex < illusts.length; illustIndex++)
         {
             var illust = illusts[illustIndex];
-            if (illust.filename == "limit_mypixiv") continue; //无权查看的文件，直接继续
+            if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) continue; //无权查看的文件，直接继续
 
             var page_count = illust.page_count; //作品页数
             if (illust.type == "ugoira" && illust.ugoira_metadata) //修改动图的页数
@@ -3494,14 +3548,17 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
         return;
     }
     var page_count = illust.page_count;
-    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
+    if (illust.type == "ugoira" && illust.ugoira_metadata) //动图的帧数当页数
     {
         page_count = illust.ugoira_metadata.frames.length;
     }
-    if (page >= page_count || illust.filename == "limit_mypixiv") //无法查看的文件和本作品页数已经完毕
+    if (new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) //无法查看的文件，直接把page加到顶
     {
-        if (illust.filename == "limit_mypixiv")
-            downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+        page = page_count;
+        downP.progress.set((downP.current += page_count) / downP.max); //直接加上所有页数
+    }
+    if (page >= page_count) //本作品页数已经完毕
+    {
         callback();
         return;
     }
@@ -3648,12 +3705,9 @@ function findInsertPlace(touch, loggedIn) {
 }
 //开始主程序
 function start(touch) {
-    if (touch || //手机版
-        self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
-        window.frames.length != parent.frames.length || //iframe判断方式2
-        self != top //iframe判断方式3
+    if (touch //手机版
     )
-    { //手机版和iframe都退出执行
+    { //手机版退出执行
         //alert("PUBD暂不支持手机版");
         clearInterval(findInsertPlaceHook);
         return;
