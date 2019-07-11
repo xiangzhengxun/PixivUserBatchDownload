@@ -44,15 +44,8 @@
 // @noframes
 // ==/UserScript==
 
-//非顶级页面退出程序，iframe退出执行
-if (
-    self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
-    window.frames.length != parent.frames.length || //iframe判断方式2
-    self != top //iframe判断方式3
-){return;}
-
 //获取当前是否是本地开发状态
-var mdev = Boolean(localStorage.getItem("mapaler-development"));
+var mdev = Boolean(localStorage.getItem("pubd-dev"));
 
 /*
  * 公共变量区
@@ -337,33 +330,26 @@ var UserInfo = function() {
 }
 
 //一个Post数据
-var PostDataObject = (function() {
-
-    return function(obj) {
-        var postdata = new Object;
-        if (obj)
-            postdata.data = Object.assign({}, obj); //合并obj
-        postdata.increase = function(obj) {
-            postdata.data = Object.assign(postdata.data, obj); //合并obj
-        }
-        postdata.toPostString = function() {
-            var arr = new Array;
-            for (var na in postdata.data) {
-                var item = [na, postdata.data[na]];
-                arr.push(item);
-            }
-
-            var str = arr.map(
-                function(item) {
-                    return item.join("=");
-                }
-            ).join("&");
-            return str;
-        }
-        return postdata;
+var PostDataObject = function(obj){
+    this.data = obj?Object.assign({}, obj):{};
+}
+PostDataObject.prototype.increase = function(obj) {
+    this.data = Object.assign(this.data, obj); //合并obj
+}
+PostDataObject.prototype.toPostString = function() {
+    var arr = new Array;
+    for (var na in this.data) {
+        var item = [na, this.data[na]];
+        arr.push(item);
     }
-})();
 
+    var str = arr.map(
+        function(item) {
+            return item.join("=");
+        }
+    ).join("&");
+    return str;
+}
 //一个本程序使用的headers数据
 var HeadersObject = function(obj) {
     var headers = {
