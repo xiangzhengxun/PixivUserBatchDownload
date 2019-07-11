@@ -68,7 +68,6 @@ var pubd = { //储存设置
     staruser: [],
 };
 
-var lang = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
 var scriptVersion = "LocalDebug"; //本程序的版本
 var scriptName = "PixivUserBatchDownload"; //本程序的名称
 var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
@@ -132,75 +131,6 @@ if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
     console.info("PUBD：当前访问的是P站触屏手机版，我没开发。");
 } else {
     console.info("PUBD：当前访问的是P站桌面版");
-}
-
-/*
- * Debug 用 仿GM函数区
- */
-//仿GM_xmlhttpRequest函数v1.3
-if (typeof(GM_xmlhttpRequest) == "undefined") {
-    var GM_xmlhttpRequest = function(GM_param) {
-
-        var xhr = new XMLHttpRequest(); //创建XMLHttpRequest对象
-        xhr.open(GM_param.method, GM_param.url, true);
-        if (GM_param.responseType) xhr.responseType = GM_param.responseType;
-        if (GM_param.overrideMimeType) xhr.overrideMimeType(GM_param.overrideMimeType);
-        xhr.onreadystatechange = function() //设置回调函数
-            {
-                if (xhr.readyState === xhr.DONE) {
-                    if (xhr.status === 200 && GM_param.onload)
-                        GM_param.onload(xhr);
-                    if (xhr.status !== 200 && GM_param.onerror)
-                        GM_param.onerror(xhr);
-                }
-            }
-
-        for (var header in GM_param.headers) {
-            xhr.setRequestHeader(header, GM_param.headers[header]);
-        }
-
-        xhr.send(GM_param.data ? GM_param.data : null);
-    }
-}
-//仿GM_getValue函数v1.0
-if (typeof(GM_getValue) == "undefined") {
-    var GM_getValue = function(name, type) {
-        var value = localStorage.getItem(name);
-        if (value == undefined) return value;
-        if ((/^(?:true|false)$/i.test(value) && type == undefined) || type == "boolean") {
-            if (/^true$/i.test(value))
-                return true;
-            else if (/^false$/i.test(value))
-                return false;
-            else
-                return Boolean(value);
-        } else if ((/^\-?[\d\.]+$/i.test(value) && type == undefined) || type == "number")
-            return Number(value);
-        else
-            return value;
-    }
-}
-//仿GM_setValue函数v1.0
-if (typeof(GM_setValue) == "undefined") {
-    var GM_setValue = function(name, value) {
-        localStorage.setItem(name, value);
-    }
-}
-//仿GM_deleteValue函数v1.0
-if (typeof(GM_deleteValue) == "undefined") {
-    var GM_deleteValue = function(name) {
-        localStorage.removeItem(name);
-    }
-}
-//仿GM_listValues函数v1.0
-if (typeof(GM_listValues) == "undefined") {
-    var GM_listValues = function() {
-        var keys = new Array();
-        for (var ki = 0, kilen = localStorage.length; ki < kilen; ki++) {
-            keys.push(localStorage.key(ki));
-        }
-        return keys;
-    }
 }
 
 //仿GM_notification函数v1.2，发送网页通知。
@@ -860,14 +790,14 @@ var InfoCard = (function() {
 
     return function(datas,className) {
         function Card (datas) {
-            var cardDiv = document.createElement("div");
+            var cardDiv = this.dom = document.createElement("div");
             cardDiv.className = "pubd-infoCard";
             var thumbnailDiv = cardDiv.appendChild(document.createElement("div"));
             thumbnailDiv.className = "pubd-infoCard-thumbnail";
             var thumbnailImg = thumbnailDiv.appendChild(document.createElement("img"));
-            var infos = cardDiv.infos = cardDiv.appendChild(document.createElement("dl"));
+            cardDiv.infos = cardDiv.appendChild(document.createElement("dl"));
             
-            Object.defineProperty(cardDiv , "thumbnail", {
+            Object.defineProperty(this , "thumbnail", {
                 configurable: true,
                 enumerable: true,
                 get() {
@@ -877,7 +807,7 @@ var InfoCard = (function() {
                     thumbnailImg.src = url;
                 }
             });
-            return cardDiv;
+            return this;
         }
 
 
