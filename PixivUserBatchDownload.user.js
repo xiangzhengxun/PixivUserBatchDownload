@@ -212,21 +212,14 @@ String.prototype.format = function() {
  */
 //document.createElement
 var dBd = document.body;
-function dcE(tagName, options) {
-    return document.createElement(tagName, options);
-}
+var dcE = document.createElement;
 //document.createTextNode
-function dcTN(data) {
-    return document.createTextNode(data);
-}
+var dcTN = document.createTextNode;
 //document.querySelector
-function dqS(data) {
-    return document.querySelector(data);
-}
+var dqS = document.querySelector;
 //document.querySelectorAll
-function dqSA(selectors) {
-    return document.querySelectorAll(selectors);
-}
+var dqSA = document.querySelectorAll;
+
 /*
  * 自定义对象区
  */
