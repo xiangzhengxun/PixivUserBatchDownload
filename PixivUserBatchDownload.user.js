@@ -1,9 +1,15 @@
 ﻿// ==UserScript==
 // @name		PixivUserBatchDownload
 // @name:zh-CN	P站画师个人作品批量下载工具
+// @name:zh-TW	P站畫師個人作品批量下載工具
+// @name:zh-HK	P站畫師個人作品批量下載工具
 // @namespace	http://www.mapaler.com/
+// @homepage	https://github.com/Mapaler/PixivUserBatchDownload
+// @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @description	Batch download pixiv user's images in one key.
-// @description:zh-CN	一键批量下载P站画师的全部作品
+// @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
+// @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
+// @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @homepage    https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @updateURL   https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
@@ -13,7 +19,9 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @version		5.7.62
+// @resource    pubd-style      https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
+// @version		5.8.67
+// @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
 // @grant       unsafeWindow
@@ -24,6 +32,8 @@
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_listValues
+// @grant       GM_addStyle
+// @grant       GM_getResourceText
 // @grant       GM_addValueChangeListener
 //-@grant       GM_notification
 // @grant       GM_registerMenuCommand
@@ -31,7 +41,11 @@
 // @connect     pixiv.net
 // @connect     127.0.0.1
 // @connect     *
+// @noframes
 // ==/UserScript==
+
+//获取当前是否是本地开发状态
+var mdev = Boolean(localStorage.getItem("pubd-dev"));
 
 /*
  * 公共变量区
@@ -54,9 +68,24 @@ var pubd = { //储存设置
     staruser: [],
 };
 
-var scriptName = typeof(GM_info) != "undefined" ? (GM_info.script.localizedName ? GM_info.script.localizedName : GM_info.script.name) : "PixivUserBatchDownload"; //本程序的名称
-var scriptVersion = typeof(GM_info) != "undefined" ? GM_info.script.version : "LocalDebug"; //本程序的版本
-var scriptIcon = ((typeof(GM_info) != "undefined") && GM_info.script.icon) ? GM_info.script.icon : "http://www.pixiv.net/favicon.ico"; //本程序的图标
+var lang = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
+var scriptVersion = "LocalDebug"; //本程序的版本
+var scriptName = "PixivUserBatchDownload"; //本程序的名称
+var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
+if (typeof(GM_info)!="undefined")
+{
+	scriptVersion = GM_info.script.version.replace(/(^\s*)|(\s*$)/g, "");
+	if (GM_info.script.name_i18n)
+	{
+		var i18n = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
+		scriptName = GM_info.script.name_i18n[i18n]; //支持Tampermonkey
+	}
+	else
+	{
+		scriptName = GM_info.script.localizedName || //支持Greasemonkey 油猴子 3.x
+					GM_info.script.name; //支持Violentmonkey 暴力猴
+	}
+}
 
 var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
@@ -301,33 +330,26 @@ var UserInfo = function() {
 }
 
 //一个Post数据
-var PostDataObject = (function() {
-
-    return function(obj) {
-        var postdata = new Object;
-        if (obj)
-            postdata.data = Object.assign({}, obj); //合并obj
-        postdata.increase = function(obj) {
-            postdata.data = Object.assign(postdata.data, obj); //合并obj
-        }
-        postdata.toPostString = function() {
-            var arr = new Array;
-            for (var na in postdata.data) {
-                var item = [na, postdata.data[na]];
-                arr.push(item);
-            }
-
-            var str = arr.map(
-                function(item) {
-                    return item.join("=");
-                }
-            ).join("&");
-            return str;
-        }
-        return postdata;
+var PostDataObject = function(obj){
+    this.data = obj?Object.assign({}, obj):{};
+}
+PostDataObject.prototype.increase = function(obj) {
+    this.data = Object.assign(this.data, obj); //合并obj
+}
+PostDataObject.prototype.toPostString = function() {
+    var arr = new Array;
+    for (var na in this.data) {
+        var item = [na, this.data[na]];
+        arr.push(item);
     }
-})();
 
+    var str = arr.map(
+        function(item) {
+            return item.join("=");
+        }
+    ).join("&");
+    return str;
+}
 //一个本程序使用的headers数据
 var HeadersObject = function(obj) {
     var headers = {
@@ -1612,9 +1634,13 @@ function buildDlgConfig(touch) {
     dl_ss.appendChild(dd);
 
     //下载过滤
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "下载过滤器";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E4%B8%8B%E8%BD%BD%E8%BF%87%E6%BB%A4%E5%99%A8";
+    dta.target = "_blank";
     var dd = dcE("dd");
     var downfilter = dcE("input");
     downfilter.type = "text";
@@ -1652,9 +1678,13 @@ function buildDlgConfig(touch) {
     dl_ss.appendChild(dd);
 
     //保存路径
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "保存路径";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E6%8E%A9%E7%A0%81";
+    dta.target = "_blank";
     var dd = dcE("dd");
     var savepath = dcE("input");
     savepath.type = "text";
@@ -1672,9 +1702,13 @@ function buildDlgConfig(touch) {
     dl_ss.appendChild(dd);
 
     //输出文本
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "文本输出模式格式";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%e9%80%89%e9%a1%b9%e7%aa%97%e5%8f%a3#%E6%96%87%E6%9C%AC%E8%BE%93%E5%87%BA%E6%A8%A1%E5%BC%8F%E6%A0%BC%E5%BC%8F";
+    dta.target = "_blank";
     var dd = dcE("dd");
     dd.className = "pubd-textout-bar";
     var textout = dcE("textarea");
@@ -1694,9 +1728,13 @@ function buildDlgConfig(touch) {
 
 
     //自定义掩码
-    var dt = dcE("dt");
-    dl_ss.appendChild(dt);
+    var dt = dl_ss.appendChild(dcE("dt"));
     dt.innerHTML = "自定义掩码";
+    var dta = dt.appendChild(dcE("a"));
+    dta.className = "pubd-help-link";
+    dta.innerHTML = "(?)";
+    dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A9%E7%A0%81";
+    dta.target = "_blank";
     var dd = dcE("dd");
     dl_ss.appendChild(dd);
     //▼掩码名
@@ -3657,16 +3695,14 @@ function findInsertPlace(touch, loggedIn) {
 }
 //开始主程序
 function start(touch) {
-    if (touch || //手机版
-        self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
-        window.frames.length != parent.frames.length || //iframe判断方式2
-        self != top //iframe判断方式3
+    if (touch //手机版
     )
-    { //手机版和iframe都退出执行
+    { //手机版退出执行
         //alert("PUBD暂不支持手机版");
         clearInterval(findInsertPlaceHook);
         return;
     }
+    if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载资源
     //载入设置
     pubd.auth = new Auth();
     try {
