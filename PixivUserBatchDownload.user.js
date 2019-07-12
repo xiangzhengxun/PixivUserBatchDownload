@@ -779,100 +779,25 @@ var Progress = (function() {
 })();
 
 //创建 卡片类
-var InfoCard = (function() {
+function InfoCard (datas) {
+    var cardDiv = this.dom = document.createElement("div");
+    cardDiv.className = "pubd-infoCard";
+    var thumbnailDiv = cardDiv.appendChild(document.createElement("div"));
+    thumbnailDiv.className = "pubd-infoCard-thumbnail";
+    this.thumbnailImg = thumbnailDiv.appendChild(document.createElement("img"));
+    this.infos = cardDiv.appendChild(document.createElement("dl"));
+}
+Object.defineProperty(this , "thumbnail", {
+    configurable: true,
+    enumerable: true,
+    get() {
+        return this.thumbnailImg.src;
+    },
+    set(url) {
+        this.thumbnailImg.src = url;
+    }
+});
 
-    return function(datas,className) {
-        function Card (datas) {
-            var cardDiv = this.dom = document.createElement("div");
-            cardDiv.className = "pubd-infoCard";
-            var thumbnailDiv = cardDiv.appendChild(document.createElement("div"));
-            thumbnailDiv.className = "pubd-infoCard-thumbnail";
-            var thumbnailImg = thumbnailDiv.appendChild(document.createElement("img"));
-            cardDiv.infos = cardDiv.appendChild(document.createElement("dl"));
-            
-            Object.defineProperty(this , "thumbnail", {
-                configurable: true,
-                enumerable: true,
-                get() {
-                    return thumbnailImg.src;
-                },
-                set(url) {
-                    thumbnailImg.src = url;
-                }
-            });
-            return this;
-        }
-
-
-        var cardDiv = dcE("div");
-        cardDiv.className = "pubd-infoCard";
-        var thumbnailDiv = cardDiv.appendChild(dcE("div"));
-        thumbnailDiv.className = "pubd-infoCard-thumbnail";
-        var thumbnailImg = cardDiv.thumbnailImg = thumbnailDiv.appendChild(dcE("img"));
-        Object.defineProperty(cardDiv, "thumbnail", {
-            configurable: true,
-            enumerable: true,
-            get() {
-                return this.thumbnail;
-            },
-            set(url) {
-                this.thumbnail = url;
-            }
-        });
-        var propertiesObject = {};
-        datas.forEach(function(item){
-
-        });
-
-
-
-        var card = Object.create(cardDiv);
-
-        var uhead = uinfo.appendChild(dcE("div"));
-        uhead.className = "pubd-user-info-head";
-        var uhead_img = uinfo.uhead = uhead.appendChild(dcE("img"));
-
-        var infos = uinfo.infos = uinfo.appendChild(dcE("dl"));
-        infos.className = "pubd-user-info-dl";
-        //ID
-        var dt = infos.appendChild(dcE("dt"));
-        dt.className = "pubd-user-info-id-dt";
-        dt.innerHTML = "ID";
-        var dd = uinfo.uid = infos.appendChild(dcE("dd"));
-        dd.className = "pubd-user-info-id-dd";
-        dd.innerHTML = uinfo.userid;
-        //作品数
-        var dt = infos.appendChild(dcE("dt"));
-        dt.className = "pubd-user-info-illusts-dt";
-        dt.innerHTML = "作品投稿数";
-        var dd = uinfo.uillusts = infos.appendChild(dcE("dd"));
-        dd.className = "pubd-user-info-illusts-dd";
-        //昵称
-        var dt = infos.appendChild(dcE("dt"));
-        dt.className = "pubd-user-info-name-dt";
-        dt.innerHTML = "昵称";
-        var dd = uinfo.uname = infos.appendChild(dcE("dd"));
-        dd.className = "pubd-user-info-name-dd";
-        //收藏数
-        var dt = infos.appendChild(dcE("dt"));
-        dt.className = "pubd-user-info-bookmarks-dt";
-        dt.innerHTML = "公开收藏数";
-        var dd = uinfo.ubookmarks = infos.appendChild(dcE("dd"));
-        dd.className = "pubd-user-info-bookmarks-dd";
-
-        uinfo.set = function(obj) {
-            if (obj.id) {
-                uinfo.userid = obj.id;
-                uinfo.uid.innerHTML = obj.id;
-            }
-            if (obj.head) uinfo.uhead.src = obj.head;
-            if (obj.name) uinfo.uname.innerHTML = obj.name;
-            if (obj.illusts >= 0) uinfo.uillusts.innerHTML = obj.illusts;
-            if (obj.bookmarks >= 0) uinfo.ubookmarks.innerHTML = obj.bookmarks;
-        }
-        return uinfo;
-    };
-})();
 
 //创建用户卡片类
 var UserCard = (function() {
