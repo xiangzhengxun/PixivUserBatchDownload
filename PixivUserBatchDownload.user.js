@@ -289,154 +289,148 @@ var HeadersObject = function(obj) {
 }
 
 //一个认证方案
-var Auth = (function() {
-
-    return function(username, password, remember) {
-        if (!username) username = "";
-        if (!password) password = "";
-        if (!remember) remember = false;
-        var auth = { //原始结构
-            response: {
-                access_token: "",
-                expires_in: 0,
-                token_type: "",
-                scope: "",
-                refresh_token: "",
-                user: {
-                    profile_image_urls: {
-                        px_16x16: "",
-                        px_50x50: "",
-                        px_170x170: "",
-                    },
-                    id: "",
-                    name: "",
-                    account: "",
-                    mail_address: "",
-                    is_premium: false,
-                    x_restrict: 0,
-                    is_mail_authorized: true,
+var Auth = function (username, password, remember) {
+    if (!username) username = "";
+    if (!password) password = "";
+    if (!remember) remember = false;
+    var auth = { //原始结构
+        response: {
+            access_token: "",
+            expires_in: 0,
+            token_type: "",
+            scope: "",
+            refresh_token: "",
+            user: {
+                profile_image_urls: {
+                    px_16x16: "",
+                    px_50x50: "",
+                    px_170x170: "",
                 },
-                device_token: "",
+                id: "",
+                name: "",
+                account: "",
+                mail_address: "",
+                is_premium: false,
+                x_restrict: 0,
+                is_mail_authorized: true,
             },
-            needlogin: false,
-            username: username,
-            password: password,
-            save_account: remember,
-            login_date: null,
+            device_token: "",
+        },
+        needlogin: false,
+        username: username,
+        password: password,
+        save_account: remember,
+        login_date: null,
+    }
+    auth.newAccount = function(username, password, remember) {
+        if (typeof(remember) == "boolean") auth.save_account = remember;
+        auth.username = username;
+        auth.password = password;
+    }
+    auth.loadFromResponse = function(response) {
+        auth = Object.assign(auth, response);
+    }
+    auth.save = function() {
+        var saveObj = JSON.parse(JSON.stringify(auth)); //深度拷贝
+        if (!saveObj.save_account) {
+            saveObj.username = "";
+            saveObj.password = "";
         }
-        auth.newAccount = function(username, password, remember) {
-            if (typeof(remember) == "boolean") auth.save_account = remember;
-            auth.username = username;
-            auth.password = password;
-        }
-        auth.loadFromResponse = function(response) {
-            auth = Object.assign(auth, response);
-        }
-        auth.save = function() {
-            var saveObj = JSON.parse(JSON.stringify(auth)); //深度拷贝
-            if (!saveObj.save_account) {
-                saveObj.username = "";
-                saveObj.password = "";
-            }
-            GM_setValue("pubd-auth", JSON.stringify(saveObj));
-        }
+        GM_setValue("pubd-auth", JSON.stringify(saveObj));
+    }
 
-        auth.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
-            var postObj = new PostDataObject({ //Post时发送的数据
-                client_id: "MOBrBDS8blbauoSck0ZfDbtuzpyT", //安卓某个版本的数据
-                client_secret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj", //安卓某个版本的数据
-                grant_type: "password",
-                username: auth.username,
-                password: auth.password,
-                device_token: "pixiv",
-                get_secure_url: "true",
-            })
+    auth.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
+        var postObj = new PostDataObject({ //Post时发送的数据
+            client_id: "MOBrBDS8blbauoSck0ZfDbtuzpyT", //安卓某个版本的数据
+            client_secret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj", //安卓某个版本的数据
+            grant_type: "password",
+            username: auth.username,
+            password: auth.password,
+            device_token: "pixiv",
+            get_secure_url: "true",
+        })
 
-            //登陆是老的API
-            GM_xmlhttpRequest({
-                url: "https://oauth.secure.pixiv.net/auth/token",
-                method: "post",
-                responseType: "text",
-                headers: new HeadersObject(),
-                data: postObj.toPostString(),
-                onload: function(response) {
-                    try {
-                        var jo = JSON.parse(response.responseText);
-                        if (jo.has_error || jo.errors) {
-                            console.error("登录失败，返回错误消息", jo);
-                            onload_hasError_Cb(jo);
-                        } else { //登陆成功
-                            auth.loadFromResponse(jo);
-                            auth.login_date = new Date();
-                            console.info("登陆成功", jo);
-                            onload_suceess_Cb(jo);
-                        }
-                    } catch (e) {
-                        console.error("登录失败，返回可能不是JSON，或程序异常", e, response);
-                        onload_notJson_Cb(response);
+        //登陆是老的API
+        GM_xmlhttpRequest({
+            url: "https://oauth.secure.pixiv.net/auth/token",
+            method: "post",
+            responseType: "text",
+            headers: new HeadersObject(),
+            data: postObj.toPostString(),
+            onload: function(response) {
+                try {
+                    var jo = JSON.parse(response.responseText);
+                    if (jo.has_error || jo.errors) {
+                        console.error("登录失败，返回错误消息", jo);
+                        onload_hasError_Cb(jo);
+                    } else { //登陆成功
+                        auth.loadFromResponse(jo);
+                        auth.login_date = new Date();
+                        console.info("登陆成功", jo);
+                        onload_suceess_Cb(jo);
                     }
-                },
-                onerror: function(response) {
-                    console.error("登录失败，AJAX发送失败", response);
-                    onerror_Cb(response);
+                } catch (e) {
+                    console.error("登录失败，返回可能不是JSON，或程序异常", e, response);
+                    onload_notJson_Cb(response);
                 }
-            })
-        }
-        return auth;
-    };
-})();
+            },
+            onerror: function(response) {
+                console.error("登录失败，AJAX发送失败", response);
+                onerror_Cb(response);
+            }
+        })
+    }
+    return auth;
+};
 
 //一个下载方案
-var DownScheme = (function() {
-    //一个自定义掩码
-    return function(name) {
-        var obj = {
-            name: name ? name : "默认方案",
-            rpcurl: "http://localhost:6800/jsonrpc",
-            https2http: false,
-            downfilter: "",
-            savedir: "D:/PixivDownload/",
-            savepath: "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
-            textout: "%{illust.url_without_page}%{page}.%{illust.extention}\n",
-            masklist: [],
-            mask: {
-                add: function(name, logic, content) {
-                    var mask = {
-                        name: name,
-                        logic: logic,
-                        content: content,
-                    };
-                    obj.masklist.push(mask);
-                    return mask;
-                },
-                remove: function(index) {
-                    obj.masklist.splice(index, 1);
-                },
+var DownScheme = function(name) {
+    var obj = {
+        name: name ? name : "默认方案",
+        rpcurl: "http://localhost:6800/jsonrpc",
+        https2http: false,
+        downfilter: "",
+        savedir: "D:/PixivDownload/",
+        savepath: "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
+        textout: "%{illust.url_without_page}%{page}.%{illust.extention}\n",
+        masklist: [],
+        mask: {
+            add: function(name, logic, content) {
+                var mask = {
+                    name: name,
+                    logic: logic,
+                    content: content,
+                };
+                obj.masklist.push(mask);
+                return mask;
             },
-            loadFromJson: function(ojson) {
-                var json = ojson;
-                if (typeof(ojson) == "string") {
-                    try {
-                        json = JSON.parse(ojson);
-                    } catch (e) {
-                        console.error(e);
-                        return false;
-                    }
+            remove: function(index) {
+                obj.masklist.splice(index, 1);
+            },
+        },
+        loadFromJson: function(ojson) {
+            var json = ojson;
+            if (typeof(ojson) == "string") {
+                try {
+                    json = JSON.parse(ojson);
+                } catch (e) {
+                    console.error(e);
+                    return false;
                 }
-                this.name = json.name;
-                this.https2http = [0, "false", false, undefined, null].indexOf(json.https2http) < 0; //存在任一条件时即为false
-                this.rpcurl = json.rpcurl;
-                this.downfilter = json.downfilter || "";
-                this.savedir = json.savedir;
-                this.savepath = json.savepath;
-                this.textout = json.textout;
-                this.masklist = JSON.parse(JSON.stringify(json.masklist));
-                return true;
-            },
-        }
-        return obj;
-    };
-})();
+            }
+            this.name = json.name;
+            this.https2http = [0, "false", false, undefined, null].indexOf(json.https2http) < 0; //存在任一条件时即为false
+            this.rpcurl = json.rpcurl;
+            this.downfilter = json.downfilter || "";
+            this.savedir = json.savedir;
+            this.savepath = json.savepath;
+            this.textout = json.textout;
+            this.masklist = JSON.parse(JSON.stringify(json.masklist));
+            return true;
+        },
+    }
+    return obj;
+};
 
 //创建菜单类
 var pubdMenu = (function() {
@@ -620,6 +614,7 @@ var Dialog = (function() {
     };
 })();
 
+/*
 //创建选项卡类，暂时没有开发
 var Tab = (function() {
 
@@ -671,6 +666,7 @@ var Tabs = (function() {
         return tabs;
     };
 })();
+*/
 
 //创建框架类
 var Frame = (function() {
@@ -779,25 +775,41 @@ var Progress = (function() {
 })();
 
 //创建 卡片类
-function InfoCard (datas) {
+function InfoCard(datas) {
     var cardDiv = this.dom = document.createElement("div");
     cardDiv.className = "pubd-infoCard";
     var thumbnailDiv = cardDiv.appendChild(document.createElement("div"));
     thumbnailDiv.className = "pubd-infoCard-thumbnail";
-    this.thumbnailImg = thumbnailDiv.appendChild(document.createElement("img"));
-    this.infos = cardDiv.appendChild(document.createElement("dl"));
+    var thumbnailImgDom = thumbnailDiv.appendChild(document.createElement("img"));
+    var infosDlDom = cardDiv.appendChild(document.createElement("dl"));
+    Object.defineProperty(this , "thumbnail", {
+        configurable: true,
+        get() {
+            return thumbnailImgDom.src;
+        },
+        set(url) {
+            thumbnailImgDom.src = url;
+        }
+    });
+    Object.defineProperty(this , "infos", {
+        configurable: true,
+        get() {
+            return this.infos;
+        },
+        set(arr) {
+            for (var ci=infosDlDom.children.length-1;ci>=0;ci--)
+            { //删掉所有老子元素
+                infosDlDom.children[ci].remove();
+            }
+            arr.forEach(function(obj){
+                var dt = infosDlDom.appendChild(document.createElement("dt"));
+                var dd = infosDlDom.appendChild(document.createElement("dt"));
+                dt.appendChild(document.createTextNode(obj.title));
+                dd.appendChild(document.createTextNode(obj.value));
+            })
+        }
+    });
 }
-Object.defineProperty(this , "thumbnail", {
-    configurable: true,
-    enumerable: true,
-    get() {
-        return this.thumbnailImg.src;
-    },
-    set(url) {
-        this.thumbnailImg.src = url;
-    }
-});
-
 
 //创建用户卡片类
 var UserCard = (function() {
@@ -3541,16 +3553,16 @@ function findInsertPlace(touch, loggedIn) {
         pubd.menu = btnStartBox.appendChild(buildbtnMenu(touch));
     }
 }
-//开始主程序
+//主引导程序
 function start(touch) {
-    if (touch //手机版
-    )
+    if (touch) //手机版
     { //手机版退出执行
         //alert("PUBD暂不支持手机版");
         clearInterval(findInsertPlaceHook);
         return;
     }
-    if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载资源
+    if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
+
     //载入设置
     pubd.auth = new Auth();
     try {
