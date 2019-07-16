@@ -1,4 +1,4 @@
-.display-none,.pubd-alert-9
+﻿.display-none,.pubd-alert-9
 {/*任何需要隐藏的*/
 	display:none !important;
 }
@@ -174,22 +174,20 @@ dt:first-child
 	min-width: 210px;
 	resize:both;
 	padding: 30px 8px 8px 8px;
-	background-color: RGBA(191,214,236,0.7);
+	background-color: RGBA(191,214,236,0.8);
 	background-image: 
 		linear-gradient(150deg, RGBA(255,255,255,0.6) 10%,RGBA(255,255,255,0.4) 30%, RGBA(255,255,255,0) 50%),
 		linear-gradient(210deg, RGBA(255,255,255,0.6) 10%,RGBA(255,255,255,0.4) 30%, RGBA(255,255,255,0) 50%),
-		linear-gradient(70deg,RGBA(255,255,255,0) 20%,RGBA(255,255,255,0.7) 22%,RGBA(255,255,255,0.2) 24%,RGBA(255,255,255,0.7) 26%,RGBA(255,255,255,0) 28%,RGBA(255,255,255,0) 46%,RGBA(255,255,255,0.7) 48%,RGBA(255,255,255,0.2) 50%,RGBA(255,255,255,0.7) 52%,RGBA(255,255,255,0) 54%,RGBA(255,255,255,0) 72%,RGBA(255,255,255,0.7) 74%,RGBA(255,255,255,0.2) 76%,RGBA(255,255,255,0.7) 78%,RGBA(255,255,255,0) 80%),
-		linear-gradient(to bottom, RGBA(237,242,247,0.3) 0%,RGBA(188,220,238,0.6) 20%,RGBA(239,246,252,0.8) 40%,RGBA(192,217,238,0.8) 41%, RGBA(195,219,243,0) 100%)
-		;
+		linear-gradient(to bottom, RGBA(237,242,247,0.4) 0%,RGBA(188,220,238,0.7) 20%,RGBA(239,246,252,0.9) 40%,RGBA(192,217,238,0.9) 41%, RGBA(195,219,243,0) 100%);
 	background-repeat: no-repeat;
-	background-size: 160px 80px, 160px 80px,100vw 100vh, 100% 300px; /*100vw 100vh*/
-	background-position: top left, top right, top left,top left;
-	background-attachment: scroll,scroll,fixed,scroll; 
+	background-size: 160px 80px, 160px 80px, 100% 300px; /*100vw 100vh*/
+	background-position: top left, top right, top left;
+	background-attachment: scroll,scroll,scroll; 
 	border: #147DF2 solid 1px;
 	border-radius: 5px;
 	box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 4px;
 	/*transition: box-shadow ease-in-out 0.1s;*/
-
+    backdrop-filter: blur(5px); /*未来的浏览器能支持就好了*/
 }
 .pubd-dialog:hover
 {/*对话框悬停*/
@@ -239,10 +237,10 @@ dt:first-child
 }
 .dlg-cpt-btn .dlg-cpt-btn-text
 {/*对话框按钮上的文字*/
+    display: block;
 	text-align: center;
 	line-height: 20px;
 	font-size: 12px;
-	font-family: HiraginoSans-W3,Hiragino Kaku Gothic Pro,\\30E1イリオ,Meiryo,Verdana,sans-serif;
 	font-weight: bold;
 	color: #fff;
 	text-shadow: -1px -1px 1px #147DF2,1px 1px 1px #147DF2,-1px 1px 1px #147DF2,1px -1px 1px #147DF2;
@@ -331,7 +329,7 @@ dt:first-child
 @keyframes progressMoveOverlay
 {
 from {background-position-x:calc(0% - 100px),0,0,0;}
-50% {background-position-x:calc(100% + 100px),0,0,0;}
+30% {background-position-x:calc(100% + 100px),0,0,0;}
 to {background-position-x:calc(100% + 100px),0,0,0;}
 }
 .pubd-progress .pubd-progress-bar
@@ -343,7 +341,7 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 	background-color: #00D328;
 	background-image:
 		linear-gradient(to right, transparent 0%,RGBA(255,255,255,0.6) 50%, transparent 100%),
-		linear-gradient(to bottom, RGBA(255,255,255,0.8) 0%,RGBA(255,255,255,0.6) 6px,transparent 6px),
+		linear-gradient(to bottom, RGBA(255,255,255,0.8) 0%,RGBA(255,255,255,0.6) 6px,transparent 8px),
 		linear-gradient(to top, RGBA(255,255,255,0.6) 0%,transparent 6px),
 		linear-gradient(to right, transparent 1px, RGBA(100,100,100,0.1) 1px, RGBA(100,100,100,0.3) 5px, RGBA(100,100,100,0.1) 13px, transparent 20px,transparent calc(100% - 20px), RGBA(100,100,100,0.1) calc(100% - 13px),RGBA(100,100,100,0.3) calc(100% - 5px),RGBA(100,100,100,0.1) calc(100% - 1px), transparent calc(100% - 1px))
 		;
@@ -351,7 +349,7 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 	background-repeat: no-repeat;
 	background-size: 60px 100%,100% 100%,100% 100%,100% 100%;
 	background-position-x: 110%,0,0,0;
-	animation: progressMoveOverlay 3s linear infinite;
+	animation: progressMoveOverlay 5s linear infinite;
 }
 .pubd-progress-right .pubd-progress-bar
 {/*进度条*/
@@ -385,89 +383,70 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 	padding-left: 2px;
 	padding-right: 4px;
 }
-.pubd-user-info
+.pubd-infoCard
 {/*一个用户信息框*/
-	width: calc(100% - 12px);
+	width: 100%;
+     box-sizing: border-box;
 	min-width: 270px;
 	overflow: hidden;
-	height: 50px;
 	background-color: white;
 	border: 1px #888 solid;
 	border-radius: 5px;
-	padding: 5px;
 }
-.pubd-user-info .pubd-user-info-head
+.pubd-infoCard .pubd-infoCard-thumbnail
 {/*用户信息框头像*/
-	width:50px;
-	height:50px;
-	line-height: 50px;
+	width:100px;
+	height:100px;
 	display: inline-block;
-	top:0;
-	margin: 0;
-	padding: 0;
-	vertical-align:top;
+     vertical-align:top;
 }
-.pubd-user-info .pubd-user-info-head img
+.pubd-infoCard .pubd-infoCard-thumbnail img
 {/*用户信息框头像图片*/
-	max-width:50px;
-	max-height:50px;
+	width: 100%;
+	height: 100%;
+    object-fit: cover;
+    object-position: center center;
 }
-.pubd-user-info-dl
+.pubd-infoCard-dl
 {/*用户信息框文字列表区域*/
-	height:50px;
 	line-height: 25px;
 	margin: 0;
 	padding: 0;
 	display: inline-block;
-	width : calc(100% - 50px);
+	width : calc(100% - 100px);
+    vertical-align:top;
 }
-.pubd-user-info-dl dt
+.pubd-infoCard-dl dt
 {/*用户信息框文字标题*/
 	display: inline-block;
 	margin: 0;
 	padding: 0;
 	left:0;
 	position:relative;
-	width : 40px;
-	height: 25px;
-	line-height: 25px;
+	width : 90px;
 	vertical-align:top;
 	text-align: right;
 }
-.pubd-user-info-dl dt::after
-{/*用户信息框文字标题-冒号*/
-	content: "：";
-}
-.pubd-user-info-dl dd
+.pubd-infoCard-dl dd
 {/*用户信息框文字内容*/
 	display: inline-block;
 	margin: 0;
 	padding: 0;
 	left:0;
 	position:relative;
-	width : calc(50% - 40px);
-	height: 25px;
-	line-height: 25px;
+	width : calc(100% - 90px);
 	vertical-align:top;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.pubd-user-info-dl .pubd-user-info-id-dt,.pubd-user-info-dl .pubd-user-info-name-dt
-{/*用户信息前两个标题*/
-	width : 45px;
+.pubd-infoCard-dl dt::after
+{/*用户信息框文字标题-冒号*/
+	content: "：";
 }
-.pubd-user-info-dl .pubd-user-info-illusts-dt,.pubd-user-info-dl .pubd-user-info-bookmarks-dt
-{/*用户信息后两个标题*/
-	width : 85px;
-}
-.pubd-user-info-dl .pubd-user-info-id-dd,.pubd-user-info-dl .pubd-user-info-name-dd
-{/*用户信息前两个内容*/
-	width : calc(100% - 185px);
-}
-.pubd-user-info-dl .pubd-user-info-illusts-dd,.pubd-user-info-dl .pubd-user-info-bookmarks-dd
-{/*用户信息后两个内容*/
-	width : 55px;
+.pubd-infoCard-dl dt:nth-of-type(even),.pubd-infoCard-dl dd:nth-of-type(even)
+{/*用户信息框文字标题*/
+	background-color:#EEF;
 }
 /*▼选项对话框相关*/
 .pubd-config
@@ -498,6 +477,7 @@ border: 1px solid #becad7;
 .pubd-browsing-restriction
 {/*访问P站设置的链接*/
 	float:right;
+    text-decoration:underline;
 }
 .pubd-token-info
 {/*token信息栏*/
@@ -749,7 +729,7 @@ border: 1px solid #becad7;
 	line-height: 11px;
 	font-size:12px;
 }
-.pubd-downthis .pubd-downthis-log
+.pubd-downthis .pubd-down-log
 {/*下载日志*/
 	min-width: 100px;
 	min-height: 40px;
@@ -757,7 +737,7 @@ border: 1px solid #becad7;
 	height : 100px;
 resize:none;
 }
-.pubd-downthis .pubd-downthis-downbar
+.pubd-downthis .pubd-down-downbar
 {
 }
 .pubd-downthis .pubd-textdown
@@ -774,11 +754,11 @@ resize:none;
 	font-size: 30px;
 	vertical-align: middle;
 }
-.pubd-downthis .pubd-downthis-textout-bar
+.pubd-downthis .pubd-down-textout-bar
 {
-	height : calc(100% - 400px);
+	height : calc(100% - 442px);
 }
-.pubd-downthis .pubd-downthis-textout
+.pubd-downthis .pubd-down-textout
 {/*文本输出*/
 	min-width: 100px;
 	min-height: 40px;
