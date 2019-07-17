@@ -325,8 +325,8 @@ dt:first-child
 }
 .pubd-progress,.pubd-progress .pubd-progress-bar,.pubd-progress .pubd-progress-text
 {/*进度条三个部分的通用设置*/
-	height: 20px;
-	line-height: 20px;
+	height: 24px;
+	line-height: 24px;
 	font-size: 15px;
 	border-radius: 3px;
 }
@@ -513,7 +513,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 389px);
+	height: calc(100% - 393px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/
@@ -769,17 +769,18 @@ resize:none;
 }
 .pubd-downthis .pubd-down-textout-bar
 {
-	height : calc(100% - 442px);
+	height : calc(100% - 435px);
 }
 .pubd-downillust .pubd-down-textout-bar
 {
-	height : calc(100% - 342px);
+	height : calc(100% - 335px);
 }
 .pubd-down .pubd-down-textout
 {/*文本输出*/
 	min-width: 100px;
 	min-height: 40px;
-	width : calc(100% - 10px);
+	width : 100%;
+    box-sizing: border-box;
 	height : 100%;
 	resize:none;
 }
