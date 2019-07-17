@@ -52,7 +52,7 @@ var mdev = Boolean(localStorage.getItem("pubd-dev"));
  */
 var pubd = { //储存设置
     configVersion: 0, //当前设置版本，用于提醒是否需要重置
-    cssVersion: 9, //当前需求CSS版本，用于提醒是否需要更新CSS
+    cssVersion: 10, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
     start: null, //开始按钮
