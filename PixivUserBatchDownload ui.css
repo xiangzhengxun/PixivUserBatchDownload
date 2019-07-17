@@ -63,7 +63,7 @@
 	position: absolute;
 	top: 0px;
 	left: 3px;
-	background-image: url('https://material.io/tools/icons/static/icons/baseline-image_search-24px.svg');
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAEN0lEQVR4Ae2bA7DsShRFz7Nt65rTe3/btm3bxW/bRuHbtm3btn2db53Xd6aTmT8nryprl9OT0yuodHcmUk4yMjIyMjI42u3Mu/g8PkQLf+ZHfAF3cJf6kTIngGVxLdsZedKGa7Fs2jv/OKP8wYMplajvy8sYBeay+r6SLmpG4TFG4cFjNaMkPXAY32AUM29wmKSEnriDUfzgdukpaQBHMkoWHCnF0TSZe+IefhOj6AuiaHberrXgErdJLpcb/mtybhNcghbv/iBJqR/My9HFKGb2EwUf8bS6zU0ThZvGWz2iD0kyKvrxyUQnvUJ1a01Pq8PFTw8c6tnjGpIEnMEoQZ4XBe/WbXCo5MEdptvjHokPKtCZSOAcdRmORJe+eKSH5KMHb1MCXYFPBH0ckgR7q+O/lb51myZLARqm6NsZ20pc+HQyAbeKOpMXq65cIAHgAvWrS+IL/JxMgDWqK/ep7RsEVd9ACdwncdEdk4ToAURTtQTQVK0HFWYCetxfPUQCqB6i5wlmAvj+v/upGCoBVAxV9X+yE3hd3eR1EoCrU/XfNxAo6U38uJ3AxWpPFwVVv0j96nQ7ga2pH2QzpABNM6DHpZuaCdSM0kMJ3FFoKAE9+WnjaDMBEd5fYCyq4BG6Pa4QsRRYjVHweLQHDvG0XthUQAQPhU1oGmfyNl9LEWMBovsppWvODecw1/zblJJt3nZb2wgkn9Tr/MiFzAWkJ24vTsFaQDgMrxenYCwgwtF8pCiFeQ0E9OIuLk6ugO85r4GAxi1feHmdL3MXtPgVTAQ0XBHXscN7lLvwkNtOeolgiXwKBgKaprHYjXfzBXyIFn6H13gXjseGbqL8TXIFv4AByRWSC9gr2AsUr2AvULyCvYBSaI39YLMV0GA5paCGFukWUAq6++kXUApoUd1PpwAO8CugBUsYPsiwRsM4CazvU8itoLtfVgE28ic+IL1D62sF6/nAML4b/uaXkVawFujxz6QSy4XX1wpmAtj/n33h6+ZJ4fVxQFkEuBV2km5xS/13gRGPSe/w+jjgfxcg2IbO3NLihVNn/6sCjguvrxVKLlA/Eh/+XuYH1Hrf+D/HaPbkVk1ev7QCPXHvP29SONq/1u/Jd7np1gKeVTc8XtFP/oXbmVF3wTPsYy7AFfMthmM+NXlXwSnGApyF7z3dOuDvifunepv/TjASqB/MV/zdcmuKSC887N+q7wQzAd7AyB+0uLl4EqOQ4Jnp/U0EsE/+I8soNDjTQMAtgk5GpQrWKbOAm8gvGZUwP6KijALso/9NV3zw0vT+5RM4m1Hpg/PKIFA+MoFMIBPIBDIBWwE1GLPOdxIXPJMmATwrceERaRLgERIXN00Nlw2DTk4t4gMI++DMhJ+gpOM+wDMV/RJ/BIQr0WXa+S5cWT9YiqFhCvfCvWr+VY58iXu5V8MUCSAjIyMjI+MX8iyKsdbetk8AAAAASUVORK5CYII=);
 }
 .pubd-menu
 {/*菜单*/
@@ -144,12 +144,16 @@
 	line-height: 2;
 }
 .pubd-menu-this-user .pubd-icon
-{/*菜单项-选项的图标*/
-	background-image: url('https://material.io/tools/icons/static/icons/baseline-get_app-24px.svg');
+{/*菜单项-选项的图标-下载当前画师*/
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAACHklEQVR4Ae3agWYcURTG8aMVW7WU0gJJg6F01rbzHehTVEELENAnSJ4hFiiobkq6T5C8QGkoqsAuBCgUpUBsbVslmUYFI1+7IXdy71y+/wXMLH7rHAbXlFJKqcs0WMUWDvzI6ys+RzjA1mDV2qzs+z5OvI53cOL7Zd/aqehh5nX8g1nRszbCjtdpDnYsPBQ4TgY4RmGh+bbXCc+2hYZpSgBmFpr/TAnwRTigTnsEEEAAAa72CMA/aB8ggAACCCCAAAIIIIAAAggggAAC4DXGOQM++Yqv4GOugK/VHTtteBffMgTg18PKzsJj/901wARvLwA8t0Z40SkADv3m+g0cLnnjpZ0Lu90BLKoHdhoKX/znjQ923c7Fy5wMgA07C8/++caX8rZxvMyJABNr5G/o+Y/hwCha5ngAnn5rxJvgT42iZY4J4OlvRJuAkXG8zKkA2DCusQl4Z9eM4mWOC6Dp5/zV3+ef/ZZRS5Y5HoCmn//VKb4P7xu1ZJkjAmj6uUfr1ROjli1zXABNf3jYjQmYWAvxMkcA0PQHxcscA8DTHx4vc3uA8OkPW+ZwwNzrhGceDEh/5SwUMEoKGAUDqnspr136WjDADOP0F1+DAEUP0w5fPWYAV/axF/vyN/bKvlkgoJmv+Wac6/f+3jd59oMB8RNAAAEEiJIA88xv5mKaO2CUHYC/97MCcBhnB+Dv/QwB/L2fMYC/97sJUEoppf4AxF4KMk77RSYAAAAASUVORK5CYII=);
+}
+.pubd-menu-this-illust .pubd-icon
+{/*菜单项-选项的图标-下载当前作品*/
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAB9ElEQVR4Ae2bgUYEURSGT0JkpReoYIQ21Z7zBEHPMQQEoAAISA8QqjAEQAEIah9hFwKkN2hbVqHdqcix6O5xd53mjv7vAFz4OP+PmXsJAAAAAACE2VzhI25LT8o/nh63+WhzhWah2ZBbHklZ3fBIbpsNmo5sgbtSVj/czRZoGvhCyjSGLygezniYjMCQM4pFTqRMaE4oFu6kJMBdikXeUhKQQbxAmdbUXAACEIAABCAAAQhAAAIQgAAEIAABCEAAAhCAAASupKingP4wkkV+rKkAv7TW6IvWhgxqKMAj2aMfOK+jwDGNIUXdBO5ojsbQJFQucMVn9il+3lmmcTQJ/gJmq9C83Bun3nmLfoHzagW0VbIleZp0rrVPAaRwEohtle11eQ2eu6YgmgR/AbNVduUj8q6DJsFZwGgVRQ4CS2bAubuA0SqKXAaWzEAKT4GIVvnuo/CSWUnwFzBaRfsouGRGEvwFjFbRPtIli4BzfwG7VbSPdMkikMJfwGoV7aPgkhlJcBTQVvFBk+ArcEzOcO4koK3ijhQOAtoqvmgSHATsVvFNwswCdqt4JgEftuIHAhDoJyXQ/39Xj/k0KYFTiqW1ltL1e1mlePi8tg8g9AlKp55PUJRmg2+qfgTEN80GzYKsymE1z7DkQQ4n7T4AAAAAAPgE2JrdC03pqrUAAAAASUVORK5CYII=);
 }
 .pubd-menu-setting .pubd-icon
 {/*菜单项-选项的图标*/
-	background: url('https://material.io/tools/icons/static/icons/baseline-settings-20px.svg');
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAEbklEQVR4Ae3aY4AkOxQF4LO2bXu3p3POs23btm3btm3btm3b9uvZPKyVSVK10/lR3/k3yO3bzE01ChMVCoVCoWBW5gHO7G1qkK7yorJ1xyyHVPFUWY9ciFTpLp8G+ChSpfe8GvgSiWok65f+zZGimqG+DdQYpKi8lKxnVkWKtJ13A3siRTrJtwGeixTxNu8GHkSK+JZ3A5+ifvVuwWv5qQ4f3cdx8+fQX7K+4RKOd7NeOoj3mJ3QGHnhoePL1vJGLYZplGflHbKBedjMgmloQV6jyvhqxyMf6jvVffumth/cFuOVuvIa2bjwOvXAeMPacGu9McXvKxyMPOj66ZT+hWeakQA30A+yGfKjtkQDM5Kn8pfp/PYuZGfmc5R/TzZ7+IHjd8sio0Z8VbZ64dtqgiy4jWx1w90Qb0wHfidb5fxqumSfsKoanoc4ZiTHyqaQchkx+KBsInky6oBENp1wbYQZ3EwfZi76HR/iKTxaF+ou/ZRxtc/UEiHMPpnK3aedS6Mxmf7NzRq8J9OaB8PfqI76NbrQXWYWzIBm592x6/KP0d3gS4tFFvmz7ucq19bfke9FS8FXub2+iCjxTXlWr9Xn0tcRq389vFPYFvq5sAKsNfPBk6jfA1d/rTQg+H2IZ4aUMLsjgFkuqIFLe7dADK2l3zxLvIRAutr3xWu2QDyO8Nvzm0UQqDRAFY+VP6wxiDd+1LuxzjKPIIKuqmtd3q12yIN2cd9b3BwRuI77TUH7ogHywqMdxSpjOiCC2jl3u6chT7zEUeoNRNKbjlWvRp5cWwA+AIfoDft9yJOedDRwBSLxSkcDT9RbA7oUkXRZTAP5P9j3I5Luj3tiRuA19f0i5nXIE89wvY2qXdyhjSr1czW5gfZlrawjayECN3OtybE8BA2Rndp5TFFXIQIfrWtdPjCqI7KpMV7DfcW9W4+f+vhJps2c2cL3qguvQSC97Lud5qaRl5V0qUeByINw7hY20AxuFrxb52uyQfld9L/mwNrA1V9S37BjlW9ixm6/oZ6KWZ1fltvHf2kgx2MVsy7/jDxWWRS+RnXXX7KRudN1sKU7468TBE0d5jDZDLnLrDnly65mlNmJD2Rac0+EUEt+JZspP/F2XcijdRof0g+yGfOhmiCMWU82oawQOQOkET6IGJo9kQYqZiTi6MIkGjgJsUwX/Vr1p893YzognvaUrXK2RBZqog+rev+/igbIRivEfE3DHf9VzHwz60TiJ55cGoYGZgv9lPFK5gYASzxTv8VNGR7MyKmG71e0ZakVxlMP3hh9868sdZ1sdN1B7045yqgv8sETxi/6t64uL4BpmFn0cPimbzrDYgMtxpsmzAo8BHlRE7MT7zUHjuruaHIJWe/85Xpum346gp/yGrVE/dLn3g28iRQFPI1uRYp4vncDJyJF3Nu3AbMtUsTVvRtYEimivMfzIUjR4La++3s0Qpo8v8TxLlLFx/0+g5EqXuTTAE9FQiJO9LgE0sWS2YcHuGJWwQSFQqFQKBT+AfVgCeOyGbjFAAAAAElFTkSuQmCC);
 }
 .pubd-menu-close .pubd-icon
 {/*菜单项-关闭的图标*/
@@ -466,7 +470,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-icon
 {/*选项对话框图标*/
-	background: url('https://material.io/tools/icons/static/icons/baseline-settings-20px.svg');
+	background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgAgMAAACf9p+rAAAACVBMVEUAAAAzMzMyMjIH2j3VAAAAA3RSTlMA/4CE6rqMAAAAc0lEQVR4Ae3NoQ0CUBAFQXLuCrmSHkFSCk1cvySo0QQB5I9dsZfjDXk54YTPhQ2uhAluhA7uhAoeTtaFxoXahSoutC40LtQuVHGhdaFxoXahigutC40LtQtVXGhdaFyoXajiQutC40LtQuXivyT63XB8iycdcJ0OPAoNRAAAAABJRU5ErkJggg==);
 }
 .pubd-tologin,.pubd-downscheme-new,.pubd-downscheme-remove,.pubd-rpcchk,.pubd-reset,.pubd-save
 {/*选项面板按钮*/
@@ -703,7 +707,13 @@ border: 1px solid #becad7;
 	top: 180px;
 	width: 400px;
 }
-.pubd-downthis .pubd-icon
+.pubd-downillust
+{/*下载当前作品*/
+	left: calc(50vw - 340px);
+	top: 200px;
+	width: 400px;
+}
+.pubd-down .pubd-icon
 {/*选项对话框图标*/
 	background: url('https://material.io/tools/icons/static/icons/baseline-get_app-24px.svg');
 }
@@ -715,11 +725,11 @@ border: 1px solid #becad7;
 {/*下载内容单选框*/
 	width: 50%;
 }
-.pubd-downthis dt
+.pubd-down dt
 {/*中断按钮*/
 	position: relative;
 }
-.pubd-downthis .pubd-breakdown
+.pubd-down .pubd-breakdown
 {/*中断按钮*/
 	position: absolute;
 	bottom: 0;
@@ -729,27 +739,30 @@ border: 1px solid #becad7;
 	line-height: 11px;
 	font-size:12px;
 }
-.pubd-downthis .pubd-down-log
+.pubd-down .pubd-down-log
 {/*下载日志*/
 	min-width: 100px;
 	min-height: 40px;
-	width : calc(100% - 10px);
+	width : 100%;
+    box-sizing: border-box;
 	height : 100px;
 resize:none;
 }
-.pubd-downthis .pubd-down-downbar
+.pubd-down .pubd-down-downbar
 {
 }
-.pubd-downthis .pubd-textdown
+.pubd-down .pubd-textdown
 {/*文本下载按钮*/
 	width: calc(20% - 5px);
+    box-sizing: border-box;
 	height: 50px;
 	margin-right: 5px;
 	vertical-align: middle;
 }
-.pubd-downthis .pubd-startdown
+.pubd-down .pubd-startdown
 {/*开始下载按钮*/
 	width: 80%;
+    box-sizing: border-box;
 	height: 50px;
 	font-size: 30px;
 	vertical-align: middle;
@@ -758,7 +771,11 @@ resize:none;
 {
 	height : calc(100% - 442px);
 }
-.pubd-downthis .pubd-down-textout
+.pubd-downillust .pubd-down-textout-bar
+{
+	height : calc(100% - 342px);
+}
+.pubd-down .pubd-down-textout
 {/*文本输出*/
 	min-width: 100px;
 	min-height: 40px;
