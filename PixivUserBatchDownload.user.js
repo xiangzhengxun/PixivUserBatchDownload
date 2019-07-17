@@ -19,8 +19,8 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/b4f79c8fbe93784572363df8c441edb825c5dd4a/PixivUserBatchDownload%20ui.css
-// @version		5.8.69
+// @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5/PixivUserBatchDownload%20ui.css
+// @version		5.8.70
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
