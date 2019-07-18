@@ -312,7 +312,6 @@ var Auth = function (username, password, remember) {
             device_token: "pixiv",
             get_secure_url: "true",
         })
-        console.log("1",postObj);
 
         //登陆是老的API
         GM_xmlhttpRequest({
