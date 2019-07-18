@@ -958,11 +958,12 @@ function toggleStar(userid)
     if (starIdx>=0)
     { //存在，则删除
         pubd.fastStarList.splice(starIdx,1);
+        pubd.start.star.classList.remove("stars");
     }else
     { //不存在，则添加
         pubd.fastStarList.push(userid);
+        pubd.start.star.classList.add("stars");
     }
-    checkStar();
     GM_setValue("pubd-faststar-list",pubd.fastStarList);
 }
 //检查是否有画师并改变星星状态
@@ -970,11 +971,11 @@ function checkStar()
 {
     var starIdx = fastStarIndex()
     if (starIdx>=0)
-    { //存在，则删除
+    { //存在，则标记
         pubd.start.star.classList.add("stars");
         return true;
     }else
-    { //不存在，则添加
+    { //不存在，则去掉标记
         pubd.start.star.classList.remove("stars");
         return false;
     }
