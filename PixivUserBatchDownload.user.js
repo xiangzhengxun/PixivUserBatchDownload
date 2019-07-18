@@ -19,8 +19,8 @@
 // @exclude		*://www.pixiv.net/*mode=big&illust_id*
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
-// @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5/PixivUserBatchDownload%20ui.css
-// @version		5.8.73
+// @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5_multiple/PixivUserBatchDownload%20ui.css
+// @version		5.9.75
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -34,6 +34,7 @@
 // @grant       GM_listValues
 // @grant       GM_addStyle
 // @grant       GM_getResourceText
+//-@grant       GM_getResourceURL
 // @grant       GM_addValueChangeListener
 //-@grant       GM_notification
 // @grant       GM_registerMenuCommand
@@ -62,6 +63,7 @@ var pubd = { //储存设置
         config: null, //设置窗口
         login: null, //登陆窗口
         downthis: null, //下载当前窗口
+        downillust: null, //下载当前作品窗口
     },
     auth: null,
     downSchemes: [],
@@ -346,53 +348,51 @@ var Auth = function (username, password, remember) {
     return auth;
 };
 
+//一个掩码
+var Mask = function(name, logic, content){
+    this.name = name;
+    this.logic = logic;
+    this.content = content;
+}
 //一个下载方案
 var DownScheme = function(name) {
-    var obj = {
-        name: name ? name : "默认方案",
-        rpcurl: "http://localhost:6800/jsonrpc",
-        https2http: false,
-        downfilter: "",
-        savedir: "D:/PixivDownload/",
-        savepath: "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}",
-        textout: "%{illust.url_without_page}%{page}.%{illust.extention}\n",
-        masklist: [],
-        mask: {
-            add: function(name, logic, content) {
-                var mask = {
-                    name: name,
-                    logic: logic,
-                    content: content,
-                };
-                obj.masklist.push(mask);
-                return mask;
-            },
-            remove: function(index) {
-                obj.masklist.splice(index, 1);
-            },
-        },
-        loadFromJson: function(ojson) {
-            var json = ojson;
-            if (typeof(ojson) == "string") {
-                try {
-                    json = JSON.parse(ojson);
-                } catch (e) {
-                    console.error(e);
-                    return false;
-                }
-            }
-            this.name = json.name;
-            this.https2http = [0, "false", false, undefined, null].indexOf(json.https2http) < 0; //存在任一条件时即为false
-            this.rpcurl = json.rpcurl;
-            this.downfilter = json.downfilter || "";
-            this.savedir = json.savedir;
-            this.savepath = json.savepath;
-            this.textout = json.textout;
-            this.masklist = JSON.parse(JSON.stringify(json.masklist));
-            return true;
-        },
+    this.name = name ? name : "默认方案";
+    this.rpcurl = "http://localhost:6800/jsonrpc";
+    this.https2http = false;
+    this.downfilter = "";
+    this.savedir = "D:/PixivDownload/";
+    this.savepath = "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}";
+    this.textout = "%{illust.url_without_page}%{page}.%{illust.extention}\n";
+    this.masklist = [];
+};
+DownScheme.prototype.maskAdd = function(name, logic, content) {
+    var mask = new Mask(name, logic, content);
+    this.masklist.push(mask);
+    return mask;
+}
+DownScheme.prototype.maskRemove = function(index) {
+    this.masklist.splice(index, 1);
+}
+DownScheme.prototype.loadFromJson = function(ojson) {
+    var json = ojson;
+    if (typeof(ojson) == "string") {
+        try {
+            json = JSON.parse(ojson);
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
     }
-    return obj;
+    this.name = json.name;
+    this.https2http = [0, "false", false, undefined, null].indexOf(json.https2http) < 0; //存在任一条件时即为false
+    this.rpcurl = json.rpcurl;
+    this.downfilter = json.downfilter || "";
+    this.savedir = json.savedir;
+    this.savepath = json.savepath;
+    this.textout = json.textout;
+    this.masklist = null; //清空之前的
+    this.masklist = JSON.parse(JSON.stringify(json.masklist));
+    return true;
 };
 
 //创建菜单类
@@ -918,20 +918,24 @@ function buildbtnStart(touch) {
     {
 
     } else {
-        var btnStart = document.createElement("a");
+        var btnStart = document.createElement("div");
         btnStart.id = "pubd-start";
         btnStart.className = "pubd-start";
         //添加图标
         var icon = btnStart.icon = btnStart.appendChild(document.createElement("i"));
-        icon.className = "pubd-icon";
+        icon.className = "pubd-icon star";
         //添加文字
-        var span = btnStart.caption = btnStart.appendChild(document.createElement("span"));
-        span.className = "text";
-        span.innerHTML = "使用PUBD扒图";
+        var caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
+        caption.className = "text";
+        caption.innerHTML = "使用PUBD扒图";
+        //添加文字
+        var menu = btnStart.menu = btnStart.appendChild(document.createElement("i"));
+        menu.className = "pubd-icon menu";
 
         //鼠标移入和按下都起作用
         //btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
-        btnStart.addEventListener("click", function() { pubd.menu.classList.toggle("display-none") });
+        menu.addEventListener("click", function() { pubd.menu.classList.toggle("display-none")});
+        caption.addEventListener("click", function() { pubd.menu.downthis.click()});
     }
     return btnStart;
 }
@@ -974,7 +978,7 @@ function buildbtnMenu(touch) {
             );
             menu.hide();
         });
-        menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
+        menu.downthis = menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
             var arg;
             var user_id = parseInt(getQueryString("id"));
             if(user_id)
@@ -1002,15 +1006,6 @@ function buildbtnMenu(touch) {
         	);
         */
         /*
-        if (typeof(pixiv.context.illustId) != "undefined")
-        { //需要子菜单，显示不同的下载方案
-        menu.add("下载当前作品","",function()
-        		{
-        			pubd.dialog.downthis.show();
-        			menu.hide();
-        		}
-        	);
-        }
         if (typeof(pixiv.context.userId) != "undefined")
         {
         menu.add("收藏作者","",function()
@@ -1147,10 +1142,10 @@ function buildDlgConfig(touch) {
     dl.appendChild(dt);
     var dd = document.createElement("dd");
 
-    var frm = new Frame("“下载该画师”窗口", "pubd-frm-downthis");
-    var chk_autoanalyse = new LabelInput("打开窗口时自动获取", "pubd-autoanalyse", "pubd-autoanalyse", "checkbox", "1", true);
+    var frm = new Frame("下载窗口", "pubd-frm-downthis");
+    var chk_autoanalyse = new LabelInput("打开窗口自动获取数据", "pubd-autoanalyse", "pubd-autoanalyse", "checkbox", "1", true);
     dlg.autoanalyse = chk_autoanalyse.input;
-    var chk_autodownload = new LabelInput("获取完成后自动发送", "pubd-autodownload", "pubd-autodownload", "checkbox", "1", true);
+    var chk_autodownload = new LabelInput("获取完成自动发送下载", "pubd-autodownload", "pubd-autodownload", "checkbox", "1", true);
     dlg.autodownload = chk_autodownload.input;
 
     frm.content.appendChild(chk_autoanalyse);
@@ -1507,7 +1502,7 @@ function buildDlgConfig(touch) {
         if (dlg.mask_logic.value.length < 1) { alert("执行条件为空"); return; }
         if (dlg.mask_content.value.indexOf("%{" + dlg.mask_logic.value + "}")>=0) { alert("该掩码调用自身，会形成死循环。"); return; }
         var schemeIndex = dlg.downSchemeDom.selectedIndex;
-        dlg.schemes[schemeIndex].mask.add(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
+        dlg.schemes[schemeIndex].maskAdd(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
         dlg.addMask(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
         dlg.mask_name.value = dlg.mask_logic.value = dlg.mask_content.value = "";
     }
@@ -1522,7 +1517,7 @@ function buildDlgConfig(touch) {
         if (dlg.masklist.selectedOptions.length < 1) { alert("没有选中掩码"); return; }
         var schemeIndex = dlg.downSchemeDom.selectedIndex;
         var maskIndex = dlg.masklist.selectedIndex;
-        dlg.schemes[schemeIndex].mask.remove(maskIndex);
+        dlg.schemes[schemeIndex].maskRemove(maskIndex);
         dlg.masklist.remove(maskIndex);
         for (var mi = maskIndex; mi < dlg.masklist.options.length; mi++) {
             dlg.masklist.options[mi].value = mi;
@@ -1713,7 +1708,7 @@ function buildDlgLogin(touch) {
     logo_box.appendChild(logo);
     var catchphrase = document.createElement("div");
     catchphrase.className = "catchphrase";
-    catchphrase.innerHTML = "登陆获取你的账户通行证，解除年龄限制";
+    catchphrase.innerHTML = "登陆获取你的账户许可，解除年龄限制";
     logo_box.appendChild(catchphrase);
     dlgc.appendChild(logo_box);
     //实际登陆部分
@@ -2485,7 +2480,6 @@ function buildDlgDownIllust(touch, illustid) {
                             dlg.log(contentName + " " + work.id + " 原图格式未知。");
                         }
                     }
-                    dlg.log("已获取图片信息");
                     dlg.infoCard.thumbnail = work.image_urls.square_medium;
                     var iType = "插画";
                     if (work.type == "ugoira")
@@ -2501,26 +2495,27 @@ function buildDlgDownIllust(touch, illustid) {
                         "作品页数": work.page_count,
                     });
 
-                    if (work.type == "ugoira" && work.ugoira_metadata == undefined)
+                    
+                    if (work.type == "ugoira" && work.ugoira_metadata == undefined && getValueDefault("pubd-getugoiraframe",true))
+                    {
+                        analyseUgoira(work, function() { //开始分析动图
+                            dlg.textdown.disabled = false;
+                            dlg.startdown.disabled = false;
+                            dlg.infoCard.infos["作品页数"] = work.ugoira_metadata.frames.length;
+                            console.log("当前作品JSON数据：",work);
+                            dlg.log("图片信息获取完毕");
+                            if (callbackAfterAnalyse) callbackAfterAnalyse();
+                        });
+                        return;
+                    }else
                     {
                         if (!getValueDefault("pubd-getugoiraframe",true)) {
                             dlg.log("由于用户设置，跳过获取动图帧数。");
-                            dlg.textdown.disabled = false;
-                            dlg.startdown.disabled = false;
-                            if (callbackAfterAnalyse) callbackAfterAnalyse();
-                        } else {
-                            analyseUgoira(work, function() { //开始分析动图
-                                dlg.textdown.disabled = false;
-                                dlg.startdown.disabled = false;
-                                dlg.infoCard.infos["作品页数"] = work.ugoira_metadata.frames.length;
-                                if (callbackAfterAnalyse) callbackAfterAnalyse();
-                            });
-                            return;
                         }
-                    }else
-                    {
                         dlg.textdown.disabled = false;
                         dlg.startdown.disabled = false;
+                        console.log("当前作品JSON数据：",work);
+                        dlg.log("图片信息获取完毕");
                         if (callbackAfterAnalyse) callbackAfterAnalyse();
                     }
                 },
@@ -2962,7 +2957,7 @@ function findInsertPlace(touch, btnStart) {
         clearInterval(findInsertPlaceHook);
         return;
     } else {
-        var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)>div") //2018年10月8日 新版用户资料首页
+        var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
                                 ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
                                 //||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
                                 ||document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div") //新版关注页
@@ -3006,6 +3001,7 @@ function start(touch) {
         clearInterval(findInsertPlaceHook);
         return;
     }
+
     if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
 
     //载入设置
@@ -3050,6 +3046,9 @@ function start(touch) {
     pubd.start = btnStartBox.appendChild(buildbtnStart(touch));
     pubd.menu = btnStartBox.appendChild(buildbtnMenu(touch));
 
+    findInsertPlaceHook = setInterval(function(){
+        findInsertPlace(touch, btnStartBox);
+    }, 1000);
     //对于新版P站的SPA结构需要循环寻找插入点，每秒循环
     if (window.MutationObserver) //如果支持MutationObserver
     {
@@ -3066,11 +3065,6 @@ function start(touch) {
             newInsertStart();
         });
         observer.observe(document.querySelector("#root"), {childList: true,subtree:true});
-    }else
-    {
-        findInsertPlaceHook = setInterval(function(){
-            findInsertPlace(touch, btnStartBox);
-        }, 1000);
     }
 }
 start(pubd.touch); //开始主程序

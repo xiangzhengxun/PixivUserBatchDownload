@@ -12,6 +12,19 @@
 	position: relative;
 	margin: 0 0 0 auto;
 }
+.pubd-icon
+{/*所有图标，来自._icon*/
+	display: inline-block;
+	overflow: hidden;
+	text-indent: -999px;
+	white-space: nowrap;
+	height: 20px;
+	width: 20px;
+	background-size: 20px;
+	background-repeat: no-repeat;
+    background-position: center;
+	vertical-align: middle;
+}
 .pubd-start
 {/*开始按钮*/
 	color: #1A4483;
@@ -20,50 +33,50 @@
 	text-shadow: #fcfcf8 0 1px 2px;
 	border: 1px solid #cfe0e9;
 	border-radius: 5px;
-	padding: 2px 0px;
+	padding: 0;
 	margin: 0;
 	display: inline-block;
 	width: 152px;
+    height: 25px;
+	font-size: 14px;
+	line-height: 25px;
 	position: relative;
-	text-align: center;
-	vertical-align: middle;
 	cursor: pointer;
-	font-size: 12px;
-	line-height: 18px;
 	word-wrap: break-word;
 	text-decoration: none !important;
+	vertical-align:top;
 }
-.pubd-start::after
-{/*开始按钮后面的箭头*/
-	content: "▾";
-	position: absolute;
-	right: 6px;
-	padding-left: 5px;
-	color: #1A4483;
-	border-left: 1px solid #77AAB1;
-}
-.pubd-start:hover
-{/*开始按钮悬停*/
-	background-image: linear-gradient(to bottom, #FAFBFD 0%, #43B8D5 100%);
-}
-.pubd-icon
-{/*所有图标，来自._icon*/
-	display: inline-block;
-	overflow: hidden;
-	text-indent: -999px;
-	white-space: nowrap;
-	vertical-align: middle;
-	height: 20px;
-	width: 20px;
-	background-size: 20px;
-	background-repeat: no-repeat;
-}
-.pubd-start .pubd-icon
+.pubd-start>.pubd-icon
 {/*开始按钮图标*/
-	position: absolute;
-	top: 0px;
-	left: 3px;
-	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAEN0lEQVR4Ae2bA7DsShRFz7Nt65rTe3/btm3bxW/bRuHbtm3btn2db53Xd6aTmT8nryprl9OT0yuodHcmUk4yMjIyMjI42u3Mu/g8PkQLf+ZHfAF3cJf6kTIngGVxLdsZedKGa7Fs2jv/OKP8wYMplajvy8sYBeay+r6SLmpG4TFG4cFjNaMkPXAY32AUM29wmKSEnriDUfzgdukpaQBHMkoWHCnF0TSZe+IefhOj6AuiaHberrXgErdJLpcb/mtybhNcghbv/iBJqR/My9HFKGb2EwUf8bS6zU0ThZvGWz2iD0kyKvrxyUQnvUJ1a01Pq8PFTw8c6tnjGpIEnMEoQZ4XBe/WbXCo5MEdptvjHokPKtCZSOAcdRmORJe+eKSH5KMHb1MCXYFPBH0ckgR7q+O/lb51myZLARqm6NsZ20pc+HQyAbeKOpMXq65cIAHgAvWrS+IL/JxMgDWqK/ep7RsEVd9ACdwncdEdk4ToAURTtQTQVK0HFWYCetxfPUQCqB6i5wlmAvj+v/upGCoBVAxV9X+yE3hd3eR1EoCrU/XfNxAo6U38uJ3AxWpPFwVVv0j96nQ7ga2pH2QzpABNM6DHpZuaCdSM0kMJ3FFoKAE9+WnjaDMBEd5fYCyq4BG6Pa4QsRRYjVHweLQHDvG0XthUQAQPhU1oGmfyNl9LEWMBovsppWvODecw1/zblJJt3nZb2wgkn9Tr/MiFzAWkJ24vTsFaQDgMrxenYCwgwtF8pCiFeQ0E9OIuLk6ugO85r4GAxi1feHmdL3MXtPgVTAQ0XBHXscN7lLvwkNtOeolgiXwKBgKaprHYjXfzBXyIFn6H13gXjseGbqL8TXIFv4AByRWSC9gr2AsUr2AvULyCvYBSaI39YLMV0GA5paCGFukWUAq6++kXUApoUd1PpwAO8CugBUsYPsiwRsM4CazvU8itoLtfVgE28ic+IL1D62sF6/nAML4b/uaXkVawFujxz6QSy4XX1wpmAtj/n33h6+ZJ4fVxQFkEuBV2km5xS/13gRGPSe/w+jjgfxcg2IbO3NLihVNn/6sCjguvrxVKLlA/Eh/+XuYH1Hrf+D/HaPbkVk1ev7QCPXHvP29SONq/1u/Jd7np1gKeVTc8XtFP/oXbmVF3wTPsYy7AFfMthmM+NXlXwSnGApyF7z3dOuDvifunepv/TjASqB/MV/zdcmuKSC887N+q7wQzAd7AyB+0uLl4EqOQ4Jnp/U0EsE/+I8soNDjTQMAtgk5GpQrWKbOAm8gvGZUwP6KijALso/9NV3zw0vT+5RM4m1Hpg/PKIFA+MoFMIBPIBDIBWwE1GLPOdxIXPJMmATwrceERaRLgERIXN00Nlw2DTk4t4gMI++DMhJ+gpOM+wDMV/RJ/BIQr0WXa+S5cWT9YiqFhCvfCvWr+VY58iXu5V8MUCSAjIyMjI+MX8iyKsdbetk8AAAAASUVORK5CYII=);
+	background-size: 23px;
+    width: 25px;
+    color:black;
+}
+.pubd-start>.star
+{/*开始按钮前面的快速收藏图标*/
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAC0ElEQVR4Ae3aA9AcSxQF4PNs2+ay73m2bRVebNu2bSeloBDbtp1CbJubTOydTZY9Xenvln+d8696bg0sy7Isy7Isy0Xwcf8TMJnkl3wwGUdwBMz1xn2MMPLGfTCVykaHjsoKU8mA0wXYH2Z69i45crqAHHn2LphI/qNzdtQ/MJH0Pl9AesE8vtt58HwBHvTdDtPIr3QumZ9hGva4tIB0g2Fu4d5LC3AHboFJwt/SuXzkK5iE7a8q0BYGuYk7rizATbgJpuAndK4e9SFMIc2jFWATmIKbohWQ1TCDeodO9AmHzShQz60Aa8MEXOFWQJbA+0I+Ou4Teh1ex2qxCkglZJpk4TgZf/3D7bEKcFtcv2ucZEHy+Ad309Ewu/kHUsP/HCdlPP4k/3NIoZtZlZGMhY+wKm5GqskHXJuJ+LJKPkB68AHpk/b4fXz3Ip2YnQfSFn6fyob04ysyOy3xZ4dfRGbwNjaQEykNf5z1cSsyiV9yY8oKbOSXyLzAQxyckviDAw9BFxaUw0mFP6gK6D99Lk44/uLgG9DvxTuldULxW756B7xCFY03vhSBl0ijuAs0hJfI6rgLrIZ3hBSd+EeF4BVSJ5ECrG3AHiLWyFIj9hAG7CikeqIFVBV4ARcmWkDmQz/1QsyQXU6N4z7qBejGiu7XV/IfAMh/ss/1e8pBN5l97eur8Itu38UZnnwCyQk2ufz6irdJ4+gVfE9CJ5aOtj7kd4iC33FblLIloJNMuyrSWPe75PxPRNnwTYI+vievCHNMKuEmxHKzVGbk8qebxicRi10Wf618kNCGrxB0kQmXxOjHB65/w3fpOkDGQA/fwxd2Q4dUgSTWARHfw9BBFTgXYHnIl+AhcPm535AHOsgoOnSk04t3IkG8++xBQ4ZpeQIxIvv4B5J0+qCh5d5SlStVy9jTBw0N95bKDylcxt6qfoRlWZZlWZZlWZZlWTeWk0IlBrn4IB9WAAAAAElFTkSuQmCC);
+}
+.pubd-start>.menu
+{/*开始按钮后面的菜单按钮*/
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgAQMAAADYVuV7AAAABlBMVEUAAAAzMzPI8eYgAAAAAXRSTlMAQObYZgAAABxJREFUeAFjIBOMAv7/UPCBlhzywWgYjIbBKAAANijXKaI5RRgAAAAASUVORK5CYII=);
+}
+.pubd-start>.pubd-icon,.pubd-start>.text
+{
+    height:100%;
+	position: relative;
+    display: inline-block;
+	vertical-align: inherit ;
+    text-align:center;
+    box-sizing: border-box;
+}
+.pubd-start>.pubd-icon:hover,.pubd-start>.text:hover
+{
+	background-color: rgba(0,0,0,0.2);
+}
+
+.pubd-start>.text
+{/*开始按钮文字*/
+    width: calc(100% - 50px);
 }
 .pubd-menu
 {/*菜单*/
@@ -582,6 +595,11 @@ border: 1px solid #becad7;
 .pubd-config .pubd-reset
 {/*重置按钮*/
 	float: left;
+}
+.pubd-help-link:hover
+{/*帮助按钮*/
+    text-decoration:underline;
+    font-weight:bold;
 }
 /*▲选项对话框相关*/
 /*▼登陆对话框相关*/
