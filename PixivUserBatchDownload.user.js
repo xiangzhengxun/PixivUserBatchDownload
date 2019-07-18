@@ -20,7 +20,7 @@
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5_multiple/PixivUserBatchDownload%20ui.css
-// @version		5.9.75
+// @version		5.9.76
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -62,7 +62,7 @@ if (
  * 公共变量区
  */
 var pubd = { //储存设置
-    configVersion: 0, //当前设置版本，用于提醒是否需要重置
+    configVersion: 1, //当前设置版本，用于提醒是否需要重置
     cssVersion: 10, //当前需求CSS版本，用于提醒是否需要更新CSS
     touch: false, //是触屏
     loggedIn: false, //登陆了
@@ -74,10 +74,11 @@ var pubd = { //储存设置
         downthis: null, //下载当前窗口
         downillust: null, //下载当前作品窗口
     },
-    auth: null,
-    downSchemes: [],
-    downbreak: false,
-    staruser: [],
+    auth: null, //储存账号密码
+    downSchemes: [], //储存下载方案
+    downbreak: false, //是否停止发送Aria2的Flag
+    fastStarList: [], //储存快速收藏的简单数字
+    staruser: [], //储存完整的下载列表
 };
 
 var scriptVersion = "LocalDebug"; //本程序的版本
@@ -297,99 +298,74 @@ var Works = function(){
 }
 //一个认证方案
 var Auth = function (username, password, remember) {
-    if (!username) username = "";
-    if (!password) password = "";
-    if (!remember) remember = false;
-    var auth = { //原始结构
-        response: {
-            access_token: "",
-            expires_in: 0,
-            token_type: "",
-            scope: "",
-            refresh_token: "",
-            user: {
-                profile_image_urls: {
-                    px_16x16: "",
-                    px_50x50: "",
-                    px_170x170: "",
-                },
-                id: "",
-                name: "",
-                account: "",
-                mail_address: "",
-                is_premium: false,
-                x_restrict: 0,
-                is_mail_authorized: true,
-            },
-            device_token: "",
-        },
-        needlogin: false,
-        username: username,
-        password: password,
-        save_account: remember,
-        login_date: null,
-    }
-    auth.newAccount = function(username, password, remember) {
-        if (typeof(remember) == "boolean") auth.save_account = remember;
-        auth.username = username;
-        auth.password = password;
-    }
-    auth.loadFromResponse = function(response) {
-        auth = Object.assign(auth, response);
-    }
-    auth.save = function() {
-        var saveObj = JSON.parse(JSON.stringify(auth)); //深度拷贝
-        if (!saveObj.save_account) {
-            saveObj.username = "";
-            saveObj.password = "";
-        }
-        GM_setValue("pubd-auth", JSON.stringify(saveObj));
-    }
-
-    auth.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
-        var postObj = new PostDataObject({ //Post时发送的数据
-            client_id: "MOBrBDS8blbauoSck0ZfDbtuzpyT", //安卓某个版本的数据
-            client_secret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj", //安卓某个版本的数据
-            grant_type: "password",
-            username: auth.username,
-            password: auth.password,
-            device_token: "pixiv",
-            get_secure_url: "true",
-        })
-
-        //登陆是老的API
-        GM_xmlhttpRequest({
-            url: "https://oauth.secure.pixiv.net/auth/token",
-            method: "post",
-            responseType: "text",
-            headers: new HeadersObject(),
-            data: postObj.toPostString(),
-            onload: function(response) {
-                try {
-                    var jo = JSON.parse(response.responseText);
-                    if (jo.has_error || jo.errors) {
-                        console.error("登录失败，返回错误消息", jo);
-                        onload_hasError_Cb(jo);
-                    } else { //登陆成功
-                        auth.loadFromResponse(jo);
-                        auth.login_date = new Date();
-                        console.info("登陆成功", jo);
-                        onload_suceess_Cb(jo);
-                    }
-                } catch (e) {
-                    console.error("登录失败，返回可能不是JSON，或程序异常", e, response);
-                    onload_notJson_Cb(response);
-                }
-            },
-            onerror: function(response) {
-                console.error("登录失败，AJAX发送失败", response);
-                onerror_Cb(response);
-            }
-        })
-    }
-    return auth;
+    this.response = null;
+    this.needlogin = false;
+    this.username = username || null;
+    this.password = password || null;
+    this.save_account = remember || false,
+    this.login_date = null;
 };
+Auth.prototype.newAccount = function(username, password, remember) {
+    if (typeof(remember) == "boolean") this.save_account = remember;
+    this.username = username;
+    this.password = password;
+}
+Auth.prototype.loadFromAuth = function(auth) {
+    var _thisAuth = this;
+    Object.keys(_thisAuth).forEach(function(key){
+        _thisAuth[key] = auth[key];
+    })
+}
+Auth.prototype.save = function() {
+    var saveObj = Object.assign({},this);
+    if (!saveObj.save_account) {
+        saveObj.username = "";
+        saveObj.password = "";
+    }
+    GM_setValue("pubd-auth", saveObj);
+}
+Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
+    var _thisAuth = this;
+    var postObj = new PostDataObject({ //Post时发送的数据
+        client_id: "MOBrBDS8blbauoSck0ZfDbtuzpyT", //安卓某个版本的数据
+        client_secret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj", //安卓某个版本的数据
+        grant_type: "password",
+        username: _thisAuth.username,
+        password: _thisAuth.password,
+        device_token: "pixiv",
+        get_secure_url: "true",
+    })
 
+    //登陆是老的API
+    GM_xmlhttpRequest({
+        url: "https://oauth.secure.pixiv.net/auth/token",
+        method: "post",
+        responseType: "text",
+        headers: new HeadersObject(),
+        data: postObj.toPostString(),
+        onload: function(response) {
+            try {
+                var jo = JSON.parse(response.responseText);
+                if (jo.has_error || jo.errors) {
+                    console.error("登录失败，返回错误消息", jo);
+                    onload_hasError_Cb(jo);
+                } else { //登陆成功
+                    _thisAuth.response = jo.response;
+                    _thisAuth.login_date = new Date();
+                    console.info("登陆成功", jo);
+                    onload_suceess_Cb(jo);
+                }
+            } catch (e) {
+                console.error("登录失败，返回可能不是JSON，或程序异常", e, response);
+                onload_notJson_Cb(response);
+            }
+        },
+        onerror: function(response) {
+            console.error("登录失败，AJAX发送失败", response);
+            onerror_Cb(response);
+        }
+    })
+}
 //一个掩码
 var Mask = function(name, logic, content){
     this.name = name;
@@ -438,7 +414,7 @@ DownScheme.prototype.loadFromJson = function(ojson) {
 };
 
 //创建菜单类
-var pubdMenu = (function() {
+var pubdMenu = function(classname) {
     //生成菜单项
     function buildMenuItem(title, classname, callback, submenu) {
         var item = document.createElement("li");
@@ -484,31 +460,29 @@ var pubdMenu = (function() {
         return item;
     }
 
-    return function(touch, classname) {
-        var menu = document.createElement("ul");
-        menu.className = "pubd-menu display-none" + (classname ? " " + classname : "");
-        menu.item = new Array();
-        //显示该菜单
-        menu.show = function() {
-            menu.classList.remove("display-none");
+    var menu = document.createElement("ul");
+    menu.className = "pubd-menu display-none" + (classname ? " " + classname : "");
+    menu.item = new Array();
+    //显示该菜单
+    menu.show = function() {
+        menu.classList.remove("display-none");
+    }
+    menu.hide = function() {
+            menu.classList.add("display-none");
         }
-        menu.hide = function() {
-                menu.classList.add("display-none");
-            }
-            //添加菜单项
-        menu.add = function(title, classname, callback, submenu) {
-                var itm = buildMenuItem(title, classname, callback, submenu);
-                this.appendChild(itm);
-                this.item.push(itm)
-                return itm;
-            }
-            //鼠标移出菜单时消失
-        menu.addEventListener("mouseleave", function(e) {
-            this.hide();
-        });
-        return menu;
-    };
-})();
+        //添加菜单项
+    menu.add = function(title, classname, callback, submenu) {
+            var itm = buildMenuItem(title, classname, callback, submenu);
+            this.appendChild(itm);
+            this.item.push(itm)
+            return itm;
+        }
+        //鼠标移出菜单时消失
+    menu.addEventListener("mouseleave", function(e) {
+        this.hide();
+    });
+    return menu;
+};
 
 //创建通用对话框类
 var Dialog = function(caption, classname, id) {
@@ -954,10 +928,10 @@ function getQueryString(name,url) {
 	var r = search.match(reg);
 	if (r != null) return decodeURIComponent(r[2]); return null;
 }
-//检查并快速添加画师收藏的函数
-function toggleStar(userid)
+//获取当前用户ID
+function getCurrentUserId()
 {
-    userid = userid || parseInt(getQueryString("id"));
+    var userid = userid || parseInt(getQueryString("id"));
     if(!userid)
     {
         if (getQueryString("illust_id")) //如果是作品页面
@@ -968,150 +942,160 @@ function toggleStar(userid)
             userid = thisPageUserid;
         }
     }
-    var starList;
-    if (pubd.staruser[0])
-    {
-        starList = pubd.staruser[0];
+    return userid;
+}
+//检查画师是否存在的函数
+function fastStarIndex(userid)
+{
+    userid = userid || getCurrentUserId();
+    return pubd.fastStarList.indexOf(userid);
+}
+//检查并快速添加画师收藏的函数
+function toggleStar(userid)
+{
+    userid = userid || getCurrentUserId();
+    var starIdx = fastStarIndex(userid)
+    if (starIdx>=0)
+    { //存在，则删除
+        pubd.fastStarList.splice(starIdx,1);
     }else
-    {
-        starList = new UsersStarList("默认收藏");
-        pubd.staruser.push(starList);
+    { //不存在，则添加
+        pubd.fastStarList.push(userid);
     }
-    var add = starList.toggle(userid);
-    if (add)
-    {
+    checkStar();
+    GM_setValue("pubd-faststar-list",pubd.fastStarList);
+}
+//检查是否有画师并改变星星状态
+function checkStar()
+{
+    var starIdx = fastStarIndex()
+    if (starIdx>=0)
+    { //存在，则删除
         pubd.start.star.classList.add("stars");
+        return true;
     }else
-    {
+    { //不存在，则添加
         pubd.start.star.classList.remove("stars");
+        return false;
     }
 }
+
 //构建开始按钮
-function buildbtnStart(touch) {
-    if (touch) //手机版
-    {
+function buildbtnStart() {
+    var btnStart = document.createElement("div");
+    btnStart.id = "pubd-start";
+    btnStart.className = "pubd-start";
+    //添加图标
+    var star = btnStart.star = btnStart.appendChild(document.createElement("i"));
+    star.className = "pubd-icon star";
+    star.title = "快速收藏当前画师（暂未开发）";
+    //添加文字
+    var caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
+    caption.className = "text";
+    caption.innerHTML = "使用PUBD扒图";
+    caption.title = "快速下载当前画师";
+    //添加文字
+    var menu = btnStart.menu = btnStart.appendChild(document.createElement("i"));
+    menu.className = "pubd-icon menu";
+    menu.title = "PUBD菜单";
 
-    } else {
-        var btnStart = document.createElement("div");
-        btnStart.id = "pubd-start";
-        btnStart.className = "pubd-start";
-        //添加图标
-        var star = btnStart.star = btnStart.appendChild(document.createElement("i"));
-        star.className = "pubd-icon star";
-        star.title = "快速收藏当前画师（暂未开发）";
-        //添加文字
-        var caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
-        caption.className = "text";
-        caption.innerHTML = "使用PUBD扒图";
-        caption.title = "快速下载当前画师";
-        //添加文字
-        var menu = btnStart.menu = btnStart.appendChild(document.createElement("i"));
-        menu.className = "pubd-icon menu";
-        menu.title = "PUBD菜单";
-
-        //鼠标移入和按下都起作用
-        //btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
-        star.addEventListener("click", function(){toggleStar(); });
-        menu.addEventListener("click", function(){pubd.menu.classList.toggle("display-none");});
-        caption.addEventListener("click", function(){pubd.menu.downthis.click();});
-    }
+    //鼠标移入和按下都起作用
+    //btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
+    star.addEventListener("click", function(){toggleStar(); });
+    menu.addEventListener("click", function(){pubd.menu.classList.toggle("display-none");});
+    caption.addEventListener("click", function(){pubd.menu.downthis.click();});
     return btnStart;
 }
 
 //构建开始菜单
-function buildbtnMenu(touch) {
-    if (touch) //手机版
-    {
-
-    } else {
-        /*
-        var menu2 = new pubdMenu(touch);
-        menu2.add("子菜单1","",function(){alert("子菜单1")});
-        menu2.add("子菜单2","",function(){alert("子菜单2")});
-        var menu1 = new pubdMenu(touch);
-        menu1.add("子菜单1","",function(){alert("子菜单1")});
-        menu1.add("子菜单2","",null,menu2);
-        var menu3 = new pubdMenu(touch);
-        menu3.add("子菜单1","",function(){alert("子菜单1")});
-        menu3.add("子菜单2","",function(){alert("子菜单2")});
-        menu3.add("子菜单2","",function(){alert("子菜单3")});
-        menu3.add("子菜单2","",function(){alert("子菜单4")});
-        var menu4 = new pubdMenu(touch);
-        menu4.add("子菜单1","",null,menu3);
-        menu4.add("子菜单2","",function(){alert("子菜单2")});
-        menu4.add("子菜单2","",function(){alert("子菜单5")});
-        menu4.add("子菜单2","",function(){alert("子菜单6")});
-        */
-        var menu = new pubdMenu(touch, "pubd-menu-main");
-        menu.id = "pubd-menu";
-        menu.downillust = menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
-            var illust_id = parseInt(getQueryString("illust_id"));
-            var arg;
-            if(illust_id)
-                arg = {id:illust_id};
-            pubd.dialog.downillust.show(
-                (document.body.clientWidth - 500)/2,
-                window.pageYOffset+150,
-                arg
-            );
-            menu.hide();
-        });
-        menu.downthis = menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
-            var arg;
-            var user_id = parseInt(getQueryString("id"));
-            if(user_id)
-            {
-                arg = {id:user_id};
-            }else if (getQueryString("illust_id")) //如果是作品页面
-            {
-                user_id = parseInt(getQueryString("id",document.querySelector("#root>div>div>div>aside>section a").search.substr(1)));
-                arg = {id:user_id}
-            }
-            pubd.dialog.downthis.show(
-                (document.body.clientWidth - 440)/2,
-                window.pageYOffset+100,
-                arg
-            );
-            menu.hide();
-        });
-        /*
-        menu.add("占位用","",null,menu1);
-        menu.add("没功能","",null,menu4);
-        menu.add("多个画师下载",null,function()
-        		{//做成“声音”的设备样子
-        			alert("这个功能也没有开发")
-        		}
-        	);
-        */
-        /*
-        if (typeof(pixiv.context.userId) != "undefined")
+function buildbtnMenu() {
+    /*
+    var menu2 = new pubdMenu();
+    menu2.add("子菜单1","",function(){alert("子菜单1")});
+    menu2.add("子菜单2","",function(){alert("子菜单2")});
+    var menu1 = new pubdMenu();
+    menu1.add("子菜单1","",function(){alert("子菜单1")});
+    menu1.add("子菜单2","",null,menu2);
+    var menu3 = new pubdMenu();
+    menu3.add("子菜单1","",function(){alert("子菜单1")});
+    menu3.add("子菜单2","",function(){alert("子菜单2")});
+    menu3.add("子菜单2","",function(){alert("子菜单3")});
+    menu3.add("子菜单2","",function(){alert("子菜单4")});
+    var menu4 = new pubdMenu();
+    menu4.add("子菜单1","",null,menu3);
+    menu4.add("子菜单2","",function(){alert("子菜单2")});
+    menu4.add("子菜单2","",function(){alert("子菜单5")});
+    menu4.add("子菜单2","",function(){alert("子菜单6")});
+    */
+    var menu = new pubdMenu("pubd-menu-main");
+    menu.id = "pubd-menu";
+    menu.downillust = menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
+        var illust_id = parseInt(getQueryString("illust_id"));
+        var arg;
+        if(illust_id)
+            arg = {id:illust_id};
+        pubd.dialog.downillust.show(
+            (document.body.clientWidth - 500)/2,
+            window.pageYOffset+150,
+            arg
+        );
+        menu.hide();
+    });
+    menu.downthis = menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
+        var arg;
+        var user_id = parseInt(getQueryString("id"));
+        if(user_id)
         {
-        menu.add("收藏作者","",function()
-        		{
-
-        			pubd.staruser.push(pixiv.context.userId);
-        			var starStr = JSON.stringify(pubd.staruser);
-        			GM_setValue("pubd-staruser",starStr); //下载方案
-
-        			menu.hide();
-        		}
-        	);
+            arg = {id:user_id};
+        }else if (getQueryString("illust_id")) //如果是作品页面
+        {
+            user_id = parseInt(getQueryString("id",document.querySelector("#root>div>div>div>aside>section a").search.substr(1)));
+            arg = {id:user_id}
         }
-        */
-        menu.add(0);
-        menu.add("选项", "pubd-menu-setting", function(e) {
-            pubd.dialog.config.show(
-                (document.body.clientWidth - 400)/2,
-                window.pageYOffset+50
-            );
-            menu.hide();
-        });
+        pubd.dialog.downthis.show(
+            (document.body.clientWidth - 440)/2,
+            window.pageYOffset+100,
+            arg
+        );
+        menu.hide();
+    });
+    /*
+    menu.add("占位用","",null,menu1);
+    menu.add("没功能","",null,menu4);
+    menu.add("多个画师下载",null,function()
+            {//做成“声音”的设备样子
+                alert("这个功能也没有开发")
+            }
+        );
+    */
+    /*
+    if (typeof(pixiv.context.userId) != "undefined")
+    {
+    menu.add("收藏作者","",function()
+            {
+
+                pubd.staruser.push(pixiv.context.userId);
+                var starStr = JSON.stringify(pubd.staruser);
+                GM_setValue("pubd-staruser",starStr); //下载方案
+
+                menu.hide();
+            }
+        );
     }
+    */
+    menu.add(0);
+    menu.add("选项", "pubd-menu-setting", function(e) {
+        pubd.dialog.config.show(
+            (document.body.clientWidth - 400)/2,
+            window.pageYOffset+50
+        );
+        menu.hide();
+    });
     return menu;
 }
 
 //构建设置对话框
-function buildDlgConfig(touch) {
+function buildDlgConfig() {
     var dlg = new Dialog("PUBD选项 v" + scriptVersion, "pubd-config", "pubd-config");
     dlg.cptBtns.add("反馈", "dlg-btn-debug", "https://github.com/Mapaler/PixivUserBatchDownload/issues");
     dlg.cptBtns.add("?", "dlg-btn-help", "https://github.com/Mapaler/PixivUserBatchDownload/wiki");
@@ -1664,13 +1648,13 @@ function buildDlgConfig(touch) {
             //作品发送完成后，如何处理通知
             var noticeType = 0;
             dlg.noticeType.some(function(item){
-                if (item.checked) noticeType = item.value;
+                if (item.checked) noticeType = parseInt(item.value);
                 return item.checked;
             });
             //逐项发送模式
             var termwiseType = 2;
             dlg.termwiseType.some(function(item){
-                if (item.checked) termwiseType = item.value;
+                if (item.checked) termwiseType = parseInt(item.value);
                 return item.checked;
             });
 
@@ -1774,7 +1758,7 @@ function reLogin(onload_suceess_Cb,onerror_Cb)
 }
 
 //构建登陆对话框
-function buildDlgLogin(touch) {
+function buildDlgLogin() {
     var dlg = new Dialog("登陆账户", "pubd-login", "pubd-login");
 
     var dlgc = dlg.content;
@@ -2017,7 +2001,7 @@ function buildDlgDown(caption, classname, id) {
 }
 
 //构建当前画师下载对话框
-function buildDlgDownThis(touch, userid) {
+function buildDlgDownThis(userid) {
     //一个用户的信息
     var UserInfo = function() {
         this.done = false; //是否已完成用户信息获取
@@ -2106,11 +2090,6 @@ function buildDlgDownThis(touch, userid) {
             }
 
             function startAnalyseUser(userid, contentType) {
-                try { //为了避免不同网页重复获取Token，开始分析前先读取储存的Token。
-                    pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
-                } catch (e) {
-                    console.error("开始分析前，重新读取登录信息失败", e);
-                }
 
                 dlg.log("开始获取ID为 " + userid + " 的用户信息");
                 xhrGenneral(
@@ -2504,7 +2483,7 @@ function buildDlgDownThis(touch, userid) {
 }
 
 //构建当前作品下载对话框
-function buildDlgDownIllust(touch, illustid) {
+function buildDlgDownIllust(illustid) {
     var dlg = new buildDlgDown("下载当前作品", "pubd-down pubd-downillust", "pubd-downillust");
     dlg.infoCard.infos = {"ID":illustid};
 
@@ -3107,6 +3086,7 @@ function findInsertPlace(btnStart) {
             pubd.menu.downillust.classList.add("display-none");
             GM_unregisterMenuCommand(downIllustMenuId);
         }
+        checkStar(); //检查是否有收藏
         //插入开始操作按钮
         btnStartInsertPlace.appendChild(btnStart);
         console.log("PUBD：已呈现开始按钮。");
@@ -3126,23 +3106,30 @@ function start(touch) {
 
     //载入设置
     pubd.auth = new Auth();
-    try {
-        pubd.auth.loadFromResponse(JSON.parse(GM_getValue("pubd-auth")));
-    } catch (e) {
-        console.error("PUBD：脚本初始化时，读取登录信息失败。可能是因为首次使用，未储存登录信息", e);
-    }
+    pubd.auth.loadFromAuth(GM_getValue("pubd-auth"));
+
     pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0));
     //对下载方案的修改添加监听
     GM_addValueChangeListener("pubd-downschemes", function(name, old_value, new_value, remote) {
         pubd.downSchemes = NewDownSchemeArrayFromJson(new_value); //重新读取下载方案（可能被其他页面修改的）
-    })
+    });
+    //快速收藏列表的监听修改
+    pubd.fastStarList = getValueDefault("pubd-faststar-list",[]);
+    GM_addValueChangeListener("pubd-faststar-list", function(name, old_value, new_value, remote) {
+        pubd.fastStarList = new_value;
+        checkStar();
+    });
+    //登陆信息的监听修改
+    GM_addValueChangeListener("pubd-auth", function(name, old_value, new_value, remote) {
+        pubd.auth.loadFromAuth(new_value);
+    });
 
     //预先添加所有视窗，即便没有操作按钮也能通过菜单打开
     var btnDlgInsertPlace = document.body;
-    pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig(touch));
-    pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
-    pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch, thisPageUserid));
-    pubd.dialog.downillust = btnDlgInsertPlace.appendChild(buildDlgDownIllust(touch, thisPageIllustid));
+    pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig());
+    pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin());
+    pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(thisPageUserid));
+    pubd.dialog.downillust = btnDlgInsertPlace.appendChild(buildDlgDownIllust(thisPageIllustid));
     pubd.dialog.importdata = btnDlgInsertPlace.appendChild(buildDlgImportData());
     
     //添加Tampermonkey扩展菜单内的入口
@@ -3170,8 +3157,8 @@ function start(touch) {
     //开始操作按钮
     var btnStartBox = document.createElement("div");
     btnStartBox.className = "pubd-btnStartInsertPlace";
-    pubd.start = btnStartBox.appendChild(buildbtnStart(touch));
-    pubd.menu = btnStartBox.appendChild(buildbtnMenu(touch));
+    pubd.start = btnStartBox.appendChild(buildbtnStart());
+    pubd.menu = btnStartBox.appendChild(buildbtnMenu());
 
     findInsertPlaceHook = setInterval(function(){
         findInsertPlace(btnStartBox);
