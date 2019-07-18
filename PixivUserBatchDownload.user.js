@@ -48,6 +48,15 @@
 
 //获取当前是否是本地开发状态
 var mdev = Boolean(localStorage.getItem("pubd-dev"));
+//非顶级页面退出程序
+if (
+    self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
+    window.frames.length != parent.frames.length || //iframe判断方式2
+    self != top //iframe判断方式3
+)
+{ //iframe退出执行
+    return;
+}
 
 /*
  * 公共变量区
@@ -231,6 +240,39 @@ PostDataObject.prototype.toPostString = function() {
     ).join("&");
     return str;
 }
+//一个被收藏的画师
+var StarUser = function(id)
+{
+    this.id = id;
+    this.infoDone = false;
+    this.downDone = false;
+}
+//一个画师收藏列表
+var UsersStarList = function(title){
+    this.title=title;
+    this.users=[];
+}
+UsersStarList.prototype.add = function(userid) {
+    this.users.push(new StarUser(userid));
+}
+UsersStarList.prototype.remove = function(userid) {
+    this.users = this.users.filter(function(u){
+        return u.id!=userid;
+    })
+}
+UsersStarList.prototype.toggle = function(userid) {
+    if (this.users.some(function(u){return u.id == userid;}))
+    {
+        this.remove(userid);
+        return false;
+    }else
+    {
+        this.add(userid);
+        return true;
+    }
+}
+
+
 //一个本程序使用的headers数据
 var HeadersObject = function(obj) {
     var headers = {
@@ -556,7 +598,7 @@ var Dialog = function(caption, classname, id) {
         }
         //窗口隐藏
     dlg.hide = function() { //默认情况下等同于关闭窗口
-            this.cptBtns.close.click;
+            dlg.cptBtns.close.click();
         }
     
     //添加鼠标拖拽移动
@@ -912,6 +954,38 @@ function getQueryString(name,url) {
 	var r = search.match(reg);
 	if (r != null) return decodeURIComponent(r[2]); return null;
 }
+//检查并快速添加画师收藏的函数
+function toggleStar(userid)
+{
+    userid = userid || parseInt(getQueryString("id"));
+    if(!userid)
+    {
+        if (getQueryString("illust_id")) //如果是作品页面
+        {
+            userid = parseInt(getQueryString("id",document.querySelector("#root>div>div>div>aside>section a").search.substr(1)));
+        }else
+        {
+            userid = thisPageUserid;
+        }
+    }
+    var starList;
+    if (pubd.staruser[0])
+    {
+        starList = pubd.staruser[0];
+    }else
+    {
+        starList = new UsersStarList("默认收藏");
+        pubd.staruser.push(starList);
+    }
+    var add = starList.toggle(userid);
+    if (add)
+    {
+        pubd.start.star.classList.add("stars");
+    }else
+    {
+        pubd.start.star.classList.remove("stars");
+    }
+}
 //构建开始按钮
 function buildbtnStart(touch) {
     if (touch) //手机版
@@ -922,20 +996,24 @@ function buildbtnStart(touch) {
         btnStart.id = "pubd-start";
         btnStart.className = "pubd-start";
         //添加图标
-        var icon = btnStart.icon = btnStart.appendChild(document.createElement("i"));
-        icon.className = "pubd-icon star";
+        var star = btnStart.star = btnStart.appendChild(document.createElement("i"));
+        star.className = "pubd-icon star";
+        star.title = "快速收藏当前画师（暂未开发）";
         //添加文字
         var caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
         caption.className = "text";
         caption.innerHTML = "使用PUBD扒图";
+        caption.title = "快速下载当前画师";
         //添加文字
         var menu = btnStart.menu = btnStart.appendChild(document.createElement("i"));
         menu.className = "pubd-icon menu";
+        menu.title = "PUBD菜单";
 
         //鼠标移入和按下都起作用
         //btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
-        menu.addEventListener("click", function() { pubd.menu.classList.toggle("display-none")});
-        caption.addEventListener("click", function() { pubd.menu.downthis.click()});
+        star.addEventListener("click", function(){toggleStar(); });
+        menu.addEventListener("click", function(){pubd.menu.classList.toggle("display-none");});
+        caption.addEventListener("click", function(){pubd.menu.downthis.click();});
     }
     return btnStart;
 }
@@ -1825,8 +1903,7 @@ function buildDlgLogin(touch) {
 function buildDlgDown(caption, classname, id) {
     var dlg = new Dialog(caption, classname, id);
 
-    var dl = document.createElement("dl");
-    dlg.content.appendChild(dl);
+    var dl = dlg.content.appendChild(document.createElement("dl"));
 
     var dt = document.createElement("dt");
     dl.appendChild(dt);
@@ -2440,9 +2517,19 @@ function buildDlgDownIllust(touch, illustid) {
         dlg.textdown.disabled = true; //禁用下载按钮
         dlg.startdown.disabled = true; //禁用输出文本按钮
         dlg.logClear(); //清空日志
-        dlg.log("开始获取作品信息");
 
-        analyseWork(illustid); //开始获取第一页
+        if (dlg.work != undefined)
+        {
+            dlg.textdown.disabled = false;
+            dlg.startdown.disabled = false;
+            console.log("当前作品JSON数据：",work);
+            dlg.log("图片信息获取完毕");
+            if (callbackAfterAnalyse) callbackAfterAnalyse();
+        }else
+        {
+            dlg.log("开始获取作品信息");
+            analyseWork(illustid); //开始获取第一页
+        }
 
         //分析作品递归函数
         function analyseWork(illustid) {
@@ -2658,6 +2745,46 @@ function buildDlgDownIllust(touch, illustid) {
         dlg.reloadSchemes();
     };
 
+    return dlg;
+}
+
+//构建导入数据对话框
+function buildDlgImportData() {
+    var dlg = new Dialog("导入数据", "pubd-import", "pubd-import");
+    dlg.content
+    var dl = dlg.content.appendChild(document.createElement("dl"));
+
+    var dt = dl.appendChild(document.createElement("dt"));
+    dt.innerHTML = "导入内容";
+
+    var dd = dl.appendChild(document.createElement("dd"));
+    var ipt = dd.appendChild(document.createElement("textarea"));
+    ipt.className = "pubd-import-textarea";
+    dlg.importTxt = ipt;
+    var dd = dl.appendChild(document.createElement("dd"));
+    var btn = dd.appendChild(document.createElement("input"));
+    btn.type = "button";
+    btn.className = "pubd-import-done";
+    btn.value = "导入";
+
+    //启动初始化
+    dlg.initialise = function(arg) {
+        ipt.value = "";
+        if (arg) //提供了ID
+        {
+            btn.onclick = function()
+            {//返回文本框的内容
+                arg.callback(ipt.value);
+                dlg.hide();
+            }
+        }else
+        {
+            btn.onclick = function()
+            {
+                alert("窗口异常启动，未提供回调函数");
+            }
+        }
+    };
     return dlg;
 }
 //为了区分设置窗口和保存的设置，产生一个新的下载方案数组
@@ -2950,47 +3077,40 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 }
 
 //开始构建UI
-function findInsertPlace(touch, btnStart) {
-    if (touch)
+function findInsertPlace(btnStart) {
+    var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
+                            ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
+                            //||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
+                            ||document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div") //新版关注页
+                            ||document.querySelector("._user-profile-card") //老版用户资料页
+                            ||document.querySelector(".ui-layout-west aside") //老版作品页
+                            ||document.querySelector(".introduction") //未登录页面
+                            ;
+    if (btnStartInsertPlace == undefined)
     {
-        //alert("PUBD暂不支持手机版");
-        clearInterval(findInsertPlaceHook);
+        console.error("PUBD：未找到开始按钮插入点。");
         return;
-    } else {
-        var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
-                                ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
-                                //||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
-                                ||document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div") //新版关注页
-                                ||document.querySelector("._user-profile-card") //老版用户资料页
-                                ||document.querySelector(".ui-layout-west aside") //老版作品页
-                                ||document.querySelector(".introduction") //未登录页面
-                                ;
-        if (btnStartInsertPlace == undefined)
+    }else
+    {
+        if (getQueryString("illust_id"))
         {
-            console.error("PUBD：未找到开始按钮插入点。");
-            return;
+            pubd.menu.downillust.classList.remove("display-none");
+            downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
+                var illust_id = parseInt(getQueryString("illust_id"));
+                var arg;
+                if(illust_id)
+                    arg = {id:illust_id};
+                pubd.dialog.downillust.show((document.body.clientWidth - 500)/2, window.pageYOffset+150, arg)}
+            );
         }else
         {
-            if (getQueryString("illust_id"))
-            {
-                pubd.menu.downillust.classList.remove("display-none");
-                downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
-                    var illust_id = parseInt(getQueryString("illust_id"));
-                    var arg;
-                    if(illust_id)
-                        arg = {id:illust_id};
-                    pubd.dialog.downillust.show((document.body.clientWidth - 500)/2, window.pageYOffset+150, arg)}
-                );
-            }else
-            {
-                pubd.menu.downillust.classList.add("display-none");
-                GM_unregisterMenuCommand(downIllustMenuId);
-            }
-            //插入开始操作按钮
-            btnStartInsertPlace.appendChild(btnStart);
-            console.log("PUBD：已呈现开始按钮。");
-            clearInterval(findInsertPlaceHook); //停止循环
+            pubd.menu.downillust.classList.add("display-none");
+            GM_unregisterMenuCommand(downIllustMenuId);
         }
+        //插入开始操作按钮
+        btnStartInsertPlace.appendChild(btnStart);
+        console.log("PUBD：已呈现开始按钮。");
+        clearInterval(findInsertPlaceHook); //停止循环
     }
 }
 //主引导程序
@@ -3023,6 +3143,7 @@ function start(touch) {
     pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
     pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch, thisPageUserid));
     pubd.dialog.downillust = btnDlgInsertPlace.appendChild(buildDlgDownIllust(touch, thisPageIllustid));
+    pubd.dialog.importdata = btnDlgInsertPlace.appendChild(buildDlgImportData());
     
     //添加Tampermonkey扩展菜单内的入口
     GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show((document.body.clientWidth - 400)/2, window.pageYOffset+50);});
@@ -3039,6 +3160,12 @@ function start(touch) {
         }
         pubd.dialog.downthis.show((document.body.clientWidth - 440)/2, window.pageYOffset+100, arg)}
     );
+    GM_registerMenuCommand("PUBD-导入窗口测试", function(){pubd.dialog.importdata.show(
+            (document.body.clientWidth - 370)/2,
+            window.pageYOffset+200,
+            {callback:function(txt){console.log(txt);}}
+        );});
+
 
     //开始操作按钮
     var btnStartBox = document.createElement("div");
@@ -3047,7 +3174,7 @@ function start(touch) {
     pubd.menu = btnStartBox.appendChild(buildbtnMenu(touch));
 
     findInsertPlaceHook = setInterval(function(){
-        findInsertPlace(touch, btnStartBox);
+        findInsertPlace(btnStartBox);
     }, 1000);
     //对于新版P站的SPA结构需要循环寻找插入点，每秒循环
     if (window.MutationObserver) //如果支持MutationObserver
@@ -3056,11 +3183,10 @@ function start(touch) {
             //不存在开始按钮就重新插入
             if (document.querySelector("#pubd-start") == undefined)
             {
-                findInsertPlace(touch, btnStartBox);
+                findInsertPlace(btnStartBox);
             }
         }
         var observer = new MutationObserver(function(mutationsList, observer) {
-            //console.log("DOM发生变化",mutationsList)
             //每次DOM变化就重新插入
             newInsertStart();
         });
