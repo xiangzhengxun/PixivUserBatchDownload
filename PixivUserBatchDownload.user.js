@@ -20,7 +20,7 @@
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5/PixivUserBatchDownload%20ui.css
-// @version		5.8.70
+// @version		5.8.72
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -310,6 +310,7 @@ var Auth = function (username, password, remember) {
             device_token: "pixiv",
             get_secure_url: "true",
         })
+        console.log("1",postObj);
 
         //登陆是老的API
         GM_xmlhttpRequest({
@@ -870,7 +871,8 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
                         reLogin(
                             function(){
                                 xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
-                            }
+                            },
+                            onload_hasError_Cb
                         );
                     }else
                     {
@@ -1657,11 +1659,12 @@ function buildDlgConfig(touch) {
 }
 
 //重新登陆
-function reLogin(onload_suceess_Cb)
+function reLogin(onload_suceess_Cb,onerror_Cb)
 {
     var dlgLogin = pubd.dialog.login;
+    dlgLogin.show((document.body.clientWidth - 370)/2, window.pageYOffset+200);
+    var defaultError = {error:{message:"自动登录失败"}};
     if (pubd.auth.save_account) {
-        dlgLogin.show((document.body.clientWidth - 370)/2, window.pageYOffset+200);
         dlgLogin.error.replace("正在自动登陆");
 
         pubd.auth.login(
@@ -1678,17 +1681,21 @@ function reLogin(onload_suceess_Cb)
             },
             function(jore) { //onload_haserror_Cb //返回错误消息
                 dlgLogin.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
+                onerror_Cb(defaultError);
             },
-            function(re) { //onload_notjson_Cb //返回不是JSON
+            function(jore) { //onload_notjson_Cb //返回不是JSON
                 dlgLogin.error.replace("返回不是JSON，或程序异常");
+                onerror_Cb(defaultError);
             },
-            function(re) { //onerror_Cb //AJAX发送失败
+            function(jore) { //onerror_Cb //AJAX发送失败
                 dlgLogin.error.replace("AJAX发送失败");
+                onerror_Cb(defaultError);
             }
         );
     }else
     {
         dlgLogin.error.replace("请手动登陆后重新执行");
+        onerror_Cb(defaultError);
     }
 }
 
@@ -2144,7 +2151,7 @@ function buildDlgDownThis(touch, userid) {
                     dlg.textdown.disabled = false;
                     dlg.startdown.disabled = false;
                     
-                    callbackAfterAnalyse();
+                    if (callbackAfterAnalyse) callbackAfterAnalyse();
                     return;
                 }
                 if (works.break) {
@@ -2499,12 +2506,13 @@ function buildDlgDownIllust(touch, illustid) {
                             dlg.log("由于用户设置，跳过获取动图帧数。");
                             dlg.textdown.disabled = false;
                             dlg.startdown.disabled = false;
+                            if (callbackAfterAnalyse) callbackAfterAnalyse();
                         } else {
                             analyseUgoira(work, function() { //开始分析动图
                                 dlg.textdown.disabled = false;
                                 dlg.startdown.disabled = false;
                                 dlg.infoCard.infos["作品页数"] = work.ugoira_metadata.frames.length;
-                                callbackAfterAnalyse();
+                                if (callbackAfterAnalyse) callbackAfterAnalyse();
                             });
                             return;
                         }
@@ -2512,6 +2520,7 @@ function buildDlgDownIllust(touch, illustid) {
                     {
                         dlg.textdown.disabled = false;
                         dlg.startdown.disabled = false;
+                        if (callbackAfterAnalyse) callbackAfterAnalyse();
                     }
                 },
                 function(jore) { //onload_haserror_Cb //返回错误消息
@@ -2955,6 +2964,7 @@ function findInsertPlace(touch, btnStart) {
         var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)>div") //2018年10月8日 新版用户资料首页
                                 ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
                                 //||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
+                                ||document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div") //新版关注页
                                 ||document.querySelector("._user-profile-card") //老版用户资料页
                                 ||document.querySelector(".ui-layout-west aside") //老版作品页
                                 ||document.querySelector(".introduction") //未登录页面
@@ -2965,12 +2975,11 @@ function findInsertPlace(touch, btnStart) {
             return;
         }else
         {
+            //插入开始操作按钮
+            btnStartInsertPlace.appendChild(btnStart);
+            console.log("PUBD：已呈现开始按钮。");
             clearInterval(findInsertPlaceHook); //停止循环
         }
-
-        //插入开始操作按钮
-        btnStartInsertPlace.appendChild(btnStart);
-        console.log("PUBD：已呈现开始按钮。");
     }
 }
 //主引导程序
@@ -3034,13 +3043,19 @@ function start(touch) {
     //对于新版P站的SPA结构需要循环寻找插入点，每秒循环
     if (window.MutationObserver) //如果支持MutationObserver
     {
-        var observer = new MutationObserver(function(mutationsList, observer) {
-            //每次DOM变化就重新插入
-            findInsertPlaceHook = setInterval(function(){
+        function newInsertStart(){
+            //不存在开始按钮就重新插入
+            if (document.querySelector("#pubd-start") == undefined)
+            {
                 findInsertPlace(touch, btnStartBox);
-            }, 1000);
+            }
+        }
+        var observer = new MutationObserver(function(mutationsList, observer) {
+            //console.log("DOM发生变化",mutationsList)
+            //每次DOM变化就重新插入
+            newInsertStart();
         });
-        observer.observe(document.querySelector("#root"), {childList: true});
+        observer.observe(document.querySelector("#root"), {childList: true,subtree:true});
     }else
     {
         findInsertPlaceHook = setInterval(function(){
