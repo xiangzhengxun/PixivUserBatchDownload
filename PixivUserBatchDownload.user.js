@@ -20,7 +20,7 @@
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5/PixivUserBatchDownload%20ui.css
-// @version		5.8.72
+// @version		5.8.73
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -37,6 +37,7 @@
 // @grant       GM_addValueChangeListener
 //-@grant       GM_notification
 // @grant       GM_registerMenuCommand
+// @grant       GM_unregisterMenuCommand
 // @connect     localhost
 // @connect     pixiv.net
 // @connect     127.0.0.1
@@ -96,6 +97,7 @@ var thisPageIllustid = 0; //当前页面的画师ID
 var findInsertPlaceHook; //储存循环钩子
 var observer; //储存DOM变动监听钩子
 var btnStartInsertPlace; //储存开始按钮插入点
+var downIllustMenuId = null; //下载当前作品的菜单的ID
 /*
  * 获取初始状态
  */
@@ -961,6 +963,18 @@ function buildbtnMenu(touch) {
         */
         var menu = new pubdMenu(touch, "pubd-menu-main");
         menu.id = "pubd-menu";
+        menu.downillust = menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
+            var illust_id = parseInt(getQueryString("illust_id"));
+            var arg;
+            if(illust_id)
+                arg = {id:illust_id};
+            pubd.dialog.downillust.show(
+                (document.body.clientWidth - 500)/2,
+                window.pageYOffset+150,
+                arg
+            );
+            menu.hide();
+        });
         menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
             var arg;
             var user_id = parseInt(getQueryString("id"));
@@ -975,18 +989,6 @@ function buildbtnMenu(touch) {
             pubd.dialog.downthis.show(
                 (document.body.clientWidth - 440)/2,
                 window.pageYOffset+100,
-                arg
-            );
-            menu.hide();
-        });
-        menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
-            var illust_id = parseInt(getQueryString("illust_id"));
-            var arg;
-            if(illust_id)
-                arg = {id:illust_id};
-            pubd.dialog.downillust.show(
-                (document.body.clientWidth - 500)/2,
-                window.pageYOffset+150,
                 arg
             );
             menu.hide();
@@ -2975,6 +2977,21 @@ function findInsertPlace(touch, btnStart) {
             return;
         }else
         {
+            if (getQueryString("illust_id"))
+            {
+                pubd.menu.downillust.classList.remove("display-none");
+                downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
+                    var illust_id = parseInt(getQueryString("illust_id"));
+                    var arg;
+                    if(illust_id)
+                        arg = {id:illust_id};
+                    pubd.dialog.downillust.show((document.body.clientWidth - 500)/2, window.pageYOffset+150, arg)}
+                );
+            }else
+            {
+                pubd.menu.downillust.classList.add("display-none");
+                GM_unregisterMenuCommand(downIllustMenuId);
+            }
             //插入开始操作按钮
             btnStartInsertPlace.appendChild(btnStart);
             console.log("PUBD：已呈现开始按钮。");
@@ -3011,7 +3028,9 @@ function start(touch) {
     pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin(touch));
     pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(touch, thisPageUserid));
     pubd.dialog.downillust = btnDlgInsertPlace.appendChild(buildDlgDownIllust(touch, thisPageIllustid));
+    
     //添加Tampermonkey扩展菜单内的入口
+    GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show((document.body.clientWidth - 400)/2, window.pageYOffset+50);});
     GM_registerMenuCommand("PUBD-下载该画师", function(){
         var arg;
         var user_id = parseInt(getQueryString("id"));
@@ -3025,14 +3044,6 @@ function start(touch) {
         }
         pubd.dialog.downthis.show((document.body.clientWidth - 440)/2, window.pageYOffset+100, arg)}
     );
-    GM_registerMenuCommand("PUBD-下载该作品", function(){
-        var illust_id = parseInt(getQueryString("illust_id"));
-        var arg;
-        if(illust_id)
-            arg = {id:illust_id};
-        pubd.dialog.downillust.show((document.body.clientWidth - 500)/2, window.pageYOffset+150, arg)}
-    );
-    GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show((document.body.clientWidth - 400)/2, window.pageYOffset+50);});
 
     //开始操作按钮
     var btnStartBox = document.createElement("div");
