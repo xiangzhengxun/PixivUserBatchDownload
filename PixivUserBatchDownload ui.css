@@ -767,7 +767,7 @@ border: 1px solid #becad7;
 	width : 100%;
     box-sizing: border-box;
 	height : 100px;
-resize:none;
+    resize:none;
 }
 .pubd-down .pubd-down-downbar
 {
@@ -806,3 +806,34 @@ resize:none;
 	resize:none;
 }
 /*▲下载当前画师窗口内容*/
+
+/*▼导入数据窗口内容*/
+.pubd-import
+{/*导入数据*/
+	left: calc(50vw - 240px);
+	top: 180px;
+	width: 400px;
+	min-height: 120px;
+}
+.pubd-import .pubd-import-textarea-bar
+{
+	height : calc(100% - 75px);
+}
+.pubd-import .pubd-import-textarea
+{/*导入内容*/
+	min-width: 100px;
+	width: 100%;
+    box-sizing: border-box;
+	height: 100%;
+    resize:none;
+}
+.pubd-import .pubd-import-done
+{/*导入载按钮*/
+	width: 100%;
+    box-sizing: border-box;
+	height: 50px;
+    margin-top:5px;
+	font-size: 30px;
+	vertical-align: middle;
+}
+/*▲导入数据窗口内容*/

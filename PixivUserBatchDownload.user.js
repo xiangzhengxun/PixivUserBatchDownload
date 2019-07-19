@@ -2749,6 +2749,7 @@ function buildDlgImportData() {
     dt.innerHTML = "导入内容";
 
     var dd = dl.appendChild(document.createElement("dd"));
+    dd.className = "pubd-import-textarea-bar";
     var ipt = dd.appendChild(document.createElement("textarea"));
     ipt.className = "pubd-import-textarea";
     dlg.importTxt = ipt;
