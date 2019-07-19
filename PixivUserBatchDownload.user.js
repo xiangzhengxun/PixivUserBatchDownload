@@ -75,7 +75,7 @@ var pubd = { //储存设置
     downSchemes: [], //储存下载方案
     downbreak: false, //是否停止发送Aria2的Flag
     fastStarList: [], //储存快速收藏的简单数字
-    staruser: [], //储存完整的下载列表
+    staruserlists: [], //储存完整的下载列表
 };
 
 var scriptVersion = "LocalDebug"; //本程序的版本
@@ -244,6 +244,8 @@ var StarUser = function(id)
     this.id = id;
     this.infoDone = false;
     this.downDone = false;
+    this.userinfo = null;
+    this.illusts = null;
 }
 //一个画师收藏列表
 var UsersStarList = function(title){
@@ -770,7 +772,8 @@ var Select = function(classname, name) {
         this.options.add(opt);
     }
     select.remove = function(index) {
-        this.options.remove(index);
+        var x = this.options.remove(index);
+        x = null;
     }
 
     return select;
@@ -933,6 +936,26 @@ function getUgoiraMeta(iid, onload_suceess_Cb, onload_hasError_Cb, onload_notJso
         onerror_Cb
     )
 }
+//为了区分设置窗口和保存的设置，产生一个新的下载方案数组
+function NewDownSchemeArrayFromJson(jsonarr) {
+    if (typeof(jsonarr) == "string") {
+        try {
+            var jsonarr = JSON.parse(jsonarr);
+        } catch (e) {
+            console.error("PUBD：拷贝新下载方案数组时失败(是字符串，但不是JSON)", e);
+            return false;
+        }
+    }
+    var sarr = new Array();
+    if (jsonarr instanceof Array) {
+        for (var si = 0; si < jsonarr.length; si++) {
+            var scheme = new DownScheme();
+            scheme.loadFromJson(jsonarr[si]);
+            sarr.push(scheme);
+        }
+    }
+    return sarr;
+}
 //获取URL参数
 function getQueryString(name,url) {
     var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
@@ -943,7 +966,7 @@ function getQueryString(name,url) {
 //获取当前用户ID
 function getCurrentUserId()
 {
-    var userid = userid || parseInt(getQueryString("id"));
+    var userid = parseInt(getQueryString("id"));
     if(!userid)
     {
         var userHeadLink = document.querySelector("#root>div>div>div>aside>section a");
@@ -1002,7 +1025,7 @@ function buildbtnStart() {
     //添加图标
     var star = btnStart.star = btnStart.appendChild(document.createElement("i"));
     star.className = "pubd-icon star";
-    star.title = "快速收藏当前画师（暂未开发）";
+    star.title = "快速收藏当前画师";
     //添加文字
     var caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
     caption.className = "text";
@@ -1056,20 +1079,10 @@ function buildbtnMenu() {
         menu.hide();
     });
     menu.downthis = menu.add("下载该画师所有作品", "pubd-menu-this-user", function(e) {
-        var arg;
-        var user_id = parseInt(getQueryString("id"));
-        if(user_id)
-        {
-            arg = {id:user_id};
-        }else if (getQueryString("illust_id")) //如果是作品页面
-        {
-            user_id = parseInt(getQueryString("id",document.querySelector("#root>div>div>div>aside>section a").search.substr(1)));
-            arg = {id:user_id}
-        }
         pubd.dialog.downthis.show(
             (document.body.clientWidth - 440)/2,
             window.pageYOffset+100,
-            arg
+            {id:getCurrentUserId()}
         );
         menu.hide();
     });
@@ -1098,6 +1111,13 @@ function buildbtnMenu() {
     }
     */
     menu.add(0);
+    menu.downthis = menu.add("多画师下载", "pubd-menu-multiple", function(e) {
+        pubd.dialog.multiple.show(
+            (document.body.clientWidth - 440)/2,
+            window.pageYOffset+100
+        );
+        menu.hide();
+    });
     menu.add("选项", "pubd-menu-setting", function(e) {
         pubd.dialog.config.show(
             (document.body.clientWidth - 400)/2,
@@ -1355,11 +1375,16 @@ function buildDlgConfig() {
         if (dlg.downSchemeDom.options.length < 1) { alert("已经没有方案了"); return; }
         if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中方案"); return; }
         var index = dlg.downSchemeDom.selectedIndex;
-        dlg.schemes.splice(index, 1);
-        dlg.downSchemeDom.remove(index);
-        var index = dlg.downSchemeDom.selectedIndex;
-        if (index < 0) dlg.reloadSchemes(); //没有选中的，重置
-        else dlg.loadScheme(dlg.schemes[index]);
+        var c = confirm("你确定要删除“" + dlg.schemes[index].name + "”方案吗？");
+        if (c)
+        {
+            var x = dlg.schemes.splice(index, 1);
+            x = null;
+            dlg.downSchemeDom.remove(index);
+            var index = dlg.downSchemeDom.selectedIndex;
+            if (index < 0) dlg.reloadSchemes(); //没有选中的，重置
+            else dlg.loadScheme(dlg.schemes[index]);
+        }
     }
     dd.appendChild(ipt);
     dl.appendChild(dd);
@@ -2742,7 +2767,6 @@ function buildDlgDownIllust(illustid) {
 //构建导入数据对话框
 function buildDlgImportData() {
     var dlg = new Dialog("导入数据", "pubd-import", "pubd-import");
-    dlg.content
     var dl = dlg.content.appendChild(document.createElement("dl"));
 
     var dt = dl.appendChild(document.createElement("dt"));
@@ -2762,7 +2786,7 @@ function buildDlgImportData() {
     //启动初始化
     dlg.initialise = function(arg) {
         ipt.value = "";
-        if (arg) //提供了ID
+        if (arg)
         {
             btn.onclick = function()
             {//返回文本框的内容
@@ -2779,26 +2803,59 @@ function buildDlgImportData() {
     };
     return dlg;
 }
-//为了区分设置窗口和保存的设置，产生一个新的下载方案数组
-function NewDownSchemeArrayFromJson(jsonarr) {
-    if (typeof(jsonarr) == "string") {
-        try {
-            var jsonarr = JSON.parse(jsonarr);
-        } catch (e) {
-            console.error("PUBD：拷贝新下载方案数组时失败(是字符串，但不是JSON)", e);
-            return false;
+
+//构建多画师下载管理对话框
+function buildDlgMultiple() {
+    var dlg = new Dialog("多画师下载管理", "pubd-multiple", "pubd-multiple");
+    var dl = dlg.content.appendChild(document.createElement("dl"));
+
+    var dt = dl.appendChild(document.createElement("dt"));
+    dt.innerHTML = "选择收藏列表";
+    var dd = dl.appendChild(document.createElement("dd"));
+    var slt = dd.appendChild(new Select("pubd-staruserlists"));
+    slt.onchange = function() {
+        dlg.reloadUserList(this.selectedIndex);
+    };
+    dlg.userListDom = slt;
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-downscheme-new";
+    ipt.value = "新建"
+    ipt.onclick = function() {
+        var schemName = prompt("请输入方案名", "我的方案");
+        if (schemName)
+        {
+            var scheme = new DownScheme(schemName);
+            var length = dlg.schemes.push(scheme);
+            dlg.downSchemeDom.add(scheme.name, length - 1);
+            dlg.downSchemeDom.selectedIndex = length - 1;
+            dlg.loadScheme(scheme);
+            //dlg.reloadSchemes();
         }
     }
-    var sarr = new Array();
-    if (jsonarr instanceof Array) {
-        for (var si = 0; si < jsonarr.length; si++) {
-            var scheme = new DownScheme();
-            scheme.loadFromJson(jsonarr[si]);
-            sarr.push(scheme);
-        }
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-downscheme-remove";
+    ipt.value = "删除"
+    ipt.onclick = function() {
+        if (dlg.downSchemeDom.options.length < 1) { alert("已经没有方案了"); return; }
+        if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中方案"); return; }
+        var index = dlg.downSchemeDom.selectedIndex;
+        dlg.schemes.splice(index, 1);
+        dlg.downSchemeDom.remove(index);
+        var index = dlg.downSchemeDom.selectedIndex;
+        if (index < 0) dlg.reloadSchemes(); //没有选中的，重置
+        else dlg.loadScheme(dlg.schemes[index]);
     }
-    return sarr;
+
+    //启动初始化
+    dlg.initialise = function(arg) {
+    };
+    return dlg;
 }
+
 //作品循环递归输出
 function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback) {
     if (illusts.length < 1) //做完了
@@ -3143,6 +3200,7 @@ function start(touch) {
     pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(thisPageUserid));
     pubd.dialog.downillust = btnDlgInsertPlace.appendChild(buildDlgDownIllust(thisPageIllustid));
     pubd.dialog.importdata = btnDlgInsertPlace.appendChild(buildDlgImportData());
+    pubd.dialog.multiple = btnDlgInsertPlace.appendChild(buildDlgMultiple());
     
     //添加Tampermonkey扩展菜单内的入口
     GM_registerMenuCommand("PUBD-选项", function(){pubd.dialog.config.show((document.body.clientWidth - 400)/2, window.pageYOffset+50);});
