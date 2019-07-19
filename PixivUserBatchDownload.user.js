@@ -20,7 +20,7 @@
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5_multiple/PixivUserBatchDownload%20ui.css
-// @version		5.9.76
+// @version		5.9.78
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -46,17 +46,14 @@
 // @noframes
 // ==/UserScript==
 
-//获取当前是否是本地开发状态
-var mdev = Boolean(localStorage.getItem("pubd-dev"));
 //非顶级页面退出程序
 if (
     self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
     window.frames.length != parent.frames.length || //iframe判断方式2
     self != top //iframe判断方式3
-)
-{ //iframe退出执行
-    return;
-}
+){return;}//iframe退出执行
+//获取当前是否是本地开发状态
+var mdev = Boolean(localStorage.getItem("pubd-dev"));
 
 /*
  * 公共变量区
@@ -276,17 +273,21 @@ UsersStarList.prototype.toggle = function(userid) {
 
 //一个本程序使用的headers数据
 var HeadersObject = function(obj) {
-    var headers = {
-        'App-OS': 'android',
-        'App-OS-Version': '9.0.0',
-        'App-Version': '5.0.115',
-        'User-Agent': UA,
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', //重要
-        "Referer": "https://app-api.pixiv.net/",
+    this["App-OS"] = "android";
+    this["App-OS-Version"] = "9.0.0";
+    this["App-Version"] = "5.0.115";
+    this["User-Agent"] = "UA";
+    this["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
+    this["Referer"] = "https://app-api.pixiv.net/";
+
+    if (typeof(obj) == "object")
+    {
+        var _this = this;
+        Object.keys(obj).forEach(function(key){
+            if (obj[key])
+                _this[key] = obj[key];
+        })
     }
-    if (obj)
-        headers = Object.assign(headers, obj); //合并obj
-    return headers;
 }
 //储存一项图片列表分析数据的对象
 var Works = function(){
@@ -311,6 +312,17 @@ Auth.prototype.newAccount = function(username, password, remember) {
     this.password = password;
 }
 Auth.prototype.loadFromAuth = function(auth) {
+    if (typeof(auth) == "string")
+    {
+        try
+        {
+            auth = JSON.parse(auth);
+        }catch(e)
+        {
+            console.error("读取的Auth数据是字符串，但非JSON。",e);
+            return;
+        }
+    }
     var _thisAuth = this;
     Object.keys(_thisAuth).forEach(function(key){
         _thisAuth[key] = auth[key];
@@ -335,7 +347,6 @@ Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_no
         device_token: "pixiv",
         get_secure_url: "true",
     })
-
     //登陆是老的API
     GM_xmlhttpRequest({
         url: "https://oauth.secure.pixiv.net/auth/token",
@@ -351,7 +362,7 @@ Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_no
                     onload_hasError_Cb(jo);
                 } else { //登陆成功
                     _thisAuth.response = jo.response;
-                    _thisAuth.login_date = new Date();
+                    _thisAuth.login_date = new Date().getTime();
                     console.info("登陆成功", jo);
                     onload_suceess_Cb(jo);
                 }
@@ -391,25 +402,28 @@ DownScheme.prototype.maskAdd = function(name, logic, content) {
 DownScheme.prototype.maskRemove = function(index) {
     this.masklist.splice(index, 1);
 }
-DownScheme.prototype.loadFromJson = function(ojson) {
-    var json = ojson;
-    if (typeof(ojson) == "string") {
+DownScheme.prototype.loadFromJson = function(json) {
+    if (typeof(json) == "string") {
         try {
-            json = JSON.parse(ojson);
+            json = JSON.parse(json);
         } catch (e) {
-            console.error(e);
+            console.error("读取的方案数据是字符串，但非JSON。",e);
             return false;
         }
     }
-    this.name = json.name;
-    this.https2http = [0, "false", false, undefined, null].indexOf(json.https2http) < 0; //存在任一条件时即为false
-    this.rpcurl = json.rpcurl;
-    this.downfilter = json.downfilter || "";
-    this.savedir = json.savedir;
-    this.savepath = json.savepath;
-    this.textout = json.textout;
-    this.masklist = null; //清空之前的
-    this.masklist = JSON.parse(JSON.stringify(json.masklist));
+    var _this = this;
+    Object.keys(_this).forEach(function(key){
+        if (key=="masklist")
+        {
+            _this.masklist.length = 0; //清空之前的
+            json.masklist.forEach(function(mask){
+                _this.masklist.push(new Mask(mask.name, mask.logic, mask.content))
+            })
+        }else
+        {
+            _this[key] = json[key];
+        }
+    })
     return true;
 };
 
@@ -745,24 +759,22 @@ function InfoCard(datas) {
     this.infos = datas || {};
 }
 //创建下拉框类
-var Select = (function() {
-    return function(classname, name) {
-        var select = document.createElement("select");
-        select.className = "pubd-select" + (classname ? " " + classname : "");
-        select.name = name;
-        select.id = select.name;
+var Select = function(classname, name) {
+    var select = document.createElement("select");
+    select.className = "pubd-select" + (classname ? " " + classname : "");
+    select.name = name;
+    select.id = select.name;
 
-        select.add = function(text, value) {
-            var opt = new Option(text, value);
-            this.options.add(opt);
-        }
-        select.remove = function(index) {
-            this.options.remove(index);
-        }
+    select.add = function(text, value) {
+        var opt = new Option(text, value);
+        this.options.add(opt);
+    }
+    select.remove = function(index) {
+        this.options.remove(index);
+    }
 
-        return select;
-    };
-})();
+    return select;
+};
 
 //创建Aria2类
 var Aria2 = (function() {
@@ -934,9 +946,10 @@ function getCurrentUserId()
     var userid = userid || parseInt(getQueryString("id"));
     if(!userid)
     {
-        if (getQueryString("illust_id")) //如果是作品页面
+        var userHeadLink = document.querySelector("#root>div>div>div>aside>section a");
+        if (getQueryString("illust_id") && userHeadLink) //如果是作品页面
         {
-            userid = parseInt(getQueryString("id",document.querySelector("#root>div>div>div>aside>section a").search.substr(1)));
+            userid = parseInt(getQueryString("id",userHeadLink.search.substr(1)));
         }else
         {
             userid = thisPageUserid;
@@ -1107,7 +1120,6 @@ function buildDlgConfig() {
     dlgc.appendChild(dl);
     var dt = document.createElement("dt");
     dl.appendChild(dt);
-    //dt.innerHTML = "Pixiv访问权限，默认仅能访问公开作品";
     var dd = document.createElement("dd");
     dl.appendChild(dd);
 
@@ -1664,7 +1676,7 @@ function buildDlgConfig() {
             GM_setValue("pubd-autodownload", dlg.autodownload.checked); //自动下载
             GM_setValue("pubd-noticeType", noticeType); //处理通知
             GM_setValue("pubd-termwiseType", termwiseType); //逐项发送
-            GM_setValue("pubd-downschemes", JSON.stringify(dlg.schemes)); //下载方案
+            GM_setValue("pubd-downschemes", dlg.schemes); //下载方案
             GM_setValue("pubd-defaultscheme", dlg.downSchemeDom.selectedIndex); //默认方案
             GM_setValue("pubd-configversion", pubd.configVersion); //设置版本
 
@@ -1708,7 +1720,6 @@ function buildDlgConfig() {
         (dlg.noticeType[parseInt(getValueDefault("pubd-noticeType", 0))] || dlg.noticeType[0]).checked = true;
         (dlg.termwiseType[parseInt(getValueDefault("pubd-termwiseType", 2))] || dlg.termwiseType[2]).checked = true;
 
-        //pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0)); //重新读取下载方案（可能被其他页面修改的）
         dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
         dlg.reloadSchemes();
         dlg.selectScheme(getValueDefault("pubd-defaultscheme", 0));
@@ -2769,12 +2780,11 @@ function buildDlgImportData() {
 }
 //为了区分设置窗口和保存的设置，产生一个新的下载方案数组
 function NewDownSchemeArrayFromJson(jsonarr) {
-
     if (typeof(jsonarr) == "string") {
         try {
             var jsonarr = JSON.parse(jsonarr);
         } catch (e) {
-            console.error("PUBD：拷贝新下载方案数组时失败", e);
+            console.error("PUBD：拷贝新下载方案数组时失败(是字符串，但不是JSON)", e);
             return false;
         }
     }
@@ -3109,7 +3119,7 @@ function start(touch) {
     pubd.auth = new Auth();
     pubd.auth.loadFromAuth(GM_getValue("pubd-auth"));
 
-    pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",0));
+    pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",[]));
     //对下载方案的修改添加监听
     GM_addValueChangeListener("pubd-downschemes", function(name, old_value, new_value, remote) {
         pubd.downSchemes = NewDownSchemeArrayFromJson(new_value); //重新读取下载方案（可能被其他页面修改的）
