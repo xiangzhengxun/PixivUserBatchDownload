@@ -20,7 +20,7 @@
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5_multiple/PixivUserBatchDownload%20ui.css
-// @version		5.9.78
+// @version		5.9.79
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -126,12 +126,12 @@ else
     if (typeof(globalInitData) != "undefined") //新版的插画页面信息
     {
         pubd.loggedIn = true;
-        if (globalInitData.preload.user) thisPageUserid = Object.keys(globalInitData.preload.user)[0]; //id不是属性值，而是子对象名，所以需要通过这样的方式获取
-        if (globalInitData.preload.illust) thisPageIllustid = Object.keys(globalInitData.preload.illust)[0];
+        if (globalInitData.preload.user) thisPageUserid = parseInt(Object.keys(globalInitData.preload.user)[0]); //id不是属性值，而是子对象名，所以需要通过这样的方式获取
+        if (globalInitData.preload.illust) thisPageIllustid = parseInt(Object.keys(globalInitData.preload.illust)[0]);
     }
     else if (typeof(pixiv) != "undefined") //原来的信息
     {
-        thisPageUserid = pixiv.context.userId;
+        thisPageUserid = parseInt(pixiv.context.userId);
         if (pixiv.user.loggedIn)
         {
             pubd.loggedIn = true; //判断是否已经登陆
@@ -144,7 +144,7 @@ if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
     pubd.touch = true;
     console.info("PUBD：当前访问的是P站触屏手机版，我没开发。");
 } else {
-    console.info("PUBD：当前访问的是P站桌面版");
+    //console.info("PUBD：当前访问的是P站桌面版");
 }
 
 //仿GM_notification函数v1.2，发送网页通知。
@@ -2810,6 +2810,43 @@ function buildDlgMultiple() {
     var dl = dlg.content.appendChild(document.createElement("dl"));
 
     var dt = dl.appendChild(document.createElement("dt"));
+    var dd = dl.appendChild(document.createElement("dd"));
+    var frm = dd.appendChild(new Frame("导出Pivix账号关注", "pubd-frm-userlist"));
+    var dl_input_frm = frm.content.appendChild(document.createElement("dl"));
+    var dt = dl_input_frm.appendChild(document.createElement("dt"));
+    var dd = dl_input_frm.appendChild(document.createElement("dd"));
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-inputstar-public";
+    ipt.value = "导出公开关注";
+    ipt.onclick = function() {
+    };
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-inputstar-public";
+    ipt.value = "导出非公开关注";
+    ipt.onclick = function() {
+    };
+
+/*
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-backup";
+    ipt.value = "备份列表JSON"
+    ipt.onclick = function() {
+    }
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-restore";
+    ipt.value = "导入备份"
+    ipt.onclick = function() {
+    }
+*/
+
+    var dt = dl.appendChild(document.createElement("dt"));
     dt.innerHTML = "选择收藏列表";
     var dd = dl.appendChild(document.createElement("dd"));
     var slt = dd.appendChild(new Select("pubd-staruserlists"));
@@ -2818,9 +2855,10 @@ function buildDlgMultiple() {
     };
     dlg.userListDom = slt;
 
+    var dd = dl.appendChild(document.createElement("dd"));
     var ipt = dd.appendChild(document.createElement("input"));
     ipt.type = "button";
-    ipt.className = "pubd-downscheme-new";
+    ipt.className = "pubd-userlist-new";
     ipt.value = "新建"
     ipt.onclick = function() {
         var schemName = prompt("请输入方案名", "我的方案");
@@ -2837,7 +2875,14 @@ function buildDlgMultiple() {
 
     var ipt = dd.appendChild(document.createElement("input"));
     ipt.type = "button";
-    ipt.className = "pubd-downscheme-remove";
+    ipt.className = "pubd-userlist-rename";
+    ipt.value = "重命名列表"
+    ipt.onclick = function() {
+    }
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-remove";
     ipt.value = "删除"
     ipt.onclick = function() {
         if (dlg.downSchemeDom.options.length < 1) { alert("已经没有方案了"); return; }
@@ -2848,6 +2893,73 @@ function buildDlgMultiple() {
         var index = dlg.downSchemeDom.selectedIndex;
         if (index < 0) dlg.reloadSchemes(); //没有选中的，重置
         else dlg.loadScheme(dlg.schemes[index]);
+    }
+
+    var dd = dl.appendChild(document.createElement("dd"));
+    var frm = dd.appendChild(new Frame("当前列表", "pubd-frm-userlist"));
+    var dl_ul_frm = frm.content.appendChild(document.createElement("dl"));
+    var dt = dl_ul_frm.appendChild(document.createElement("dt"));
+    var dd = dl_ul_frm.appendChild(document.createElement("dd"));
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-this-add";
+    ipt.value = "添加画师ID"
+    ipt.onclick = function() {
+    }
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-this-remove";
+    ipt.value = "删除选中画师"
+    ipt.onclick = function() {
+    }
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-this-reset-getdata";
+    ipt.value = "重置数据获取状态"
+    ipt.onclick = function() {
+    }
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-this-reset-downloaded";
+    ipt.value = "重置下载状态"
+    ipt.onclick = function() {
+    }
+
+    var dt = dl_ul_frm.appendChild(document.createElement("dt"));
+    dt.innerHTML = "画师列表";
+    var ipt = dt.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-break";
+    ipt.value = "中断操作"
+    ipt.onclick = function() {
+    }
+    var dd = dl_ul_frm.appendChild(document.createElement("dd"));
+    var dl_ul = dd.appendChild(document.createElement("ul"));
+    dlg.ulDom = dl_ul;
+    dl_ul.className = "pubd-userlist-ul";
+
+    var dt = dl.appendChild(document.createElement("dt"));
+    var dd = dl.appendChild(document.createElement("dd"));
+    
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-this-getdata";
+    ipt.value = "获取画师数据"
+    ipt.onclick = function() {
+    }
+
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-textdown";
+    ipt.value = "输出文本"
+    ipt.onclick = function() {
+    }
+    var ipt = dd.appendChild(document.createElement("input"));
+    ipt.type = "button";
+    ipt.className = "pubd-userlist-download";
+    ipt.value = "下载列表内画师作品"
+    ipt.onclick = function() {
     }
 
     //启动初始化
@@ -3233,8 +3345,9 @@ function start(touch) {
     findInsertPlaceHook = setInterval(function(){
         findInsertPlace(btnStartBox);
     }, 1000);
+    var vueRoot = document.querySelector("#root");
     //对于新版P站的SPA结构需要循环寻找插入点，每秒循环
-    if (window.MutationObserver) //如果支持MutationObserver
+    if (window.MutationObserver && vueRoot) //如果支持MutationObserver，且是vue框架
     {
         function newInsertStart(){
             //不存在开始按钮就重新插入
@@ -3247,7 +3360,7 @@ function start(touch) {
             //每次DOM变化就重新插入
             newInsertStart();
         });
-        observer.observe(document.querySelector("#root"), {childList: true,subtree:true});
+        observer.observe(vueRoot, {childList: true,subtree:true});
     }
 }
 start(pubd.touch); //开始主程序

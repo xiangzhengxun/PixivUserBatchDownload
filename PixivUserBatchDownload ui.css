@@ -169,7 +169,7 @@
 {/*菜单项-选项的图标-下载当前作品*/
 	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAAB9ElEQVR4Ae2bgUYEURSGT0JkpReoYIQ21Z7zBEHPMQQEoAAISA8QqjAEQAEIah9hFwKkN2hbVqHdqcix6O5xd53mjv7vAFz4OP+PmXsJAAAAAACE2VzhI25LT8o/nh63+WhzhWah2ZBbHklZ3fBIbpsNmo5sgbtSVj/czRZoGvhCyjSGLygezniYjMCQM4pFTqRMaE4oFu6kJMBdikXeUhKQQbxAmdbUXAACEIAABCAAAQhAAAIQgAAEIAABCEAAAhCAAASupKingP4wkkV+rKkAv7TW6IvWhgxqKMAj2aMfOK+jwDGNIUXdBO5ojsbQJFQucMVn9il+3lmmcTQJ/gJmq9C83Bun3nmLfoHzagW0VbIleZp0rrVPAaRwEohtle11eQ2eu6YgmgR/AbNVduUj8q6DJsFZwGgVRQ4CS2bAubuA0SqKXAaWzEAKT4GIVvnuo/CSWUnwFzBaRfsouGRGEvwFjFbRPtIli4BzfwG7VbSPdMkikMJfwGoV7aPgkhlJcBTQVvFBk+ArcEzOcO4koK3ijhQOAtoqvmgSHATsVvFNwswCdqt4JgEftuIHAhDoJyXQ/39Xj/k0KYFTiqW1ltL1e1mlePi8tg8g9AlKp55PUJRmg2+qfgTEN80GzYKsymE1z7DkQQ4n7T4AAAAAAPgE2JrdC03pqrUAAAAASUVORK5CYII=);
 }
-.pubd-menu-multiple .pubd-icon
+.pubd-menu-multiple .pubd-icon,.pubd-multiple .pubd-icon
 {/*菜单项-选项的图标-多画师下载*/
 	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAQAAABIkb+zAAACQ0lEQVR4AezZNZAUURSF4a7NyHB3t5npd08RIRHukOLu7k6GS4ITQoa7Q4i7a4o7rO/DZce6b+2pjt534r/67qzveo7jOI7jOI7jOI7jaDSvZEbgMO7LZ/mE+3LQjIhVIPTRMPWwCQWwpSd52Bivze/p/D7Ihc2wXL8Pv6fCFNjsk4n8nkZ6SkngASWmN6XnMzXxBTZ48ileldDzyQ7YkNtO6NniDWDDTopNTULPZabDhp8ZS+i5cEJzgOwn9FzySHXAdULPhS+qA15yewL5rDrgBbcnwGPVATe4PYGc1H8S8noCzNB/GeT1BLGGmm9EiVrsngA7Q5+wjd8TJGrpfxhj9gSmd4jHl/id+D2NTAt6PMbzeyrpn/VXwu78ng519b+UM3uKVhX//7MIDmFkrAK/dxzHcRy2HMRkjKyX3XIZr2B/7xUuyG5ZL2Mk7uV4oaCvvAjuaRJNMVfOyTMUwGaf5MsznMU8v4kXwHTDF3WvJ3FZipuw+uHW9zLmZYF28knRa8UqYJE8hC3b5CEWZf45x3RAQaheK15V1uIrLGlfZW2m37LMYH0f/MqvQS4seblYk/6VlIO6PoAMxIfkmLYPMjDtPz5yFX12GEc4U/0/MCxX9+nJRMaJ+hNQGQWEN8EMgo1mZrCXRHar+2TNK+E9bER737ySVwrGq/tkZiFsdDMLvVL8Nuo+Ga7xztP/BwY11H0y5MJGuFyvlNrl1H0y2GhX1ud/a38OBAAAABgG+Vvf4yuDBAQEBAQEvgIAAAAQM/51H4xXwfgaAAAAAElFTkSuQmCC);
 }
@@ -842,3 +842,13 @@ border: 1px solid #becad7;
 	vertical-align: middle;
 }
 /*▲导入数据窗口内容*/
+/*▼多画师下载窗口内容*/
+.pubd-multiple .pubd-userlist-ul
+{
+    width: 100%;
+    height: 200px;
+    background: white;
+    border: 1px solid grey;
+    box-sizing: border-box;
+}
+/*▲多画师下载窗口内容*/
