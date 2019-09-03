@@ -20,8 +20,8 @@
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5_multiple/PixivUserBatchDownload%20ui.css
-// @require     https://raw.githubusercontent.com/blueimp/JavaScript-MD5/master/js/md5.min.js
-// @version		5.9.80
+// @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
+// @version		5.9.81
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -315,7 +315,7 @@ var HeadersObject = function(obj) {
     this["User-Agent"] = UA;
     this["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
     this["Referer"] = "https://app-api.pixiv.net/";
-    this["X-Client-Hash"] = md5(new Date().toPixivString() + "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c");
+    this["X-Client-Hash"] = hex_md5(new Date().toPixivString() + "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c");
     this["X-Client-Time"] = new Date().toPixivString();
 
     if (typeof(obj) == "object")
