@@ -14,7 +14,7 @@
 ![程序运行图](https://raw.githubusercontent.com/wiki/Mapaler/PixivUserBatchDownload/images/preview.png)
 
 ## 程序结构
-PUBD主体部分是采用JavaScript语言编写的用户脚本，为了方便开发，分离了用户界面到单独的CSS文件。
+PUBD主体部分是采用JavaScript语言编写的用户脚本。
 
 PUBD通过P站官方手机APP的后台API获取作者的作品列表，然后发送到指定的Aria2下载器下载。可选用第三方管理器对Aria2状态进行管理。
 
@@ -30,10 +30,8 @@ PixivUserBatchDownload 5 Copyright(C) 2018 by Mapaler
 * Pixiv APP-API分析来自[PixivPy](https://github.com/upbit/pixivpy)。
 
 ## 程序下载
-为了方便扩展自动更新PUBD，我将两部分都发布到了扩展支持自动更新的网站，建议到这里安装。
-
-* [用户脚本部分(Greasy Fork)](https://greasyfork.org/zh-CN/scripts/17879)
-* [用户样式部分(userstyles.org)](https://userstyles.org/styles/137583)
+* [从 Greasy Fork 安装](https://greasyfork.org/zh-CN/scripts/17879)(推荐)
+* [从 GitHub 源文件安装](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload.user.js)
 
 ## 使用说明
 请访问▶ **[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)** ◀阅读。
