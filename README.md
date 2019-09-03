@@ -32,6 +32,7 @@ PixivUserBatchDownload 5 Copyright(C) 2018 by Mapaler
 ## 程序下载
 * [从 Greasy Fork 安装](https://greasyfork.org/zh-CN/scripts/17879)(推荐)
 * [从 GitHub 源文件安装](https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload.user.js)
+> **用户样式CSS** 自 v5.8 开始已内置为自动加载，不再需要单独安装。
 
 ## 使用说明
 请访问▶ **[PUBD Wiki](https://github.com/Mapaler/PixivUserBatchDownload/wiki)** ◀阅读。
