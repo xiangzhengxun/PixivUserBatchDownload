@@ -20,7 +20,8 @@
 // @exclude		*://www.pixiv.net/*mode=manga_big*
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://raw.githubusercontent.com/Mapaler/PixivUserBatchDownload/dev5_multiple/PixivUserBatchDownload%20ui.css
-// @version		5.9.79
+// @require     https://raw.githubusercontent.com/blueimp/JavaScript-MD5/master/js/md5.min.js
+// @version		5.9.80
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -100,7 +101,7 @@ var illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d
 var limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
 var limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 
-var UA = "PixivAndroidApp/5.0.115 (Android 9.0.0; Android SDK built for x86)"; //向P站请求数据时的UA
+var UA = "PixivAndroidApp/5.0.155 (Android 9.0.0; Android SDK built for x86)"; //向P站请求数据时的UA
 var thisPageUserid = 0; //当前页面的画师ID
 var thisPageIllustid = 0; //当前页面的画师ID
 var findInsertPlaceHook; //储存循环钩子
@@ -202,9 +203,24 @@ if (typeof(GM_notification) == "undefined") {
     }
 }
 
+//生成P站需要的时间格式，如 "2019-09-03T18:51:40+08:00"
+Date.prototype.toPixivString = function() {
+    var p = PrefixInteger; //补前导0函数的简写
+    var offsetPlus = this.getTimezoneOffset()<=0; //时区的正负号
+    var offsetAbs = Math.abs(this.getTimezoneOffset()); //时区的差值绝对值
+    var str = this.getFullYear() + "-" + p(this.getMonth()+1,2) + "-" + p(this.getDate(),2)
+        + "T" + p(this.getHours()) + ":" + p(this.getMinutes()) + ":" + p(this.getSeconds())
+        + (offsetPlus?"+":"-") + p(Math.round(offsetAbs/60),2) + ":" + p(Math.round(offsetAbs%60),2);
+    return str;
+}
 /*
  * 现成函数库，好像根本没用上
  */
+//填充截取法补前导0
+function PrefixInteger(num, length) {
+    //这里用slice和substr均可
+    return (Array(length).join('0') + num).slice(-length);
+}
 //String.format实现占位符输出
 String.prototype.format = function() {
     if (arguments.length == 0) return this;
@@ -212,7 +228,25 @@ String.prototype.format = function() {
         s = s.replace(new RegExp("\\{" + i + "\\}", "g"), arguments[i]);
     return s;
 };
-
+/*
+** randomWord 产生任意长度随机字母数字组合
+** randomFlag-是否任意长度 min-任意长度最小位[固定位数] max-任意长度最大位
+** xuanfeng 2014-08-28
+*/
+function randomWord(min, max, randomFlag){
+    var strArr = [],
+    range = min,
+    arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
+    // 随机产生
+    if(randomFlag){
+        range = Math.round(Math.random() * (max-min)) + min;
+    }
+    for(var i=0; i<range; i++){
+        pos = Math.round(Math.random() * (arr.length-1));
+        strArr.push(arr[pos]);
+    }
+    return strArr.join("");
+}
 /*
  * 自定义对象区
  */
@@ -277,10 +311,12 @@ UsersStarList.prototype.toggle = function(userid) {
 var HeadersObject = function(obj) {
     this["App-OS"] = "android";
     this["App-OS-Version"] = "9.0.0";
-    this["App-Version"] = "5.0.115";
-    this["User-Agent"] = "UA";
+    this["App-Version"] = "5.0.155";
+    this["User-Agent"] = UA;
     this["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
     this["Referer"] = "https://app-api.pixiv.net/";
+    this["X-Client-Hash"] = md5(new Date().toPixivString() + "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c");
+    this["X-Client-Time"] = new Date().toPixivString();
 
     if (typeof(obj) == "object")
     {
@@ -348,6 +384,7 @@ Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_no
         password: _thisAuth.password,
         device_token: "pixiv",
         get_secure_url: "true",
+        include_policy: "true",
     })
     //登陆是老的API
     GM_xmlhttpRequest({
@@ -1111,7 +1148,7 @@ function buildbtnMenu() {
     }
     */
     menu.add(0);
-    menu.downthis = menu.add("多画师下载", "pubd-menu-multiple", function(e) {
+    if (mdev) menu.downmult = menu.add("多画师下载", "pubd-menu-multiple", function(e) {
         pubd.dialog.multiple.show(
             (document.body.clientWidth - 440)/2,
             window.pageYOffset+100
@@ -3329,7 +3366,8 @@ function start(touch) {
         }
         pubd.dialog.downthis.show((document.body.clientWidth - 440)/2, window.pageYOffset+100, arg)}
     );
-    GM_registerMenuCommand("PUBD-导入窗口测试", function(){pubd.dialog.importdata.show(
+
+    if (mdev) GM_registerMenuCommand("PUBD-导入窗口测试", function(){pubd.dialog.importdata.show(
             (document.body.clientWidth - 370)/2,
             window.pageYOffset+200,
             {callback:function(txt){console.log(txt);}}
