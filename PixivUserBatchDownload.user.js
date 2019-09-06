@@ -21,7 +21,7 @@
 // @exclude		*://www.pixiv.net/*search.php*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.82
+// @version		5.9.83
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -360,10 +360,14 @@ Auth.prototype.loadFromAuth = function(auth) {
             console.error("读取的Auth数据是字符串，但非JSON。",e);
             return;
         }
+    }else if (auth == undefined)
+    {
+        return;
     }
     var _thisAuth = this;
     Object.keys(_thisAuth).forEach(function(key){
-        _thisAuth[key] = auth[key];
+        if (typeof(auth[key]) != "undefined")
+            _thisAuth[key] = auth[key];
     })
 }
 Auth.prototype.save = function() {
