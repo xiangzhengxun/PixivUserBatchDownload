@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.86
+// @version		5.9.87
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -1098,7 +1098,7 @@ function buildbtnStart() {
     //添加图标
     var star = btnStart.star = btnStart.appendChild(document.createElement("i"));
     star.className = "pubd-icon star";
-    star.title = "快速收藏当前画师";
+    star.title = "快速收藏当前画师（开发中功能，目前没用）";
     //添加文字
     var caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
     caption.className = "text";
