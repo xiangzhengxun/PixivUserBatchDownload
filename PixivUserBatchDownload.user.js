@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.84
+// @version		5.9.85
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -948,7 +948,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
                 //jo.error.user_message 是单行文本的错误信息
                 if (jo.error) {
                     if (jo.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
-                        console.alert("Token过期，或其他错误",jo, response);
+                        console.warn("Token过期，或其他错误",jo, response);
                         reLogin(
                             function(){
                                 xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
