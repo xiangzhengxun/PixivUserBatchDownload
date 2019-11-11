@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.87
+// @version		5.9.88
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -164,7 +164,7 @@ if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
 //仿GM_notification函数v1.2，发送网页通知。
 //此函数非Debug用，为了替换选项较少但是兼容其格式的GM_notification插件
 if (typeof(GM_notification) == "undefined") {
-    const GM_notification = function(text, title, image, onclick) {
+    var GM_notification = function(text, title, image, onclick) {
         var options = {},rTitle,rText;
         var dataMode = (typeof(text) == "string"); //GM_notification有两种模式，普通4参数模式和option对象模式
         if (dataMode)
