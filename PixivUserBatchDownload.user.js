@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.90
+// @version		5.9.91
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -436,7 +436,7 @@ Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_no
             }
         },
         onerror: function(response) {
-            console.error("登录失败，AJAX发送失败", response);
+            console.error("登录失败，网络请求发生错误", response);
             onerror_Cb(response);
             return;
         }
@@ -1876,8 +1876,8 @@ function reLogin(onload_suceess_Cb,onerror_Cb)
                 dlgLogin.error.replace("返回不是JSON，或本程序异常");
                 onerror_Cb(defaultError);
             },
-            function(jore) { //onerror_Cb //AJAX发送失败
-                dlgLogin.error.replace("AJAX发送失败");
+            function(jore) { //onerror_Cb //网络请求发生错误
+                dlgLogin.error.replace("网络请求发生错误");
                 onerror_Cb(defaultError);
             }
         );
@@ -1967,8 +1967,8 @@ function buildDlgLogin() {
                 function(re) { //onload_notjson_Cb //返回不是JSON
                     dlg.error.replace("返回不是JSON，或本程序异常");
                 },
-                function(re) { //onerror_Cb //AJAX发送失败
-                    dlg.error.replace("AJAX发送失败");
+                function(re) { //onerror_Cb //网络请求发生错误
+                    dlg.error.replace("网络请求发生错误");
                 }
             );
         }
@@ -2250,8 +2250,8 @@ function buildDlgDownThis(userid) {
                         dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                         dlg.startdown.disabled = false;
                     },
-                    function(re) { //onerror_Cb //AJAX发送失败
-                        dlg.log("错误：AJAX发送失败");
+                    function(re) { //onerror_Cb //网络请求发生错误
+                        dlg.log("错误：网络请求发生错误");
                         works.runing = false;
                         dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                         dlg.startdown.disabled = false;
@@ -2408,8 +2408,8 @@ function buildDlgDownThis(userid) {
                         dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                         dlg.startdown.disabled = false;
                     },
-                    function(re) { //onerror_Cb //AJAX发送失败
-                        dlg.log("错误：AJAX发送失败");
+                    function(re) { //onerror_Cb //网络请求发生错误
+                        dlg.log("错误：网络请求发生错误");
                         works.runing = false;
                         dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                         dlg.startdown.disabled = false;
@@ -2474,8 +2474,8 @@ function buildDlgDownThis(userid) {
                         dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                         dlg.startdown.disabled = false;
                     },
-                    function(re) { //onerror_Cb //AJAX发送失败
-                        dlg.log("错误：AJAX发送失败");
+                    function(re) { //onerror_Cb //网络请求发生错误
+                        dlg.log("错误：网络请求发生错误");
                         works.runing = false;
                         dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                         dlg.startdown.disabled = false;
@@ -2700,6 +2700,7 @@ function buildDlgDownIllust(illustid) {
                             dlg.infoCard.infos["作品页数"] = work.ugoira_metadata.frames.length;
                             dlg.infoCard.reload(); //必须要reload
                             dlg.log("图片信息获取完毕");
+                            console.log("当前作品JSON数据：",work);
                             if (callbackAfterAnalyse) callbackAfterAnalyse();
                         });
                         return;
@@ -2710,8 +2711,8 @@ function buildDlgDownIllust(illustid) {
                         }
                         dlg.textdown.disabled = false;
                         dlg.startdown.disabled = false;
-                        console.log("当前作品JSON数据：",work);
                         dlg.log("图片信息获取完毕");
+                        console.log("当前作品JSON数据：",work);
                         if (callbackAfterAnalyse) callbackAfterAnalyse();
                     }
                 },
@@ -2726,8 +2727,8 @@ function buildDlgDownIllust(illustid) {
                     dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                     dlg.startdown.disabled = false;
                 },
-                function(re) { //onerror_Cb //AJAX发送失败
-                    dlg.log("错误：AJAX发送失败");
+                function(re) { //onerror_Cb //网络请求发生错误
+                    dlg.log("错误：网络请求发生错误");
                     dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                     dlg.startdown.disabled = false;
                 }
@@ -2768,8 +2769,8 @@ function buildDlgDownIllust(illustid) {
                     dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                     dlg.startdown.disabled = false;
                 },
-                function(re) { //onerror_Cb //AJAX发送失败
-                    dlg.log("错误：AJAX发送失败");
+                function(re) { //onerror_Cb //网络请求发生错误
+                    dlg.log("错误：网络请求发生错误");
                     works.runing = false;
                     dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
                     dlg.startdown.disabled = false;
