@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.88
+// @version		5.9.89
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -40,7 +40,7 @@
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
-// @grant       GM_listValues
+//-@grant       GM_listValues
 // @grant       GM_addStyle
 // @grant       GM_getResourceText
 //-@grant       GM_getResourceURL
@@ -51,6 +51,7 @@
 // @connect     localhost
 // @connect     pixiv.net
 // @connect     127.0.0.1
+// @connect     192.168.*.*
 // @connect     *
 // @noframes
 // ==/UserScript==
@@ -86,9 +87,9 @@ var pubd = { //储存设置
     staruserlists: [], //储存完整的下载列表
 };
 
-var scriptVersion = "LocalDebug"; //本程序的版本
-var scriptName = "PixivUserBatchDownload"; //本程序的名称
-var scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
+var scriptVersion = "LocalDebug", //本程序的版本
+    scriptName = "PixivUserBatchDownload", //本程序的名称
+    scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
 if (typeof(GM_info)!="undefined")
 {
     if (mdev) console.log("GM_info信息：",GM_info); //用来显示meta数据
@@ -109,46 +110,53 @@ if (typeof(GM_info)!="undefined")
 const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
+//作者页面“主页”按钮的CSS位置
+const userMainPageCssPath = "#root>div>div>div:nth-of-type(2)>nav>a";
+//作品页，收藏按钮的CSS位置
+const artWorkStarCssPath = "#root>div>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2) a";
+//作品也，作者头像链接的CSS位置
+const artWorkUserHeadCssPath = "#root>div>div>div>aside>section a";
 
 const PixivAppVersion = "5.0.161"; //Pixiv APP的版本
 const AndroidVersion = "9.0.0"; //安卓的版本
 const UA = "PixivAndroidApp/" + PixivAppVersion + " (Android " + AndroidVersion + "; Android SDK built for x86)"; //向P站请求数据时的UA
 const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
 
-var thisPageUserid = 0; //当前页面的画师ID
-var thisPageIllustid = 0; //当前页面的画师ID
-var findInsertPlaceHook; //储存循环钩子
-var observer; //储存DOM变动监听钩子
-var btnStartInsertPlace; //储存开始按钮插入点
-var downIllustMenuId = null; //下载当前作品的菜单的ID
+
+var thisPageUserid = null, //当前页面的画师ID
+    thisPageIllustid = null, //当前页面的作品ID
+    findInsertPlaceHook = null, //储存循环钩子
+    observer = null, //储存DOM变动监听钩子
+    btnStartInsertPlace = null, //储存开始按钮插入点
+    downIllustMenuId = null; //下载当前作品的菜单的ID
 /*
  * 获取初始状态
  */
 //1、获取原网页数据对象
 if (typeof(unsafeWindow) != "undefined")
 {
-    const globalInitData = unsafeWindow.globalInitData; //新版的插画页面信息
-    const pixiv = unsafeWindow.pixiv; //原来的信息
-}
+    const globalInitData = unsafeWindow.globalInitData; //新版的插画页面信息-已失效
+    const pixiv = unsafeWindow.pixiv; //原来的信息-已失效
 //2、获取是否为登录状态与当前页面画师ID
-if (typeof(pixiv) == "undefined" && typeof(globalInitData) == "undefined")
-{
-    console.error("PUBD：当前网页没有找到 pixiv 对象或 globalInitData 对象");
-}
-else
-{
-    if (typeof(globalInitData) != "undefined") //新版的插画页面信息
+    if (pixiv == undefined && globalInitData == undefined)
     {
-        pubd.loggedIn = true;
-        if (globalInitData.preload.user) thisPageUserid = parseInt(Object.keys(globalInitData.preload.user)[0]); //id不是属性值，而是子对象名，所以需要通过这样的方式获取
-        if (globalInitData.preload.illust) thisPageIllustid = parseInt(Object.keys(globalInitData.preload.illust)[0]);
+        console.error("PUBD：当前网页没有找到 metaPreloadData 数据或 pixiv 对象或 globalInitData 对象");
     }
-    else if (typeof(pixiv) != "undefined") //原来的信息
+    else
     {
-        thisPageUserid = parseInt(pixiv.context.userId);
-        if (pixiv.user.loggedIn)
+        if (globalInitData != undefined) //新版的插画页面信息
         {
-            pubd.loggedIn = true; //判断是否已经登陆
+            pubd.loggedIn = true;
+            if (globalInitData.preload.user) thisPageUserid = parseInt(Object.keys(globalInitData.preload.user)[0]); //id不是属性值，而是子对象名，所以需要通过这样的方式获取
+            if (globalInitData.preload.illust) thisPageIllustid = parseInt(Object.keys(globalInitData.preload.illust)[0]);
+        }
+        else if (pixiv != undefined) //原来的信息
+        {
+            thisPageUserid = parseInt(pixiv.context.userId);
+            if (pixiv.user.loggedIn)
+            {
+                pubd.loggedIn = true; //判断是否已经登陆
+            }
         }
     }
 }
@@ -782,28 +790,33 @@ function InfoCard(datas) {
         }
     });
     var infoObj;
+    this.reload = function() //重构Card文本区域
+    {
+        for (var ci = infosDlDom.children.length-1;ci >= 0;ci--)
+        { //删掉所有老子元素
+            var x = infosDlDom.children[ci];
+            x.remove();
+            x = null;
+        }
+        for (var pn in infoObj)
+        {
+            var dt = infosDlDom.appendChild(document.createElement("dt"));
+            var dd = infosDlDom.appendChild(document.createElement("dd"));
+            dt.appendChild(document.createTextNode(pn));
+            dd.appendChild(document.createTextNode(infoObj[pn]));
+        }
+    }
+
     Object.defineProperty(this , "infos", {
         get() {
             return infoObj;
         },
         set(obj) {
             infoObj = obj;
-            for (var ci = infosDlDom.children.length-1;ci >= 0;ci--)
-            { //删掉所有老子元素
-                var x = infosDlDom.children[ci];
-                x.remove();
-                x = null;
-            }
-            for (var pn in obj)
-            {
-                var dt = infosDlDom.appendChild(document.createElement("dt"));
-                var dd = infosDlDom.appendChild(document.createElement("dd"));
-                dt.appendChild(document.createTextNode(pn));
-                dd.appendChild(document.createTextNode(obj[pn]));
-            }
+            this.reload();
         }
     });
-    this.infos = datas || {};
+    this.infos = datas || {}; //使用传入data进行初始设定
 }
 //创建下拉框类
 var Select = function(classname, name) {
@@ -1021,7 +1034,7 @@ function getQueryString(name,url) {
         return null;
 }
 //从URL获取图片ID
-function getArtworkIdFromUrl(url) {
+function getArtworkIdFromImageUrl(url) {
     var regSrc = new RegExp(illustPattern, "ig");
     var regRes = regSrc.exec(url);
     if (regRes) {
@@ -1036,14 +1049,14 @@ function getCurrentUserId()
     var userid = parseInt(getQueryString("id"));
     if(!userid)
     {
-        var userMainPageLink = document.querySelector("#root>div>div>div:nth-of-type(2)>nav>a");
-        var artWorkLink = document.querySelector("#root>div>div>div>main>section>div>div>figure>div a");
-        var userHeadLink = document.querySelector("#root>div>div>div>aside>section a");
+        var userMainPageLink = document.querySelector(userMainPageCssPath); //作者主页的“主页”按钮
+        //var artWorkLink = document.querySelector(artWorkStarCssPath);
+        var userHeadLink = document.querySelector(artWorkUserHeadCssPath);
         if (userMainPageLink) //如果是作者页面
         {
             userid = parseInt(getQueryString("id",userMainPageLink.search.substr(1)));
         }
-        if (artWorkLink && userHeadLink) //如果是作品页面
+        if (userHeadLink) //如果是作品页面
         {
             userid = parseInt(getQueryString("id",userHeadLink.search.substr(1)));
         }else
@@ -1140,11 +1153,11 @@ function buildbtnMenu() {
     var menu = new pubdMenu("pubd-menu-main");
     menu.id = "pubd-menu";
     menu.downillust = menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
-        var artWorkLink = document.querySelector("#root>div>div>div>main>section>div>div>figure>div a");
+        var artWorkLink = document.querySelector(artWorkStarCssPath);
         pubd.dialog.downillust.show(
             (document.body.clientWidth - 500)/2,
             window.pageYOffset+150,
-            {id:getArtworkIdFromUrl(artWorkLink.href)}
+            {id:getQueryString('illust_id',artWorkLink.search.substr(1))}
         );
         menu.hide();
     });
@@ -1891,8 +1904,8 @@ function buildDlgLogin() {
     input_field1.className = "input-field";
     var pid = document.createElement("input");
     pid.type = "text";
-    pid.className = "pubd-account";
-    pid.name = "pubd-account";
+    pid.className = "pubd-username";
+    pid.name = "pubd-username";
     pid.id = pid.name;
     pid.placeholder = "邮箱地址/pixiv ID";
     dlg.pid = pid;
@@ -2562,8 +2575,9 @@ function buildDlgDownThis(userid) {
         else if (dlg.user.illusts.runing)
             dcType = 0;
         dlg.dcType[dcType].checked = true;
+        console.log(arg)
 
-        if (arg) //提供了ID
+        if (arg && arg.id>0) //提供了ID
         {
             if (arg.id != dlg.infoCard.infos["ID"])
             { //更换新的id
@@ -2674,7 +2688,7 @@ function buildDlgDownIllust(illustid) {
                             dlg.textdown.disabled = false;
                             dlg.startdown.disabled = false;
                             dlg.infoCard.infos["作品页数"] = work.ugoira_metadata.frames.length;
-                            console.log("当前作品JSON数据：",work);
+                            dlg.infoCard.reload(); //必须要reload
                             dlg.log("图片信息获取完毕");
                             if (callbackAfterAnalyse) callbackAfterAnalyse();
                         });
@@ -2809,7 +2823,7 @@ function buildDlgDownIllust(illustid) {
         }
     //启动初始化
     dlg.initialise = function(arg) {
-        if (arg) //提供了ID
+        if (arg && arg.id>0) //提供了ID
         {
             if (arg.id != dlg.infoCard.infos["ID"])
             { //更换新的id
@@ -3322,7 +3336,7 @@ function findInsertPlace(btnStart) {
     }else
     {
         //第一张作品图像
-        var artWorkLink = document.querySelector("#root>div>div>div>main>section>div>div>figure>div a");
+        var artWorkLink = document.querySelector(artWorkStarCssPath);
         if (artWorkLink) //如果是作品页面，显示下载当前作品按钮
         {
             pubd.menu.downillust.classList.remove("display-none");
@@ -3330,7 +3344,7 @@ function findInsertPlace(btnStart) {
                 pubd.dialog.downillust.show(
                     (document.body.clientWidth - 500)/2,
                     window.pageYOffset+150,
-                    {id:getArtworkIdFromUrl(artWorkLink.href)}
+                    {id:getQueryString('illust_id',artWorkLink.search.substr(1))}
                 );
             });
         }else
