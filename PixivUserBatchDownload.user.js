@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.89
+// @version		5.9.90
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -135,23 +135,34 @@ var thisPageUserid = null, //当前页面的画师ID
 //1、获取原网页数据对象
 if (typeof(unsafeWindow) != "undefined")
 {
+    const metaPreloadData = document.querySelector('#meta-preload-data'); //HTML源代码里有，会被前端删掉的数据
     const globalInitData = unsafeWindow.globalInitData; //新版的插画页面信息-已失效
     const pixiv = unsafeWindow.pixiv; //原来的信息-已失效
 //2、获取是否为登录状态与当前页面画师ID
-    if (pixiv == undefined && globalInitData == undefined)
+    if (metaPreloadData == undefined && pixiv == undefined && globalInitData == undefined)
     {
-        console.error("PUBD：当前网页没有找到 metaPreloadData 数据或 pixiv 对象或 globalInitData 对象");
+        console.error("PUBD：当前网页没有找到 preloadData 元数据或 pixiv 对象或 globalInitData 对象");
     }
     else
     {
-        if (globalInitData != undefined) //新版的插画页面信息
+        if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页面信息
         {
             pubd.loggedIn = true;
+            const preloadData = JSON.parse(metaPreloadData.content);
+            console.log("本页面抢救出 preloadData 元数据：",preloadData);
+            thisPageUserid = parseInt(Object.keys(preloadData.user)[0]);
+            thisPageIllustid = parseInt(Object.keys(preloadData.illust)[0]);
+        }
+        else if (globalInitData != undefined) //新版的插画页面信息
+        {
+            pubd.loggedIn = true;
+            console.log("本页面存在 globalInitData 对象：",globalInitData);
             if (globalInitData.preload.user) thisPageUserid = parseInt(Object.keys(globalInitData.preload.user)[0]); //id不是属性值，而是子对象名，所以需要通过这样的方式获取
             if (globalInitData.preload.illust) thisPageIllustid = parseInt(Object.keys(globalInitData.preload.illust)[0]);
         }
         else if (pixiv != undefined) //原来的信息
         {
+            console.log("本页面存在 pixiv 对象：",pixiv);
             thisPageUserid = parseInt(pixiv.context.userId);
             if (pixiv.user.loggedIn)
             {
@@ -966,7 +977,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
                 //jo.error.user_message 是单行文本的错误信息
                 if (jo.error) {
                     if (jo.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
-                        console.warn("Token过期，或其他错误",jo, response);
+                        console.warn("Token过期，或其他错误",jo);
                         reLogin(
                             function(){
                                 xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
@@ -2575,7 +2586,6 @@ function buildDlgDownThis(userid) {
         else if (dlg.user.illusts.runing)
             dcType = 0;
         dlg.dcType[dcType].checked = true;
-        console.log(arg)
 
         if (arg && arg.id>0) //提供了ID
         {
