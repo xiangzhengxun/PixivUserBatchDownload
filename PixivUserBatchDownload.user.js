@@ -12,7 +12,7 @@
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @homepage    https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
-// @updateURL   https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
+// @updateURL   https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.meta.js
 // @downloadURL https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
 // @include		*://www.pixiv.net/*
 // @exclude		*://www.pixiv.net/search.php*
