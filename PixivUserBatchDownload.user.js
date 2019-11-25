@@ -48,11 +48,9 @@
 //-@grant       GM_notification
 // @grant       GM_registerMenuCommand
 // @grant       GM_unregisterMenuCommand
-// @connect     localhost
 // @connect     pixiv.net
+// @connect     localhost
 // @connect     127.0.0.1
-// @connect     192.168.*.*
-// @connect     *
 // @noframes
 // ==/UserScript==
 
