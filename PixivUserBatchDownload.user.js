@@ -66,25 +66,6 @@ const mdev = Boolean(localStorage.getItem("pubd-dev"));
 /*
  * 公共变量区
  */
-var pubd = { //储存设置
-    configVersion: 1, //当前设置版本，用于提醒是否需要重置
-    touch: false, //是触屏
-    loggedIn: false, //登陆了
-    start: null, //开始按钮
-    menu: null, //菜单
-    dialog: { //窗口些个
-        config: null, //设置窗口
-        login: null, //登陆窗口
-        downthis: null, //下载当前窗口
-        downillust: null, //下载当前作品窗口
-    },
-    auth: null, //储存账号密码
-    downSchemes: [], //储存下载方案
-    downbreak: false, //是否停止发送Aria2的Flag
-    fastStarList: [], //储存快速收藏的简单数字
-    staruserlists: [], //储存完整的下载列表
-};
-
 var scriptVersion = "LocalDebug", //本程序的版本
     scriptName = "PixivUserBatchDownload", //本程序的名称
     scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
@@ -105,6 +86,26 @@ if (typeof(GM_info)!="undefined")
 	}
 }
 
+var pubd = { //储存程序设置
+    configVersion: 1, //当前设置版本，用于提醒是否需要重置
+    touch: false, //是触屏
+    loggedIn: false, //登陆了
+    start: null, //开始按钮
+    menu: null, //菜单
+    dialog: { //窗口些个
+        config: null, //设置窗口
+        login: null, //登陆窗口
+        downthis: null, //下载当前窗口
+        downillust: null, //下载当前作品窗口
+    },
+    auth: null, //储存账号密码
+    downSchemes: [], //储存下载方案
+    downbreak: false, //是否停止发送Aria2的Flag
+    fastStarList: [], //储存快速收藏的简单数字
+    staruserlists: [], //储存完整的下载列表
+};
+
+//匹配P站内容的正则表达式
 const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
@@ -112,21 +113,28 @@ const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文
 const userMainPageCssPath = "#root>div>div>div:nth-of-type(2)>nav>a";
 //作品页，收藏按钮的CSS位置
 const artWorkStarCssPath = "#root>div>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2) a";
-//作品也，作者头像链接的CSS位置
+//作品页，作者头像链接的CSS位置
 const artWorkUserHeadCssPath = "#root>div>div>div>aside>section a";
 
-const PixivAppVersion = "5.0.161"; //Pixiv APP的版本
-const AndroidVersion = "9.0.0"; //安卓的版本
+//Header使用
+const PixivAppVersion = "5.0.169"; //Pixiv APP的版本
+const AndroidVersion = "9"; //安卓的版本
 const UA = "PixivAndroidApp/" + PixivAppVersion + " (Android " + AndroidVersion + "; Android SDK built for x86)"; //向P站请求数据时的UA
-const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
-
+const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat
+const Referer = "https://app-api.pixiv.net/";
+const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
+//登陆时的固定参数
+const authURL = "https://oauth.secure.pixiv.net/auth/token";
+const client_id = "MOBrBDS8blbauoSck0ZfDbtuzpyT"; //安卓版固定数据
+const client_secret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"; //安卓版固定数据
+const device_token = "pixiv"; //每个设备不一样，不过好像随便写也没事
 
 var thisPageUserid = null, //当前页面的画师ID
     thisPageIllustid = null, //当前页面的作品ID
-    findInsertPlaceHook = null, //储存循环钩子
+    findInsertPlaceHook = null, //储存插入点循环钩子（循环函数指针）
     observer = null, //储存DOM变动监听钩子
     btnStartInsertPlace = null, //储存开始按钮插入点
-    downIllustMenuId = null; //下载当前作品的菜单的ID
+    downIllustMenuId = null; //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
 /*
  * 获取初始状态
  */
@@ -325,8 +333,8 @@ var HeadersObject = function(obj) {
     this["App-OS-Version"] = AndroidVersion;
     this["App-Version"] = PixivAppVersion;
     this["User-Agent"] = UA;
-    this["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
-    this["Referer"] = "https://app-api.pixiv.net/";
+    this["Content-Type"] = ContentType; //重要
+    this["Referer"] = Referer;
     this["X-Client-Hash"] = hex_md5(time + X_Client_Hash_Salt);
     this["X-Client-Time"] = time;
 
@@ -383,7 +391,7 @@ Auth.prototype.loadFromAuth = function(auth) {
     })
 }
 Auth.prototype.save = function() {
-    var saveObj = Object.assign({},this);
+    let saveObj = Object.assign({},this);
     if (!saveObj.save_account) {
         saveObj.username = "";
         saveObj.password = "";
@@ -391,20 +399,20 @@ Auth.prototype.save = function() {
     GM_setValue("pubd-auth", saveObj);
 }
 Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
-    var _thisAuth = this;
-    var postObj = new PostDataObject({ //Post时发送的数据
-        client_id: "MOBrBDS8blbauoSck0ZfDbtuzpyT", //安卓某个版本的数据
-        client_secret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj", //安卓某个版本的数据
+    let _thisAuth = this;
+    let postObj = new PostDataObject({ //Post时发送的数据
+        client_id: client_id, //安卓某个版本的数据
+        client_secret: client_secret, //安卓某个版本的数据
         grant_type: "password",
         username: _thisAuth.username,
         password: _thisAuth.password,
-        device_token: "pixiv",
+        device_token: device_token,
         get_secure_url: "true",
         include_policy: "true",
     })
-    //登陆是老的API
+    //登陆的Auth API
     GM_xmlhttpRequest({
-        url: "https://oauth.secure.pixiv.net/auth/token",
+        url: authURL,
         method: "post",
         responseType: "text",
         headers: new HeadersObject(),
@@ -882,7 +890,7 @@ var Aria2 = (function() {
             }
         }
 
-        var headers = { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", }
+        var headers = { "Content-Type": ContentType, }
         if (auth && auth.indexOf('token:') != 0) {
             headers.Authorization = "Basic " + btoa(auth);
         }
@@ -3112,7 +3120,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
                     aria2_method.params.push([url]); //添加下载链接
                 var options = {
                     "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
-                    "referer": "https://app-api.pixiv.net/",
+                    "referer": Referer,
                     "user-agent": UA,
                 }
                 if (scheme.savedir.length > 0) {
@@ -3166,7 +3174,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
                         aria2_method.params.push([url]); //添加下载链接
                     var options = {
                         "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
-                        "referer": "https://app-api.pixiv.net/",
+                        "referer": Referer,
                         "user-agent": UA,
                     }
                     if (scheme.savedir.length > 0) {
@@ -3236,7 +3244,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
     } else {
         var options = {
             "out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
-            "referer": "https://app-api.pixiv.net/",
+            "referer": Referer,
             "user-agent": UA,
         }
 
