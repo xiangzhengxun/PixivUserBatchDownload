@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.91
+// @version		5.9.92
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -148,21 +148,22 @@ if (typeof(unsafeWindow) != "undefined")
         if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页面信息
         {
             pubd.loggedIn = true;
+            console.log("PUBD：本页面抢救出 metaPreloadData 对象：",metaPreloadData);
             const preloadData = JSON.parse(metaPreloadData.content);
-            console.log("本页面抢救出 preloadData 元数据：",preloadData);
-            thisPageUserid = parseInt(Object.keys(preloadData.user)[0]);
-            thisPageIllustid = parseInt(Object.keys(preloadData.illust)[0]);
+            console.log("PUBD：metaPreloadData 中的 preloadData 元数据：",preloadData);
+            if (preloadData.user) thisPageUserid = parseInt(Object.keys(preloadData.user)[0]);
+            if (preloadData.illust) thisPageIllustid = parseInt(Object.keys(preloadData.illust)[0]); //必须判断是否存在，否则会出现can't convert undefined to object错误
         }
         else if (globalInitData != undefined) //新版的插画页面信息
         {
             pubd.loggedIn = true;
-            console.log("本页面存在 globalInitData 对象：",globalInitData);
+            console.log("PUBD：本页面存在 globalInitData 对象：",globalInitData);
             if (globalInitData.preload.user) thisPageUserid = parseInt(Object.keys(globalInitData.preload.user)[0]); //id不是属性值，而是子对象名，所以需要通过这样的方式获取
             if (globalInitData.preload.illust) thisPageIllustid = parseInt(Object.keys(globalInitData.preload.illust)[0]);
         }
         else if (pixiv != undefined) //原来的信息
         {
-            console.log("本页面存在 pixiv 对象：",pixiv);
+            console.log("PUBD：本页面存在 pixiv 对象：",pixiv);
             thisPageUserid = parseInt(pixiv.context.userId);
             if (pixiv.user.loggedIn)
             {
@@ -3366,7 +3367,7 @@ function findInsertPlace(btnStart) {
         checkStar(); //检查是否有收藏
         //插入开始操作按钮
         btnStartInsertPlace.appendChild(btnStart);
-        console.log("PUBD：已呈现开始按钮。");
+        console.log("PUBD：网页发生变动，已重新呈现开始按钮。");
         clearInterval(findInsertPlaceHook); //停止循环
     }
 }
