@@ -237,30 +237,26 @@ if (typeof(GM_notification) == "undefined") {
 }
 
 /*
- * 现成函数库
- */
-//填充截取法补前导0
-function PrefixInteger(num, length=2) {
-    let ns = num.toString();
-    if (ns.length >= length)
-        return ns;
-    else
-    { //这里用slice和substr均可
-        return (Array(length).join('0') + num.toString()).slice(-length);
-    }
-}
-/*
  * 自定义对象区
  */
 
 //生成P站需要的时间格式，如 "2019-09-03T18:51:40+08:00"
 Date.prototype.toPixivString = function() {
-    const p = PrefixInteger; //补前导0函数的简写，见上面现成函数库
+    function pad(num, length=2)
+    { //填充截取法补前导0 
+        let ns = num.toString();
+        if (ns.length >= length)
+            return ns;
+        else
+        { //这里用slice和substr均可
+            return (Array(length).join('0') + num.toString()).slice(-length);
+        }
+    }
     const timezoneOffset = this.getTimezoneOffset(); //时区差值
-    const str = this.getFullYear() + "-" + p(this.getMonth()+1) + "-" + p(this.getDate()) //年月日
-        + "T" + p(this.getHours()) + ":" + p(this.getMinutes()) + ":" + p(this.getSeconds()) //时分秒
+    const str = this.getFullYear() + "-" + pad(this.getMonth()+1) + "-" + pad(this.getDate()) //年月日
+        + "T" + pad(this.getHours()) + ":" + pad(this.getMinutes()) + ":" + pad(this.getSeconds()) //时分秒
         + (timezoneOffset<=0?"+":"-") //时区的正负号
-        + p(Math.round(Math.abs(timezoneOffset)/60)) + ":" + p(Math.round(Math.abs(timezoneOffset)%60)); //时区差值时分
+        + pad(Math.round(Math.abs(timezoneOffset)/60)) + ":" + pad(Math.round(Math.abs(timezoneOffset)%60)); //时区差值时分
     return str;
 }
 
