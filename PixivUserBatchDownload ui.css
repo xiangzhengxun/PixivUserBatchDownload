@@ -12,6 +12,21 @@
 	position: relative;
 	margin: 0 0 0 auto;
 }
+ /*推荐作品列表里已经收藏了的作者*/
+.pubd-stared
+{
+    background-color: grey;
+    opacity: 1;
+    position:relative;
+}
+.pubd-stared::after
+{
+    content:"该作者已收藏";
+    background-color: pink;
+    position:absolute;
+    bottom:0;
+    right:0;
+}
 .pubd-icon
 {/*所有图标，来自._icon*/
 	display: inline-block;
