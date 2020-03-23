@@ -29,7 +29,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css
 // @require     https://greasyfork.org/scripts/40003-pajhome-md5-min/code/PajHome-MD5-min.js?version=262502
-// @version		5.9.92
+// @version		5.9.93
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @icon		http://www.pixiv.net/favicon.ico
@@ -109,12 +109,12 @@ var pubd = { //储存程序设置
 const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
-//作者页面“主页”按钮的CSS位置
-const userMainPageCssPath = "#root>div>div>div:nth-of-type(2)>nav>a";
-//作品页，收藏按钮的CSS位置
-const artWorkStarCssPath = "#root>div>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2) a";
-//作品页，作者头像链接的CSS位置
-const artWorkUserHeadCssPath = "#root>div>div>div>aside>section a";
+//作者页面“主页”按钮的CSS位置（用来获取作者ID）
+const userMainPageCssPath = "#root>div:nth-of-type(2)>div>div:nth-of-type(2)>nav>a";
+//作品页，收藏按钮的CSS位置（用来获取当前作品ID）
+const artWorkStarCssPath = "#root>div:nth-of-type(2)>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
+//作品页，作者头像链接的CSS位置（用来获取作者ID）
+const artWorkUserHeadCssPath = "#root>div:nth-of-type(2)>div>div>aside>section a";
 
 //Header使用
 const PixivAppVersion = "5.0.169"; //Pixiv APP的版本
@@ -243,54 +243,29 @@ if (typeof(GM_notification) == "undefined") {
 }
 
 /*
- * 现成函数库
- */
-//填充截取法补前导0
-function PrefixInteger(num, length=2) {
-    let ns = num.toString();
-    if (ns.length >= length)
-        return ns;
-    else
-    { //这里用slice和substr均可
-        return (Array(length).join('0') + num.toString()).slice(-length);
-    }
-}
-/*
  * 自定义对象区
  */
 
 //生成P站需要的时间格式，如 "2019-09-03T18:51:40+08:00"
 Date.prototype.toPixivString = function() {
-    let p = PrefixInteger; //补前导0函数的简写
-    let offsetSign = this.getTimezoneOffset()<=0?"+":"-"; //时区的正负号
-    let offsetAbs = Math.abs(this.getTimezoneOffset()); //时区的差值绝对值
-    let str = this.getFullYear() + "-" + p(this.getMonth()+1) + "-" + p(this.getDate())
-        + "T" + p(this.getHours()) + ":" + p(this.getMinutes()) + ":" + p(this.getSeconds())
-        + offsetSign + p(Math.round(offsetAbs/60)) + ":" + p(Math.round(offsetAbs%60));
-    return str;
-}
-
-//一个Post数据
-var PostDataObject = function(obj){
-    this.data = obj?Object.assign({}, obj):{};
-}
-PostDataObject.prototype.increase = function(obj) {
-    this.data = Object.assign(this.data, obj); //合并obj
-}
-PostDataObject.prototype.toPostString = function() {
-    let arr = new Array;
-    for (var na in this.data) {
-        let item = [na, this.data[na]];
-        arr.push(item);
-    }
-
-    let str = arr.map(
-        function(item) {
-            return item.join("=");
+    function pad(num, length=2)
+    { //填充截取法补前导0 
+        let ns = num.toString();
+        if (ns.length >= length)
+            return ns;
+        else
+        { //这里用slice和substr均可
+            return (Array(length).join('0') + num.toString()).slice(-length);
         }
-    ).join("&");
+    }
+    const timezoneOffset = this.getTimezoneOffset(); //时区差值
+    const str = this.getFullYear() + "-" + pad(this.getMonth()+1) + "-" + pad(this.getDate()) //年月日
+        + "T" + pad(this.getHours()) + ":" + pad(this.getMinutes()) + ":" + pad(this.getSeconds()) //时分秒
+        + (timezoneOffset<=0?"+":"-") //时区的正负号
+        + pad(Math.round(Math.abs(timezoneOffset)/60)) + ":" + pad(Math.round(Math.abs(timezoneOffset)%60)); //时区差值时分
     return str;
 }
+
 //一个被收藏的画师
 var StarUser = function(id)
 {
@@ -400,23 +375,23 @@ Auth.prototype.save = function() {
 }
 Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
     let _thisAuth = this;
-    let postObj = new PostDataObject({ //Post时发送的数据
-        client_id: client_id, //安卓某个版本的数据
-        client_secret: client_secret, //安卓某个版本的数据
-        grant_type: "password",
-        username: _thisAuth.username,
-        password: _thisAuth.password,
-        device_token: device_token,
-        get_secure_url: "true",
-        include_policy: "true",
-    })
+    let postObj = new URLSearchParams();
+    postObj.set("client_id","MOBrBDS8blbauoSck0ZfDbtuzpyT");//安卓某个版本的数据
+    postObj.set("client_secret","lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj");//安卓某个版本的数据
+    postObj.set("grant_type","password");
+    postObj.set("username",_thisAuth.username);
+    postObj.set("password",_thisAuth.password);
+    postObj.set("device_token","pixiv");
+    postObj.set("get_secure_url","true");
+    postObj.set("include_policy","true");
+
     //登陆的Auth API
     GM_xmlhttpRequest({
         url: authURL,
         method: "post",
         responseType: "text",
         headers: new HeadersObject(),
-        data: postObj.toPostString(),
+        data: postObj.toString(),
         onload: function(response) {
             var jo;
             try {
@@ -1043,13 +1018,23 @@ function NewDownSchemeArrayFromJson(jsonarr) {
 }
 //获取URL参数
 function getQueryString(name,url) {
-    var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
-    var search = url || window.location.search.substr(1);
-	var r = search.match(reg);
-    if (r != null)
-        return decodeURIComponent(r[2]);
-    else
-        return null;
+	if (!!(window.URL && window.URLSearchParams))
+	{ //浏览器原生支持的API
+		const urlObj = new URL(url || document.location);
+		return urlObj.searchParams.get(name);
+	}else
+	{
+		const reg = new RegExp(`(?:^|&)${name}=([^&]*)(?:&|$)`, "i");
+		const searchStr = url || location.search.substr(1);
+		const r = searchStr.match(reg);
+		if (r != null)
+		{
+			return decodeURIComponent(r[1]);
+		}else
+		{
+			return null;
+		}
+	}
 }
 //从URL获取图片ID
 function getArtworkIdFromImageUrl(url) {
@@ -1064,7 +1049,20 @@ function getArtworkIdFromImageUrl(url) {
 //获取当前用户ID
 function getCurrentUserId()
 {
-    var userid = parseInt(getQueryString("id"));
+    //从URL获取作者ID
+    function getUserIdFromUrl(url) {
+        var userid = parseInt(getQueryString("id",url),10);
+        if (!userid)
+        {
+            var regSrc = new RegExp("users/(\\d+)", "ig");
+            var regRes = regSrc.exec(url.pathname);
+            if (regRes) {
+                return parseInt(regRes[1],10);
+            }
+        }
+        return userid;
+    }
+    var userid = getUserIdFromUrl(document.location);
     if(!userid)
     {
         var userMainPageLink = document.querySelector(userMainPageCssPath); //作者主页的“主页”按钮
@@ -1072,11 +1070,11 @@ function getCurrentUserId()
         var userHeadLink = document.querySelector(artWorkUserHeadCssPath);
         if (userMainPageLink) //如果是作者页面
         {
-            userid = parseInt(getQueryString("id",userMainPageLink.search.substr(1)));
+            userid = getUserIdFromUrl(userMainPageLink);
         }
         if (userHeadLink) //如果是作品页面
         {
-            userid = parseInt(getQueryString("id",userHeadLink.search.substr(1)));
+            userid = getUserIdFromUrl(userHeadLink);
         }else
         {
             userid = thisPageUserid;
@@ -1175,7 +1173,7 @@ function buildbtnMenu() {
         pubd.dialog.downillust.show(
             (document.body.clientWidth - 500)/2,
             window.pageYOffset+150,
-            {id:getQueryString('illust_id',artWorkLink.search.substr(1))}
+            {id:getQueryString('illust_id',artWorkLink)}
         );
         menu.hide();
     });
@@ -3339,10 +3337,10 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 
 //开始构建UI
 function findInsertPlace(btnStart) {
-    var btnStartInsertPlace = document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
-                            ||document.querySelector("#root>div>div>div>aside>section") //新版作品页
+    var btnStartInsertPlace = document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
+                            ||document.querySelector("#root>div:nth-of-type(2)>div>div>aside>section") //新版作品页
                             //||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
-                            ||document.querySelector("#root>div>div>div>div>div:nth-of-type(2)>div") //新版关注页
+                            ||document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div") //新版关注页
                             ||document.querySelector("._user-profile-card") //老版用户资料页
                             ||document.querySelector(".ui-layout-west aside") //老版作品页
                             ||document.querySelector(".introduction") //未登录页面
@@ -3362,7 +3360,7 @@ function findInsertPlace(btnStart) {
                 pubd.dialog.downillust.show(
                     (document.body.clientWidth - 500)/2,
                     window.pageYOffset+150,
-                    {id:getQueryString('illust_id',artWorkLink.search.substr(1))}
+                    {id:getQueryString('illust_id',artWorkLink)}
                 );
             });
         }else
