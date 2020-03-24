@@ -120,10 +120,10 @@ const artWorkStarCssPath = "#root>div:nth-of-type(2)>div>div>main>section>div>di
 const artWorkUserHeadCssPath = "#root>div:nth-of-type(2)>div>div>aside>section a";
 
 //Header使用
-const PixivAppVersion = "5.0.169"; //Pixiv APP的版本
-const AndroidVersion = "9"; //安卓的版本
-const UA = "PixivAndroidApp/" + PixivAppVersion + " (Android " + AndroidVersion + "; Android SDK built for x86)"; //向P站请求数据时的UA
-const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat
+const PixivAppVersion = "5.0.187"; //Pixiv APP的版本
+const AndroidVersion = "10.0.0"; //安卓的版本
+const UA = "PixivAndroidApp/" + PixivAppVersion + " (Android " + AndroidVersion + "; Android SDK built for x64)"; //向P站请求数据时的UA
+const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat，目前是固定值
 const Referer = "https://app-api.pixiv.net/";
 const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
 //登陆时的固定参数
@@ -397,12 +397,12 @@ Auth.prototype.save = function() {
 Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
 	let _thisAuth = this;
 	let postObj = new URLSearchParams();
-	postObj.set("client_id","MOBrBDS8blbauoSck0ZfDbtuzpyT");//安卓某个版本的数据
-	postObj.set("client_secret","lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj");//安卓某个版本的数据
+	postObj.set("client_id",client_id);//安卓某个版本的数据
+	postObj.set("client_secret",client_secret);//安卓某个版本的数据
 	postObj.set("grant_type","password");
 	postObj.set("username",_thisAuth.username);
 	postObj.set("password",_thisAuth.password);
-	postObj.set("device_token","pixiv");
+	postObj.set("device_token",device_token);
 	postObj.set("get_secure_url","true");
 	postObj.set("include_policy","true");
 
