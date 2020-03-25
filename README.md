@@ -40,7 +40,7 @@ PixivUserBatchDownload 5 Copyright(C) 2018 by Mapaler
 ## 后续功能开发状态
 - [x] 下载逐项发送（不卡死）
 - [x] 输出文本信息（下载列表）
-- [ ] 多画师批量下载(储存画师>储存解析到的数据>一起发送到Aria2) (IndexedDB太复杂看不懂)
+- [ ] 多画师批量下载(储存画师>储存解析到的数据>一起发送到Aria2) (IndexedDB太复杂看不懂，但是是目前努力的方向，用GM_setValue储存可能数据多了会太卡。)
 - [x] 子菜单快速完成操作（已开发但暂未使用）
 - [x] 仅下载当前一幅作品
 - [x] 下载过滤器
@@ -50,6 +50,7 @@ PixivUserBatchDownload 5 Copyright(C) 2018 by Mapaler
 - [ ] 自动清除Aria2下载完成项目 (暂时不是很必要)
 - [ ] WebSocket协议 (暂时不是很必要)
 - [x] 自动标记已快速收藏作者的推荐作品(目前只是添加明式标记，将来把多作者下载做了后，改成切换显示隐藏)
+- [x] 使用ES6原生模板字符串替代掩码（已开发暂未启用，准备下个大版本迁移）
 
 ## 友情链接
 [仙尊 Pixiv 图片批量下载器](https://github.com/xuejianxianzun/XZPixivDownloader)  

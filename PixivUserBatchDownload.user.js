@@ -3282,6 +3282,20 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 }
 //返回掩码值
 function showMask(oldStr, maskList, user, illust, page) {
+	//ES6原生模式，将来再启用
+	/*const cm = function(maskName) //customMask
+	{
+		const cusMask = maskList.find(mask=>mask.name == maskName);
+		if (cusMask) { //如果有对应的自定义掩码
+			if (returnLogicValue(cusMask.logic, user, illust, page)) //mask的逻辑判断
+				return eval("`" + cusMask.content +"`"); //递归
+			else
+				return "";
+		}
+	}
+	let newStr = eval("`" + oldStr +"`"); //需要解决旧有路径里\右斜杠的问题*/
+
+	//以下均为传统掩码
 	var newStr = oldStr;
 	//var pattern = "%{([^}]+)}"; //旧的，简单匹配
 	var regPattern = "%{(.*?(?:[^\\\\](?:\\\\{2})+|[^\\\\]))}"; //新的，支持转义符
@@ -3295,9 +3309,8 @@ function showMask(oldStr, maskList, user, illust, page) {
 			//去掉转义符的掩码名
 			mskN = (mskN != undefined) ? mskN.replace(/\\{/ig, "{").replace(/\\}/ig, "}").replace(/\\\\/ig, "\\") : null;
 			//搜寻自定义掩码
-			var cusMasks = maskList.filter(function(mask) { return mask.name == mskN; });
-			if (cusMasks.length > 0) { //如果有对应的自定义掩码
-				var cusMask = cusMasks[0];
+			var cusMask = maskList.find(mask=>mask.name == mskN);
+			if (cusMask) { //如果有对应的自定义掩码
 				try {
 					if (returnLogicValue(cusMask.logic, user, illust, page)) //mask的逻辑判断
 						newStr = newStr.replace(mskO, cusMask.content);
@@ -3327,10 +3340,10 @@ function showMask(oldStr, maskList, user, illust, page) {
 function returnLogicValue(logic, user, illust, page) {
 	try {
 		if (logic.length == 0) return false;
-		var evTemp = eval("(" + logic + ")");
+		const evTemp = Boolean(eval(logic));
 		return evTemp;
 	} catch (e) {
-		console.error("下载过滤器出现了异常情况，逻辑内容：","(" + logic + ")", e);
+		console.error("逻辑运算出现了异常情况，逻辑内容：","(" + logic + ")", e);
 		return false;
 	}
 }
