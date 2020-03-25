@@ -169,6 +169,7 @@ DBOpenRequest.onupgradeneeded = function(event) {
 
 	let illustsStore = db.createObjectStore("illusts", { keyPath: "id" });
 	illustsStore.createIndex("type", "type", { unique: false });
+	illustsStore.createIndex("userid", "user.id", { unique: false });
 	// 使用事务的 oncomplete 事件确保在插入数据前对象仓库已经创建完毕
 	illustsStore.transaction.oncomplete = function(event) {
 		console.log("PUBD：数据库建立完毕");
