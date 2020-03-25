@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.10.95
+// @version		5.11.95
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -51,6 +51,7 @@
 // @grant       GM_registerMenuCommand
 // @grant       GM_unregisterMenuCommand
 // @connect     pixiv.net
+// @connect     i.pximg.net
 // @connect     localhost
 // @connect     127.0.0.1
 // @noframes
@@ -138,7 +139,41 @@ var thisPageUserid = null, //当前页面的画师ID
 	observer = null, //储存DOM变动监听钩子
 	btnStartInsertPlace = null, //储存开始按钮插入点
 	downIllustMenuId = null, //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
-	recommendList = null; //推荐作品列表
+	recommendList = null; //推荐作品列表Dom位置
+
+/*
+ * 初始化数据库
+ */
+const dbName = "PUBD";
+var db;
+const DBOpenRequest = indexedDB.open(dbName);
+
+DBOpenRequest.onsuccess = function(event) {
+	db = event.target.result; //DBOpenRequest.result;
+	console.log("PUBD：数据库已可使用");
+};
+DBOpenRequest.onerror = function(event) {
+	// 错误处理
+	console.log("PUBD：数据库无法启用",event);
+};
+DBOpenRequest.onupgradeneeded = function(event) {
+	let db = event.target.result;
+
+	// 建立一个对象仓库来存储用户的相关信息，我们选择 user.id 作为键路径（key path）
+	// 因为 user.id 可以保证是不重复的
+	let usersStore = db.createObjectStore("users", { keyPath: "user.id" });
+	// 建立一个索引来通过姓名来搜索用户。名字可能会重复，所以我们不能使用 unique 索引
+	usersStore.createIndex("name", "user.name", { unique: false });
+	// 使用账户建立索引，我们确保用户的账户不会重复，所以我们使用 unique 索引
+	usersStore.createIndex("account", "user.account", { unique: true });
+
+	let illustsStore = db.createObjectStore("illusts", { keyPath: "id" });
+	illustsStore.createIndex("type", "type", { unique: false });
+	// 使用事务的 oncomplete 事件确保在插入数据前对象仓库已经创建完毕
+	illustsStore.transaction.oncomplete = function(event) {
+		console.log("PUBD：数据库建立完毕");
+	}
+};
 /*
  * 获取初始状态
  */
@@ -976,6 +1011,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 
 			if (jo)
 			{
+				console.log("请求URL %s，结果 %o",url,JSON.parse(response.responseText));
 				//jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
 				//jo.error.user_message 是单行文本的错误信息
 				if (jo.error) {
@@ -1161,9 +1197,9 @@ function buildbtnStart() {
 
 	//鼠标移入和按下都起作用
 	//btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
-	star.addEventListener("click", function(){toggleStar(); });
-	menu.addEventListener("click", function(){pubd.menu.classList.toggle("display-none");});
-	caption.addEventListener("click", function(){pubd.menu.downthis.click();});
+	star.onclick = function(){toggleStar();}
+	menu.onclick = function(){pubd.menu.classList.toggle("display-none");}
+	caption.onclick = function(){pubd.menu.downthis.click();}
 	return btnStart;
 }
 
@@ -1828,6 +1864,7 @@ function buildDlgConfig() {
 			GM_notification({text:"设置已保存", title:scriptName, image:scriptIcon});
 			pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
 			pubd.dialog.downthis.reloadSchemes();
+			pubd.dialog.downillust.reloadSchemes();
 		}
 		//重置设置函数
 	dlg.reset = function() {
@@ -2255,6 +2292,76 @@ function buildDlgDownThis(userid) {
 						works.runing = true;
 						dlg.user.done = true;
 						dlg.user.info = Object.assign(dlg.user.info, jore);
+
+						const usersStore = db.transaction("users", "readwrite").objectStore("users");
+						let usersStoreRequest = usersStore.get(jore.user.id);
+						usersStoreRequest.onsuccess = function(event) {
+							// 获取我们想要更新的数据
+							let data = event.target.result;
+							if (data)
+								console.log("上次的头像",data.user.profile_image_urls);
+							if (!data || //没有老数据
+								!data.avatarBlob || //没有头像
+								data.user.profile_image_urls.medium != jore.user.profile_image_urls.medium //换了头像
+								)
+							{
+								console.debug("需要更新头像图片",jore.user.profile_image_urls);
+								GM_xmlhttpRequest({
+									url: jore.user.profile_image_urls.medium,
+									method: "get",
+									responseType: "blob",
+									headers: new HeadersObject(),
+									onload: function(response) {
+										console.info("用户头像Blob结果", response.response);
+										var obj_url = URL.createObjectURL(response.response);
+										var newImg = new Image();
+										newImg.src = obj_url;
+										URL.revokeObjectURL(obj_url);
+										document.body.appendChild(newImg);
+
+										var newData = data ? Object.assign(data,jore) : jore;
+										newData.avatarBlob = response.response;
+										// 把更新过的对象放回数据库
+										const usersStore = db.transaction("users", "readwrite").objectStore("users");
+										var requestUpdate = usersStore.put(newData);
+										
+										requestUpdate.onerror = function(event) {// 错误处理
+											console.error(`${newData.user.name} 更新数据库头像发生错误`,newData);
+										};
+										requestUpdate.onsuccess = function(event) {// 完成，数据已更新！
+											console.debug(`${newData.user.name} 已${data?"更新":"添加"}到头像用户数据库`,newData);
+										};
+										return;
+									},
+									onerror: function(response) {
+										console.error("抓取头像失败", response);
+										return;
+									}
+								})
+							}else
+							{
+								var newData = data ? Object.assign(data,jore) : jore;
+								// 把更新过的对象放回数据库
+								var requestUpdate = usersStore.put(newData);
+								
+								requestUpdate.onerror = function(event) {// 错误处理
+									console.error(`${newData.user.name} 发生错误`,newData);
+								};
+								requestUpdate.onsuccess = function(event) {// 完成，数据已更新！
+									console.debug(`${newData.user.name} 已${data?"更新":"添加"}到用户数据库`,newData);
+								};
+							}
+						}
+						usersStoreRequest.onerror = function(event) {// 错误处理
+							console.error(`${jore.user.name} 数据库里没有？`,jore);
+						};
+
+
+						/*const usersStoreRequest = usersStore.put(jore);
+						usersStoreRequest.onsuccess = function(event) {
+							console.debug(`${jore.user.name} 已添加到用户数据库`,jore);
+						}*/
+
 						dlg.infoCard.thumbnail = jore.user.profile_image_urls.medium;
 						dlg.infoCard.infos = Object.assign(dlg.infoCard.infos, {
 							"昵称": jore.user.name,
@@ -2377,16 +2484,15 @@ function buildDlgDownThis(userid) {
 					function(jore) { //onload_suceess_Cb
 						works.runing = true;
 						var illusts = jore.illusts;
-						for (var ii = 0, ii_len = illusts.length; ii < ii_len; ii++) {
-							var work = illusts[ii];
-							var original;
-							if (work.page_count > 1) { /*漫画多图*/
-								original = work.meta_pages[0].image_urls.original;
-							} else { /*单张图片或动图，含漫画单图*/
-								original = work.meta_single_page.original_image_url;
-							}
-							var regSrc = new RegExp(illustPattern, "ig");
-							var regRes = regSrc.exec(original);
+						const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+						
+						illusts.forEach(function(work) {
+							const original = work.page_count > 1 ?
+								work.meta_pages[0].image_urls.original : //漫画多图
+								work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
+
+							const regSrc = new RegExp(illustPattern, "ig");
+							const regRes = regSrc.exec(original);
 							if (regRes) {
 								//然后添加扩展名等
 								work.url_without_page = regRes[1];
@@ -2395,11 +2501,10 @@ function buildDlgDownThis(userid) {
 								work.token = regRes[4];
 								work.extention = regRes[5];
 							} else {
-								var regSrcL = new RegExp(limitingPattern, "ig");
-								var regResL = regSrcL.exec(original);
+								const regSrcL = new RegExp(limitingPattern, "ig");
+								const regResL = regSrcL.exec(original);
 								if (regResL) {
 									dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
-									//console.log(work);
 									work.url_without_page = regResL[1];
 									work.domain = regResL[2];
 									work.filename = regResL[3];
@@ -2409,9 +2514,14 @@ function buildDlgDownThis(userid) {
 									dlg.log(contentName + " " + work.id + " 原图格式未知。");
 								}
 							}
-
 							works.item.push(work);
-						}
+
+							const illustsStoreRequest = illustsStore.put(work);
+							illustsStoreRequest.onsuccess = function(event) {
+								//console.debug(`${work.title} 已添加到作品数据库`);
+							};
+						})
+
 						dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
 						if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
 						if (jore.next_url) { //还有下一页
@@ -2446,7 +2556,7 @@ function buildDlgDownThis(userid) {
 			function analyseUgoira(works, ugoirasItems, callback) {
 				var dealItems = ugoirasItems.filter(function(item) {
 					return (item.type == "ugoira" && item.ugoira_metadata == undefined);
-				})
+				});
 				if (dealItems.length < 1) {
 					dlg.log("动图获取完毕");
 					dlg.progress.set(1); //设置当前下载进度
@@ -2470,6 +2580,13 @@ function buildDlgDownThis(userid) {
 						works.runing = true;
 						//var illusts = jore.illusts;
 						work = Object.assign(work, jore);
+
+						const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+						const illustsStoreRequest = illustsStore.put(work);
+						illustsStoreRequest.onsuccess = function(event) {
+							console.debug(`${work.title} 已更新动画帧数据到数据库`);
+						};
+
 						dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
 						dlg.progress.set(1 - dealItems.length / ugoirasItems.length); //设置当前下载进度
 						analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
@@ -2613,6 +2730,7 @@ function buildDlgDownThis(userid) {
 			dcType = 0;
 		dlg.dcType[dcType].checked = true;
 
+		let uid = arg.id;
 		if (arg && arg.id>0) //提供了ID
 		{
 			if (arg.id != dlg.infoCard.infos["ID"])
@@ -2623,10 +2741,22 @@ function buildDlgDownThis(userid) {
 			}
 		}else if(!dlg.infoCard.infos["ID"]) //没有ID
 		{
-			dlg.infoCard.infos = {"ID":parseInt(prompt("没有用户ID，请手动输入。", "ID缺失"))}; //初始化窗口id
+			uid = parseInt(prompt("没有用户ID，请手动输入。", "ID缺失"),10);
+			dlg.infoCard.infos = {"ID":uid}; //初始化窗口id
 		}
+		
 		if (getValueDefault("pubd-autoanalyse",false)) {
-			dlg.analyse(dcType, dlg.infoCard.infos["ID"], function(){
+
+			//开始自动分析的话，也自动添加到快速收藏
+			var starIdx = fastStarIndex(uid);
+			if (starIdx<0) { //不存在，则添加
+				pubd.fastStarList.push(uid);
+				pubd.start.star.classList.add("stars");
+				GM_setValue("pubd-faststar-list",pubd.fastStarList);
+				console.debug(`已将 ${uid} 添加到快速收藏`);
+			}
+
+			dlg.analyse(dcType, uid, function(){
 				if (getValueDefault("pubd-autodownload",false)) { //自动开始
 					dlg.log("🅰️自动开始发送");
 					dlg.startdownload();
@@ -2672,14 +2802,12 @@ function buildDlgDownIllust(illustid) {
 				"https://app-api.pixiv.net/v1/illust/detail?illust_id=" + illustid,
 				function(jore) { //onload_suceess_Cb
 					var work = dlg.work = jore.illust;
-					var original;
-					if (work.page_count > 1) { /*漫画多图*/
-						original = work.meta_pages[0].image_urls.original;
-					} else { /*单张图片或动图，含漫画单图*/
-						original = work.meta_single_page.original_image_url;
-					}
-					var regSrc = new RegExp(illustPattern, "ig");
-					var regRes = regSrc.exec(original);
+					const original = work.page_count > 1 ?
+						work.meta_pages[0].image_urls.original : //漫画多图
+						work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
+
+					const regSrc = new RegExp(illustPattern, "ig");
+					const regRes = regSrc.exec(original);
 					if (regRes) {
 						//然后添加扩展名等
 						work.url_without_page = regRes[1];
@@ -2688,11 +2816,10 @@ function buildDlgDownIllust(illustid) {
 						work.token = regRes[4];
 						work.extention = regRes[5];
 					} else {
-						var regSrcL = new RegExp(limitingPattern, "ig");
-						var regResL = regSrcL.exec(original);
+						const regSrcL = new RegExp(limitingPattern, "ig");
+						const regResL = regSrcL.exec(original);
 						if (regResL) {
 							dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
-							//console.log(work);
 							work.url_without_page = regResL[1];
 							work.domain = regResL[2];
 							work.filename = regResL[3];
@@ -2702,6 +2829,12 @@ function buildDlgDownIllust(illustid) {
 							dlg.log(contentName + " " + work.id + " 原图格式未知。");
 						}
 					}
+					
+					const illustsStoreRequest = db.transaction("illusts", "readwrite").objectStore("illusts").put(work);
+					illustsStoreRequest.onsuccess = function(event) {
+						console.debug(`${work.title} 已添加到作品数据库`);
+					};
+
 					dlg.infoCard.thumbnail = work.image_urls.square_medium;
 					var iType = "插画";
 					if (work.type == "ugoira")
@@ -2766,6 +2899,10 @@ function buildDlgDownIllust(illustid) {
 				work.id,
 				function(jore) { //onload_suceess_Cb
 					work = Object.assign(work, jore);
+					const illustsStoreRequest = db.transaction("illusts", "readwrite").objectStore("illusts").put(work);
+					illustsStoreRequest.onsuccess = function(event) {
+						console.debug(`${work.title} 已更新动画帧数据到数据库`);
+					};
 					dlg.log("动图信息获取完成");
 					callback(); //开始获取下一项
 				},
@@ -3528,7 +3665,7 @@ function start(touch) {
 							//console.log('推荐列表改变',mutationsList);
 							mutationsList.forEach(mutation=>
 								mutation.addedNodes.forEach(linode=>{ //这个node是每个新增列表里的li
-									const userLink = linode.querySelector("div>div:nth-of-type(2)>div>a");
+									const userLink = linode.querySelector("div>div:last-of-type>div>a");
 									const uidRes = /\d+/.exec(userLink.pathname);
 									if (uidRes.length)
 									{
