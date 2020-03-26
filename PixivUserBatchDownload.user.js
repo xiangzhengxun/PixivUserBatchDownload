@@ -3609,7 +3609,36 @@ function start(touch) {
 		pubd.dialog.importdata.show(
 			(document.body.clientWidth - 370)/2,
 			window.pageYOffset+200,
-			{callback:function(txt){console.log(txt);}}
+			{callback:function(txt){
+				const importArr = txt.split("\n");
+				const needAddArr = importArr.map(str=>{
+					let res = null,num = null;
+					if (
+						Boolean(res = new RegExp("^(\\d+)$","ig").exec(str)) ||
+						Boolean(res = new RegExp("member.+?\\?id=(\\d+)","ig").exec(str)) ||
+						Boolean(res = new RegExp("users/(\\d+)","ig").exec(str))
+					)
+					{
+						num = parseInt(res[1],10);
+						if (!pubd.fastStarList.includes(num))
+							return num;
+						else
+							return null;
+					}else
+					{
+						if (str.length>0)
+							console.log("未知的字符串",str);
+						return null;
+					}
+				}).filter(Boolean);
+				console.log(needAddArr);
+				if (needAddArr.length>0)
+				{
+					console.log(`新增了${needAddArr.length}个收藏`);
+					pubd.fastStarList = pubd.fastStarList.concat(needAddArr);
+					GM_setValue("pubd-faststar-list",pubd.fastStarList);
+				}
+			}}
 		);
 	});
 
