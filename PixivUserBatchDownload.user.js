@@ -318,7 +318,26 @@ Date.prototype.toPixivString = function() {
 	].map(n=>pad(Math.floor(Math.abs(n)))).join(':');
 	return str;
 };
-
+//数组去重
+/* https://www.cnblogs.com/baiyangyuanzi/p/6726258.html
+* 实现思路：获取没重复的最右一值放入新数组。
+* （检测到有重复值时终止当前循环同时进入顶层循环的下一轮判断）*/
+Array.prototype.uniq = function()
+{
+	let temp = [];
+	const l = this.length;
+	for(let i = 0; i < l; i++) {
+		for(let j = i + 1; j < l; j++){
+			if (this[i] === this[j]){
+				i++;
+				j = i;
+			}
+		}
+		temp.push(this[i]);
+	}
+	return temp;
+};
+/*
 //一个被收藏的画师
 class StarUser{
 	constructor(id){
@@ -358,7 +377,68 @@ class UsersStarList{
 		}
 	}
 }
+*/
 
+//一个画师收藏列表
+class UsersStarList{
+	constructor(title,users = []){
+		this.title = title;
+		this.users = users;
+	}
+	includes(userid)
+	{ //检查是否存在
+		if (isNaN(userid)) userid = parseInt(userid,10);
+		return this.users.includes(userid);
+	}
+	add(userid)
+	{ //增加
+		if (isNaN(userid)) userid = parseInt(userid,10);
+		if (!this.users.includes(userid))
+		{
+			this.users.push(userid);
+			return true;
+		}else
+		{
+			return false;
+		}
+	}
+	remove(userid)
+	{ //删除
+		if (isNaN(userid)) userid = parseInt(userid,10);
+		const idx = this.users.indexOf(userid);
+		if (idx>=0)
+		{
+			this.users.splice(this.users.indexOf(userid),1);
+			return true;
+		}else
+		{
+			return false;
+		}
+	}
+	toggle(userid)
+	{ //切换有无
+		if (isNaN(userid)) userid = parseInt(userid,10);
+		if (this.users.includes(userid))
+		{
+			this.remove(userid);
+			return false;
+		}else
+		{
+			this.add(userid);
+			return true;
+		}
+	}
+	importArray(arr)
+	{
+		const arrMaxLength = 500000;
+		if (arr.length>arrMaxLength)
+		{
+			alert(`最多仅允许添加 ${arrMaxLength.toLocaleString()} 个数据。`);
+			arr = arr.splice(500000); //删除50万以后的
+		}
+		this.users = this.users.push(...arr).uniq();
+	}
+}
 //一个本程序使用的headers数据
 class HeadersObject{
 	constructor(obj){
@@ -980,7 +1060,7 @@ var Aria2 = (function() {
 //有默认值的获取设置
 function getValueDefault(name, defaultValue) {
 	var value = GM_getValue(name);
-	if (value != undefined)
+	if (value != null)
 		return value;
 	else
 		return defaultValue;
@@ -1145,33 +1225,26 @@ function getCurrentUserId()
 	}
 	return userid;
 }
-//检查画师是否存在的函数
-function fastStarIndex(userid)
-{
-	userid = userid || getCurrentUserId();
-	return pubd.fastStarList.indexOf(userid);
-}
 //检查并快速添加画师收藏的函数
 function toggleStar(userid)
 {
 	userid = userid || getCurrentUserId();
-	var starIdx = fastStarIndex(userid)
-	if (starIdx>=0)
-	{ //存在，则删除
-		pubd.fastStarList.splice(starIdx,1);
-		pubd.start.star.classList.remove("stars");
-	}else
-	{ //不存在，则添加
-		pubd.fastStarList.push(userid);
+	const res = pubd.fastStarList.toggle(userid);
+	if (res)
+	{ //添加
 		pubd.start.star.classList.add("stars");
+	}else
+	{ //删除
+		pubd.start.star.classList.remove("stars");
 	}
-	GM_setValue("pubd-faststar-list",pubd.fastStarList);
+	GM_setValue("pubd-faststar-list",pubd.fastStarList.users);
 }
 //检查是否有画师并改变星星状态
 function checkStar()
 {
-	var starIdx = fastStarIndex()
-	if (starIdx>=0)
+	const userid = userid || getCurrentUserId();
+	const res = pubd.fastStarList.includes(userid);
+	if (res)
 	{ //存在，则标记
 		pubd.start.star.classList.add("stars");
 		return true;
@@ -2758,11 +2831,9 @@ function buildDlgDownThis(userid) {
 		if (getValueDefault("pubd-autoanalyse",false)) {
 
 			//开始自动分析的话，也自动添加到快速收藏
-			var starIdx = fastStarIndex(uid);
-			if (starIdx<0) { //不存在，则添加
-				pubd.fastStarList.push(uid);
+			if (pubd.fastStarList.add(uid)) { //不存在，则添加
 				pubd.start.star.classList.add("stars");
-				GM_setValue("pubd-faststar-list",pubd.fastStarList);
+				GM_setValue("pubd-faststar-list",pubd.fastStarList.users);
 				console.debug(`已将 ${uid} 添加到快速收藏`);
 			}
 
@@ -3577,9 +3648,10 @@ function start(touch) {
 		pubd.downSchemes = NewDownSchemeArrayFromJson(new_value); //重新读取下载方案（可能被其他页面修改的）
 	});
 	//快速收藏列表的监听修改
-	pubd.fastStarList = getValueDefault("pubd-faststar-list",[]);
+	//pubd.fastStarList = getValueDefault("pubd-faststar-list",[]);
+	pubd.fastStarList = new UsersStarList("快速收藏",getValueDefault("pubd-faststar-list",[]));
 	GM_addValueChangeListener("pubd-faststar-list", function(name, old_value, new_value, remote) {
-		pubd.fastStarList = new_value;
+		pubd.fastStarList.importArray(new_value);
 		checkStar();
 		//将来还需要在更改收藏时，就自动刷新所有的其他推荐列表
 		//put my code
@@ -3621,18 +3693,14 @@ function start(touch) {
 			{callback:function(txt){
 				const importArr = txt.split("\n");
 				const needAddArr = importArr.map(str=>{
-					let res = null,num = null;
+					let res = null;
 					if (
 						Boolean(res = new RegExp("^(\\d+)$","ig").exec(str)) ||
 						Boolean(res = new RegExp("member.+?\\?id=(\\d+)","ig").exec(str)) ||
 						Boolean(res = new RegExp("users/(\\d+)","ig").exec(str))
 					)
 					{
-						num = parseInt(res[1],10);
-						if (!pubd.fastStarList.includes(num))
-							return num;
-						else
-							return null;
+						return parseInt(res[1],10);
 					}else
 					{
 						if (str.length>0)
@@ -3644,8 +3712,8 @@ function start(touch) {
 				if (needAddArr.length>0)
 				{
 					console.log(`新增了${needAddArr.length}个收藏`);
-					pubd.fastStarList = pubd.fastStarList.concat(needAddArr);
-					GM_setValue("pubd-faststar-list",pubd.fastStarList);
+					pubd.fastStarList.importArray(needAddArr);;
+					GM_setValue("pubd-faststar-list",pubd.fastStarList.users);
 				}
 			}}
 		);
