@@ -986,14 +986,14 @@ function getValueDefault(name, defaultValue) {
 		return defaultValue;
 }
 //加入了Auth的网络请求函数
-function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
+function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb, dlog=str=>str) {
 	var headersObj = new HeadersObject();
 	var auth = pubd.auth;
 	if (auth.needlogin) {
 		var token_type = auth.response.token_type.substring(0, 1).toUpperCase() + auth.response.token_type.substring(1);
 		headersObj.Authorization = token_type + " " + auth.response.access_token;
 	} else {
-		console.info("非登录模式获取信息");
+		console.info(dlog("尝试非登录模式获取信息"));
 	}
 	GM_xmlhttpRequest({
 		url: url,
@@ -1005,7 +1005,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 			try {
 				jo = JSON.parse(response.responseText);
 			} catch (e) {
-				console.error("错误：返回可能不是JSON格式，或本程序异常", e, response);
+				console.error(dlog("错误：返回可能不是JSON格式，或本程序异常"), e, response);
 				onload_notJson_Cb(response);
 				return;
 			}
@@ -1017,13 +1017,18 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 				//jo.error.user_message 是单行文本的错误信息
 				if (jo.error) {
 					if (jo.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
-						console.warn("Token过期，或其他错误",jo);
-						reLogin(
-							function(){
-								xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
-							},
-							onload_hasError_Cb
-						);
+						if (auth.needlogin) {
+							console.warn(dlog("Token过期，或其他错误"),jo);
+							reLogin(
+								function(){
+									xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
+								},
+								onload_hasError_Cb
+							);
+						} else {
+							console.info(dlog("非登录模式获取信息失败"),jo);
+							onload_hasError_Cb(jo);
+						}
 						return;
 					}else
 					{
@@ -1038,7 +1043,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 			}
 		},
 		onerror: function(response) {
-			console.error("错误：网络请求发送失败", response);
+			console.error(dlog("错误：网络请求发送失败"), response);
 			onerror_Cb(response);
 		}
 	})
@@ -2389,6 +2394,10 @@ function buildDlgDownThis(userid) {
 						works.runing = false;
 						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
 						dlg.startdown.disabled = false;
+					},
+					function(str) { //dlog，推送错误消息
+						dlg.log(str);
+						return str;
 					}
 				);
 			}
