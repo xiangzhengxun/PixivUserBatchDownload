@@ -7,7 +7,7 @@
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
-// @icon		http://www.pixiv.net/favicon.ico
+// @icon		https://www.pixiv.net/favicon.ico
 // @homepage	https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @description	Batch download pixiv user's images in one key.
@@ -50,45 +50,50 @@
 // @grant       GM_registerMenuCommand
 // @grant       GM_unregisterMenuCommand
 // @connect     pixiv.net
-// @connect     i.pximg.net
+// @connect     pximg.net
 // @connect     localhost
 // @connect     127.0.0.1
 // @noframes
 // ==/UserScript==
 
 /*jshint esversion: 6, shadow: true */
+(function() {
+    'use strict';
 
 //非顶级页面退出程序
 if (
 	self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
 	window.frames.length != parent.frames.length || //iframe判断方式2
 	self != top //iframe判断方式3
-){return;}//iframe退出执行
+){
+	console.log('还是检测到了iframe',self.frameElement);
+	return; //iframe退出执行
+}
 //获取当前是否是本地开发状态
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
 
 /*
  * 公共变量区
  */
-var scriptVersion = "LocalDebug", //本程序的版本
-	scriptName = "PixivUserBatchDownload", //本程序的名称
-	scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
-if (typeof(GM_info) != "undefined") //使用了扩展
-{
-	if (mdev) console.log("GM_info信息：",GM_info); //开发模式时显示meta数据
-	scriptVersion = GM_info.script.version.trim();
-	scriptIcon = GM_info.script.icon64 || GM_info.script.icon;
-	if (GM_info.script.name_i18n)
+if (mdev) console.log("GM_info信息：",GM_info); //开发模式时显示meta数据
+
+const scriptVersion = GM_info.script.version.trim(); //本程序的版本
+const scriptIcon = GM_info.script.icon64 || GM_info.script.icon; //本程序的图标
+const scriptName = (defaultName=>{ //本程序的名称
+	if (typeof(GM_info) != "undefined") //使用了扩展
 	{
-		var i18n = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
-		scriptName = GM_info.script.name_i18n[i18n]; //支持Tampermonkey
+		if (GM_info.script.name_i18n)
+		{
+			return GM_info.script.name_i18n[navigator.language.replace("-","_")]; //支持Tampermonkey
+		}
+		else
+		{
+			return GM_info.script.localizedName || //支持Greasemonkey 油猴子 3.x
+						GM_info.script.name; //支持Violentmonkey 暴力猴
+		}
 	}
-	else
-	{
-		scriptName = GM_info.script.localizedName || //支持Greasemonkey 油猴子 3.x
-					GM_info.script.name; //支持Violentmonkey 暴力猴
-	}
-}
+	return defaultName;
+})('PixivUserBatchDownload');
 
 const pubd = { //储存程序设置
 	configVersion: 1, //当前设置版本，用于提醒是否需要重置
@@ -105,8 +110,8 @@ const pubd = { //储存程序设置
 	auth: null, //储存账号密码
 	downSchemes: [], //储存下载方案
 	downbreak: false, //是否停止发送Aria2的Flag
-	fastStarList: [], //储存快速收藏的简单数字
-	staruserlists: [], //储存完整的下载列表
+	fastStarList: null, //储存快速收藏的简单数字
+	starUserlists: [], //储存完整的下载列表
 };
 
 //匹配P站内容的正则表达式
@@ -219,7 +224,7 @@ if (typeof(unsafeWindow) != "undefined")
 	}
 }
 //3、获取是否为手机版
-if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
+if (location.host.includes("touch")) //typeof(pixiv.AutoView)!="undefined"
 {
 	pubd.touch = true;
 	console.info("PUBD：当前访问的是P站触屏手机版，我没开发。");
@@ -229,57 +234,59 @@ if (location.host.indexOf("touch") >= 0) //typeof(pixiv.AutoView)!="undefined"
 
 //仿GM_notification函数v1.2，发送网页通知。
 //此函数非Debug用，为了替换选项较少但是兼容其格式的GM_notification插件
-if (typeof(GM_notification) == "undefined") {
-	var GM_notification = function(text, title, image, onclick) {
-		var options = {},rTitle,rText;
-		var dataMode = (typeof(text) == "string"); //GM_notification有两种模式，普通4参数模式和option对象模式
-		if (dataMode)
-		{ //普通模式
-			rTitle = title;
-			rText = text;
-			options.body = text;
-			options.icon = image;
-		}else
-		{ //选项模式
-			var details = text, ondone = title, onclose = image;
-			rTitle = details.title;
-			rText = details.text;
-			if (details.text) options.body = details.text;
-			if (details.image) options.icon = details.image;
-			if (details.timeout) options.timestamp = details.timeout;
-			//if (details.highlight) options.highlight = details.highlight; //没找到这个功能
-		}
+function GM_notification(text, title, image, onclick) {
+	const options = {};
+	let rTitle, rText;
+	let ondone, onclose;
+	const dataMode = Boolean(typeof(text) == "string"); //GM_notification有两种模式，普通4参数模式和option对象模式
+	if (dataMode)
+	{ //普通模式
+		rTitle = title;
+		rText = text;
+		options.body = text;
+		options.icon = image;
+	}else
+	{ //选项模式
+		const details = text;
+		rTitle = details.title;
+		rText = details.text;
+		if (details.text) options.body = details.text;
+		if (details.image) options.icon = details.image;
+		if (details.timeout) options.timestamp = details.timeout;
+		ondone = title;
+		onclose = image;
+		//if (details.highlight) options.highlight = details.highlight; //没找到这个功能
+	}
 
-		function sendNotification(general){
-			var n = new Notification(rTitle, options);
-			if (general)
-			{ //普通模式
-				if (onclick) n.onclick = onclick;
-			}else
-			{ //选项模式，这里和TamperMonkey API不一样，区分了关闭和点击。
-				if (ondone) n.onclick = ondone;
-				if (onclose) n.onclose = onclose;
-			}
+	function sendNotification(general){
+		const n = new Notification(rTitle, options);
+		if (general)
+		{ //普通模式
+			if (onclick) n.onclick = onclick;
+		}else
+		{ //选项模式，这里和TamperMonkey API不一样，区分了关闭和点击。
+			if (ondone) n.onclick = ondone;
+			if (onclose) n.onclose = onclose;
 		}
-		// 先检查浏览器是否支持
-		if (!("Notification" in window)) {
-			alert(rTitle + "\r\n" + rText);
-		// 检查用户是否同意接受通知
-		} else if (Notification.permission === "granted") {
-			Notification.requestPermission(function(permission) {
+	}
+	// 先检查浏览器是否支持
+	if (!("Notification" in window)) {
+		alert(rTitle + "\r\n" + rText);
+	// 检查用户是否同意接受通知
+	} else if (Notification.permission === "granted") {
+		Notification.requestPermission(function(permission) {
+			sendNotification(dataMode);
+		});
+	}
+	// 否则我们需要向用户获取权限
+	else if (Notification.permission !== 'denied') {
+		Notification.requestPermission(function(permission) {
+			// 如果用户同意，就可以向他们发送通知
+			if (permission === "granted") {
 				sendNotification(dataMode);
-			});
-		}
-		// 否则我们需要向用户获取权限
-		else if (Notification.permission !== 'denied') {
-			Notification.requestPermission(function(permission) {
-				// 如果用户同意，就可以向他们发送通知
-				if (permission === "granted") {
-					sendNotification(dataMode);
-				}
-			});
-		}
-	};
+			}
+		});
+	}
 }
 
 /*
@@ -496,7 +503,7 @@ Auth.prototype.loadFromAuth = function(auth) {
 	{
 		return;
 	}
-	var _thisAuth = this;
+	const _thisAuth = this;
 	Object.keys(_thisAuth).forEach(function(key){
 		if (typeof(auth[key]) != "undefined")
 			_thisAuth[key] = auth[key];
@@ -596,7 +603,7 @@ DownScheme.prototype.loadFromJson = function(json) {
 			return false;
 		}
 	}
-	var _this = this;
+	const _this = this;
 	Object.keys(_this).forEach(function(key){
 		if (key=="masklist")
 		{
@@ -828,10 +835,9 @@ var Frame = function(title, classname) {
 //创建带Label的Input类
 var LabelInput = function(text, classname, name, type, value, beforeText, title) {
 	var label = document.createElement("label");
-	label.innerHTML = text;
+	if (text) label.appendChild(document.createTextNode(text));
 	label.className = classname;
-	if (typeof(title) != "undefined")
-		label.title = title;
+	if (title) label.title = title;
 
 	var ipt = label.input = document.createElement("input");
 	ipt.name = name;
@@ -839,7 +845,7 @@ var LabelInput = function(text, classname, name, type, value, beforeText, title)
 	ipt.type = type;
 	ipt.value = value;
 
-	if (beforeText)
+	if (beforeText && label.childNodes.length>0)
 		label.insertBefore(ipt, label.firstChild);
 	else
 		label.appendChild(ipt);
@@ -922,19 +928,22 @@ function InfoCard(datas) {
 	var infoObj;
 	this.reload = function() //重构Card文本区域
 	{
-		for (var ci = infosDlDom.children.length-1;ci >= 0;ci--)
+		infosDlDom.classList.add('display-none');
+		for (let ci = infosDlDom.childNodes.length-1;ci >= 0;ci--)
 		{ //删掉所有老子元素
-			var x = infosDlDom.children[ci];
+			var x = infosDlDom.childNodes[ci];
 			x.remove();
 			x = null;
 		}
-		for (var pn in infoObj)
-		{
-			var dt = infosDlDom.appendChild(document.createElement("dt"));
-			var dd = infosDlDom.appendChild(document.createElement("dd"));
-			dt.appendChild(document.createTextNode(pn));
-			dd.appendChild(document.createTextNode(infoObj[pn]));
-		}
+		const fragment = document.createDocumentFragment();
+		Object.entries(infoObj).forEach(entry=>{
+			const dt = fragment.appendChild(document.createElement("dt"));
+			const dd = fragment.appendChild(document.createElement("dd"));
+			dt.appendChild(document.createTextNode(entry[0]));
+			if (entry[1]) dd.appendChild(document.createTextNode(entry[1]));
+		});
+		infosDlDom.appendChild(fragment);
+		infosDlDom.classList.remove('display-none');
 	};
 
 	Object.defineProperty(this , "infos", {
@@ -1029,7 +1038,7 @@ var Aria2 = (function() {
 	}
 
 	return function(jsonrpc_path) {
-		_this = this;
+		const _this = this;
 		_this.jsonrpc_path = jsonrpc_path;
 		_this.addUri = function(uri, options, callback) {
 			request(_this.jsonrpc_path, 'aria2.addUri', [
@@ -1096,7 +1105,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 				//jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
 				//jo.error.user_message 是单行文本的错误信息
 				if (jo.error) {
-					if (jo.error.message.indexOf("Error occurred at the OAuth process.") >= 0) {
+					if (jo.error.message.includes("Error occurred at the OAuth process.")) {
 						if (auth.needlogin) {
 							console.warn(dlog("Token过期，或其他错误"),jo);
 							reLogin(
@@ -1143,7 +1152,7 @@ function getUgoiraMeta(iid, onload_suceess_Cb, onload_hasError_Cb, onload_notJso
 function NewDownSchemeArrayFromJson(jsonarr) {
 	if (typeof(jsonarr) == "string") {
 		try {
-			var jsonarr = JSON.parse(jsonarr);
+			jsonarr = JSON.parse(jsonarr);
 		} catch (e) {
 			console.error("PUBD：拷贝新下载方案数组时失败(是字符串，但不是JSON)", e);
 			return false;
@@ -1151,17 +1160,17 @@ function NewDownSchemeArrayFromJson(jsonarr) {
 	}
 	var sarr = [];
 	if (jsonarr instanceof Array) {
-		for (var si = 0; si < jsonarr.length; si++) {
+		jsonarr.forEach(json=>{
 			var scheme = new DownScheme();
-			scheme.loadFromJson(jsonarr[si]);
+			scheme.loadFromJson(json);
 			sarr.push(scheme);
-		}
+		});
 	}
 	return sarr;
 }
 //获取URL参数
 function getQueryString(name,url) {
-	if (!!(window.URL && window.URLSearchParams))
+	if (Boolean(window.URL && window.URLSearchParams))
 	{ //浏览器原生支持的API
 		const urlObj = new URL(url || document.location);
 		return urlObj.searchParams.get(name);
@@ -1179,7 +1188,7 @@ function getQueryString(name,url) {
 		}
 	}
 }
-//从URL获取图片ID
+//从图片URL获取图片ID
 function getArtworkIdFromImageUrl(url) {
 	var regSrc = new RegExp(illustPattern, "ig");
 	var regRes = regSrc.exec(url);
@@ -1194,10 +1203,10 @@ function getCurrentUserId()
 {
 	//从URL获取作者ID
 	function getUserIdFromUrl(url) {
-		var userid = parseInt(getQueryString("id",url),10);
+		var userid = parseInt(getQueryString("id",url),10); //老地址：https://www.pixiv.net/member_illust.php?id=3896348
 		if (!userid)
 		{
-			var regSrc = new RegExp("users/(\\d+)", "ig");
+			var regSrc = new RegExp("users/(\\d+)", "ig"); //新地址：https://www.pixiv.net/users/3896348
 			var regRes = regSrc.exec(url.pathname);
 			if (regRes) {
 				return parseInt(regRes[1],10);
@@ -1835,7 +1844,7 @@ function buildDlgConfig() {
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中下载方案"); return; }
 		if (dlg.mask_name.value.length < 1) { alert("掩码名称为空"); return; }
 		if (dlg.mask_logic.value.length < 1) { alert("执行条件为空"); return; }
-		if (dlg.mask_content.value.indexOf("%{" + dlg.mask_logic.value + "}")>=0) { alert("该掩码调用自身，会形成死循环。"); return; }
+		if (dlg.mask_content.value.includes("%{" + dlg.mask_logic.value + "}")) { alert("该掩码调用自身，会形成死循环。"); return; }
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].maskAdd(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
 		dlg.addMask(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
@@ -3189,8 +3198,62 @@ function buildDlgMultiple() {
 	var dd = dl.appendChild(document.createElement("dd"));
 	var slt = dd.appendChild(new Select("pubd-staruserlists"));
 	slt.onchange = function() {
-		dlg.reloadUserList(this.selectedIndex);
+		dlg.loadTheList(this.selectedIndex);
 	};
+	
+	//每次脚本预加载的时候事先生成列表
+	slt.options.add(new Option('快速收藏',0));
+	//重新读取所有收藏列表
+	dlg.reloadStarList = function() {
+		while (slt.length>0)
+		{
+			const x = slt.options[0];
+			x.remove();
+			x = null;
+		}
+		slt.options.length = 0;
+		pubd.starUserlists.forEach((ulist,idx) => slt.options.add(new Option(ulist.title,idx)));
+	};
+	dlg.loadTheList = function(listIdx) {
+		const listArr = listIdx > 0 ? pubd.starUserlists[listIdx].users : pubd.fastStarList.users;
+		const ulDom = dlg.ulDom;
+		ulDom.classList.add("display-none");
+		while (ulDom.childNodes.length)
+		{
+			const x = ulDom.childNodes[0];
+			if (x.nodeName == 'li')
+			{
+				const l = x.querySelector('label');
+				l.ipt.remove();
+				delete l.ipt;
+				l.card.dom.remove();
+				delete l.card.dom
+				delete l.card;
+				l.remove();
+				l = null;
+			}
+			x.remove();
+			x = null;
+		}
+		const fragment = document.createDocumentFragment();
+		console.log(listArr)
+		listArr.forEach(uid=>{ //添加每一个作者的信息
+			const uli = fragment.appendChild(document.createElement('li'));
+			uli.className = 'user-card-li';
+			uli.setAttribute('data-user-id',uid);
+			const lbl = uli.appendChild(new LabelInput(null,'user-card-lbl',`user-${uid}`,'checkbox',uid));
+			const card = lbl.card = new InfoCard({
+				"ID": uid,
+				"昵称": null,
+				"作品获取程度": null,
+				"数据更新时间": null,
+			});
+			lbl.appendChild(card.dom);
+		});
+		ulDom.appendChild(fragment);
+		ulDom.classList.remove("display-none");
+	};
+
 	dlg.userListDom = slt;
 
 	var dd = dl.appendChild(document.createElement("dd"));
@@ -3299,9 +3362,10 @@ function buildDlgMultiple() {
 	ipt.value = "下载列表内画师作品";
 	ipt.onclick = function() {
 	};
-
+	
 	//启动初始化
 	dlg.initialise = function(arg) {
+		dlg.loadTheList(0); //加载快速收藏列表
 	};
 	return dlg;
 }
@@ -3342,7 +3406,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 			return;
 		}
 		var aria2_params = [];
-		for (page=0;page<page_count;page++)
+		for (let page=0;page<page_count;page++)
 		{
 			if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
 				//跳过此次下载
@@ -3396,7 +3460,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 			{
 				page_count = illust.ugoira_metadata.frames.length;
 			}
-			for (page=0;page<page_count;page++)
+			for (let page=0;page<page_count;page++)
 			{
 				if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
 					//跳过此次下载
@@ -3662,6 +3726,7 @@ function start(touch) {
 		//将来还需要在更改收藏时，就自动刷新所有的其他推荐列表
 		//put my code
 	});
+
 	//登陆信息的监听修改
 	GM_addValueChangeListener("pubd-auth", function(name, old_value, new_value, remote) {
 		pubd.auth.loadFromAuth(new_value);
@@ -3796,4 +3861,6 @@ function start(touch) {
 		observerFirstOnce.observe(vueRoot, {childList: true,subtree:true});
 	}
 }
+
 start(pubd.touch); //开始主程序
+})();
