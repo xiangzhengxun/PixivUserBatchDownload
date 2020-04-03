@@ -15,7 +15,7 @@
 
 
 ## 程序下载
-* [从 Greasy Fork 安装](https://greasyfork.org/zh-CN/scripts/17879)(推荐)
+* [从 Greasy Fork 安装](//greasyfork.org/zh-CN/scripts/17879)(推荐)
 * [从 GitHub 源文件安装](PixivUserBatchDownload.user.js)
 > **用户样式CSS** 自 v5.8 开始已内置为自动加载，不再需要单独安装。
 

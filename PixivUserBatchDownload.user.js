@@ -55,7 +55,8 @@
 // @connect     127.0.0.1
 // @noframes
 // ==/UserScript==
-/*jshint esversion: 6 */
+
+/*jshint esversion: 6, shadow: true */
 
 //非顶级页面退出程序
 if (
@@ -72,9 +73,9 @@ const mdev = Boolean(localStorage.getItem("pubd-dev"));
 var scriptVersion = "LocalDebug", //本程序的版本
 	scriptName = "PixivUserBatchDownload", //本程序的名称
 	scriptIcon = "http://www.pixiv.net/favicon.ico"; //本程序的图标
-if (typeof(GM_info)!="undefined")
+if (typeof(GM_info) != "undefined") //使用了扩展
 {
-	if (mdev) console.log("GM_info信息：",GM_info); //用来显示meta数据
+	if (mdev) console.log("GM_info信息：",GM_info); //开发模式时显示meta数据
 	scriptVersion = GM_info.script.version.trim();
 	scriptIcon = GM_info.script.icon64 || GM_info.script.icon;
 	if (GM_info.script.name_i18n)
@@ -89,7 +90,7 @@ if (typeof(GM_info)!="undefined")
 	}
 }
 
-var pubd = { //储存程序设置
+const pubd = { //储存程序设置
 	configVersion: 1, //当前设置版本，用于提醒是否需要重置
 	touch: false, //是触屏
 	loggedIn: false, //登陆了
@@ -172,7 +173,7 @@ DBOpenRequest.onupgradeneeded = function(event) {
 	// 使用事务的 oncomplete 事件确保在插入数据前对象仓库已经创建完毕
 	illustsStore.transaction.oncomplete = function(event) {
 		console.log("PUBD：数据库建立完毕");
-	}
+	};
 };
 /*
  * 获取初始状态
@@ -448,7 +449,7 @@ class HeadersObject{
 		header["App-Version"] = PixivAppVersion;
 		header["User-Agent"] = UA;
 		header["Content-Type"] = ContentType; //重要
-		header["Referer"] = Referer;
+		header["Referer"] = Referer; // jshint ignore:line
 		header["X-Client-Hash"] = CryptoJS.MD5(timeStr + X_Client_Hash_Salt).toString();
 		header["X-Client-Time"] = timeStr;
 		if (typeof(obj) == "object")
@@ -473,7 +474,7 @@ var Auth = function (username, password, remember) {
 	this.username = username || null;
 	this.password = password || null;
 	this.save_account = remember || false,
-	this.login_date = null;
+	this.login_date = null; // jshint ignore:line
 };
 Auth.prototype.newAccount = function(username, password, remember) {
 	if (typeof(remember) == "boolean") this.save_account = remember;
@@ -558,14 +559,14 @@ Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_no
 			onerror_Cb(response);
 			return;
 		}
-	})
-}
+	});
+};
 //一个掩码
 var Mask = function(name, logic, content){
 	this.name = name;
 	this.logic = logic;
 	this.content = content;
-}
+};
 //一个下载方案
 var DownScheme = function(name) {
 	//默认值
@@ -582,10 +583,10 @@ DownScheme.prototype.maskAdd = function(name, logic, content) {
 	var mask = new Mask(name, logic, content);
 	this.masklist.push(mask);
 	return mask;
-}
+};
 DownScheme.prototype.maskRemove = function(index) {
 	this.masklist.splice(index, 1);
-}
+};
 DownScheme.prototype.loadFromJson = function(json) {
 	if (typeof(json) == "string") {
 		try {
@@ -601,13 +602,13 @@ DownScheme.prototype.loadFromJson = function(json) {
 		{
 			_this.masklist.length = 0; //清空之前的
 			json.masklist.forEach(function(mask){
-				_this.masklist.push(new Mask(mask.name, mask.logic, mask.content))
-			})
+				_this.masklist.push(new Mask(mask.name, mask.logic, mask.content));
+			});
 		}else
 		{
 			_this[key] = json[key];
 		}
-	})
+	});
 	return true;
 };
 
@@ -638,7 +639,7 @@ var pubdMenu = function(classname) {
 
 		//添加链接
 		var a = item.appendChild(document.createElement("a"));
-		a.className = "pubd-menu-item-a"
+		a.className = "pubd-menu-item-a";
 		//添加图标
 		var icon = a.appendChild(document.createElement("i"));
 		icon.className = "pubd-icon";
@@ -660,21 +661,21 @@ var pubdMenu = function(classname) {
 
 	var menu = document.createElement("ul");
 	menu.className = "pubd-menu display-none" + (classname ? " " + classname : "");
-	menu.item = new Array();
+	menu.item = [];
 	//显示该菜单
 	menu.show = function() {
 		menu.classList.remove("display-none");
-	}
+	};
 	menu.hide = function() {
 			menu.classList.add("display-none");
-		}
+		};
 		//添加菜单项
 	menu.add = function(title, classname, callback, submenu) {
 			var itm = buildMenuItem(title, classname, callback, submenu);
 			this.appendChild(itm);
-			this.item.push(itm)
+			this.item.push(itm);
 			return itm;
-		}
+		};
 		//鼠标移出菜单时消失
 	menu.addEventListener("mouseleave", function(e) {
 		this.hide();
@@ -731,7 +732,7 @@ var Dialog = function(caption, classname, id) {
 		var btn = buildDlgCptBtn(text, classname, callback);
 		this.insertBefore(btn, this.firstChild);
 		return btn;
-	}
+	};
 	//添加关闭按钮
 	cptBtns.close = cptBtns.add("X", "dlg-btn-close", (function() {
 		dlg.classList.add("display-none");
@@ -755,11 +756,11 @@ var Dialog = function(caption, classname, id) {
 				this.classList.add("pubd-dlg-active"); //添加激活
 				this.style.zIndex = ""; //z级归零
 			}
-		}
+		};
 	//窗口初始化
 	dlg.initialise = function() { //窗口初始化默认情况下什么也不做，具体在每个窗口再设置
 			return;
-		}
+		};
 		//窗口显示
 	dlg.show = function(posX, posY, arg) {
 			if (posX) dlg.style.left = posX + "px"; //更改显示时初始坐标
@@ -767,11 +768,11 @@ var Dialog = function(caption, classname, id) {
 			dlg.initialise(arg); //对窗体进行初始化（激活为可见前提前修改窗体内容）
 			dlg.classList.remove("display-none");
 			dlg.active(); //激活窗口
-		}
+		};
 		//窗口隐藏
 	dlg.hide = function() { //默认情况下等同于关闭窗口
 			dlg.cptBtns.close.click();
-		}
+		};
 	
 	//添加鼠标拖拽移动
 	var drag = dlg.drag = [0, 0]; //[X,Y] 用以储存窗体开始拖动时的鼠标相对窗口坐标差值。
@@ -812,14 +813,14 @@ var Frame = function(title, classname) {
 
 	frame.name = function() {
 		return this.caption.textContent;
-	}
+	};
 	frame.rename = function(newName) {
 		if (typeof(newName) == "string" && newName.length > 0) {
 			this.caption.innerHTML = newName;
 			return true;
 		} else
 			return false;
-	}
+	};
 
 	return frame;
 };
@@ -888,7 +889,7 @@ var Progress = function(classname, align_right) {
 			txt.innerHTML = str;
 		else
 			txt.innerHTML = percentStr;
-	}
+	};
 	Object.defineProperty(progress , "scale", {
 		get() {
 			return this.scaleNum;
@@ -934,7 +935,7 @@ function InfoCard(datas) {
 			dt.appendChild(document.createTextNode(pn));
 			dd.appendChild(document.createTextNode(infoObj[pn]));
 		}
-	}
+	};
 
 	Object.defineProperty(this , "infos", {
 		get() {
@@ -957,11 +958,11 @@ var Select = function(classname, name) {
 	select.add = function(text, value) {
 		var opt = new Option(text, value);
 		this.options.add(opt);
-	}
+	};
 	select.remove = function(index) {
 		var x = this.options.remove(index);
 		x = null;
-	}
+	};
 
 	return select;
 };
@@ -975,16 +976,16 @@ var Aria2 = (function() {
 	}
 
 	function request(jsonrpc_path, method, params, callback, priority) {
-		if (callback == undefined) callback = function() { return; }
+		if (callback == undefined) callback = ()=>{};
 		var auth = get_auth(jsonrpc_path);
 		jsonrpc_path = jsonrpc_path.replace(/^((?![^:@]+:[^:@\/]*@)[^:\/?#.]+:)?(\/\/)?(?:(?:[^:@]*(?::[^:@]*)?)?@)?(.*)/, '$1$2$3'); // auth string not allowed in url for firefox
 
 		var request_obj = {
 			jsonrpc: jsonrpc_version,
 			method: method,
-			id: priority ? "1" : (new Date()).getTime().toString(),
+			id: priority ? 1 : Date.now(),
 		};
-		if (params) request_obj['params'] = params;
+		if (params) request_obj.params = params;
 		
 		if (auth && auth.indexOf('token:') == 0)
 		{
@@ -993,8 +994,8 @@ var Aria2 = (function() {
 				params.forEach(function(param){
 					param.forEach(function(method){
 						method.params.unshift(auth);
-					})
-				})
+					});
+				});
 			}else
 			{
 				params.unshift(auth);
@@ -1050,7 +1051,7 @@ var Aria2 = (function() {
 			},
 		};
 		return this;
-	}
+	};
 })();
 
 /*
@@ -1125,7 +1126,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 			console.error(dlog("错误：网络请求发送失败"), response);
 			onerror_Cb(response);
 		}
-	})
+	});
 }
 //用id来获取动画帧数据
 function getUgoiraMeta(iid, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb)
@@ -1136,7 +1137,7 @@ function getUgoiraMeta(iid, onload_suceess_Cb, onload_hasError_Cb, onload_notJso
 		onload_hasError_Cb,
 		onload_notJson_Cb,
 		onerror_Cb
-	)
+	);
 }
 //为了区分设置窗口和保存的设置，产生一个新的下载方案数组
 function NewDownSchemeArrayFromJson(jsonarr) {
@@ -1148,7 +1149,7 @@ function NewDownSchemeArrayFromJson(jsonarr) {
 			return false;
 		}
 	}
-	var sarr = new Array();
+	var sarr = [];
 	if (jsonarr instanceof Array) {
 		for (var si = 0; si < jsonarr.length; si++) {
 			var scheme = new DownScheme();
@@ -1241,7 +1242,7 @@ function toggleStar(userid)
 //检查是否有画师并改变星星状态
 function checkStar()
 {
-	const userid = userid || getCurrentUserId();
+	const userid = getCurrentUserId();
 	const res = pubd.fastStarList.includes(userid);
 	if (res)
 	{ //存在，则标记
@@ -1275,9 +1276,9 @@ function buildbtnStart() {
 
 	//鼠标移入和按下都起作用
 	//btnStart.addEventListener("mouseenter",function(){pubd.menu.show()});
-	star.onclick = function(){toggleStar();}
-	menu.onclick = function(){pubd.menu.classList.toggle("display-none");}
-	caption.onclick = function(){pubd.menu.downthis.click();}
+	star.onclick = function(){toggleStar();};
+	menu.onclick = function(){pubd.menu.classList.toggle("display-none");};
+	caption.onclick = function(){pubd.menu.downthis.click();};
 	return btnStart;
 }
 
@@ -1396,7 +1397,7 @@ function buildDlgConfig() {
 			dlg.stop_token_animate();
 		}
 		pubd.dialog.login.cptBtns.close.click();
-	}
+	};
 	dd.appendChild(checkbox);
 
 	var a_setting = document.createElement("a");
@@ -1418,9 +1419,9 @@ function buildDlgConfig() {
 			//{
 			dlg.stop_token_animate();
 			requestAnimationFrame(token_animate);
-			dlg.token_ani = setInterval(function() { requestAnimationFrame(token_animate) }, 1000);
+			dlg.token_ani = setInterval(function() { requestAnimationFrame(token_animate); }, 1000);
 			//}
-		}
+		};
 		//停止动画
 	dlg.stop_token_animate = function() {
 			clearInterval(dlg.token_ani);
@@ -1512,10 +1513,10 @@ function buildDlgConfig() {
 		dlg.downSchemeDom.options.length = 0;
 		dlg.schemes.forEach(function(item, index) {
 			dlg.downSchemeDom.add(item.name, index);
-		})
+		});
 		if (dlg.downSchemeDom.options.length > 0)
 			dlg.selectScheme(0);
-	}
+	};
 	dlg.loadScheme = function(scheme) { //读取一个下载方案
 		if (scheme == undefined) {
 			dlg.rpcurl.value = "";
@@ -1534,25 +1535,25 @@ function buildDlgConfig() {
 			dlg.textout.value = scheme.textout;
 			dlg.loadMasklistFromArray(scheme.masklist);
 		}
-	}
+	};
 	dlg.addMask = function(name, logic, content, value) { //向掩码列表添加一个新的掩码
 		if (value == undefined)
 			value = dlg.masklist.options.length;
 		var text = name + " : " + logic + " : " + content;
 		var opt = new Option(text, value);
 		dlg.masklist.options.add(opt);
-	}
+	};
 	dlg.loadMask = function(mask) { //读取一个掩码到三个文本框，只是用来查看
 		dlg.mask_name.value = mask.name;
 		dlg.mask_logic.value = mask.logic;
 		dlg.mask_content.value = mask.content;
-	}
+	};
 	dlg.loadMasklistFromArray = function(masklist) { //从掩码数组重置掩码列表
 			dlg.masklist.length = 0;
 			masklist.forEach(function(item, index) {
 				dlg.addMask(item.name, item.logic, item.content, index);
-			})
-		}
+			});
+		};
 		//选择一个方案，同时读取设置
 	dlg.selectScheme = function(index) {
 			if (index == undefined) index = 0;
@@ -1560,7 +1561,7 @@ function buildDlgConfig() {
 			var scheme = dlg.schemes[index];
 			dlg.loadScheme(scheme);
 			dlg.downSchemeDom.selectedIndex = index;
-		}
+		};
 		//选择一个掩码，同时读取设置
 	dlg.selectMask = function(index) {
 		if (dlg.downSchemeDom.options.length < 1 || dlg.downSchemeDom.selectedOptions.length < 1) { return; }
@@ -1569,7 +1570,7 @@ function buildDlgConfig() {
 		var mask = scheme.masklist[index];
 		dlg.loadMask(mask);
 		dlg.masklist.selectedIndex = index;
-	}
+	};
 
 	//配置方案选择
 	var dt = document.createElement("dt");
@@ -1586,7 +1587,7 @@ function buildDlgConfig() {
 	var ipt = document.createElement("input");
 	ipt.type = "button";
 	ipt.className = "pubd-downscheme-new";
-	ipt.value = "新建"
+	ipt.value = "新建";
 	ipt.onclick = function() {
 		var schemName = prompt("请输入方案名", "我的方案");
 		if (schemName)
@@ -1598,13 +1599,13 @@ function buildDlgConfig() {
 			dlg.loadScheme(scheme);
 			//dlg.reloadSchemes();
 		}
-	}
+	};
 	dd.appendChild(ipt);
 
 	var ipt = document.createElement("input");
 	ipt.type = "button";
 	ipt.className = "pubd-downscheme-remove";
-	ipt.value = "删除"
+	ipt.value = "删除";
 	ipt.onclick = function() {
 		if (dlg.downSchemeDom.options.length < 1) { alert("已经没有方案了"); return; }
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中方案"); return; }
@@ -1619,7 +1620,7 @@ function buildDlgConfig() {
 			if (index < 0) dlg.reloadSchemes(); //没有选中的，重置
 			else dlg.loadScheme(dlg.schemes[index]);
 		}
-	}
+	};
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
@@ -1653,21 +1654,21 @@ function buildDlgConfig() {
 	rpcurl.className = "pubd-rpcurl";
 	rpcurl.name = "pubd-rpcurl";
 	rpcurl.id = rpcurl.name;
-	rpcurl.placeholder = "Aria2的信息接收路径"
+	rpcurl.placeholder = "Aria2的信息接收路径";
 	rpcurl.onchange = function() {
 		dlg.rpcchk.innerHTML = "";
 		dlg.rpcchk.runing = false;
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].rpcurl = rpcurl.value;
-	}
+	};
 	dlg.rpcurl = rpcurl;
 	dd.appendChild(rpcurl);
 
 	var ipt = document.createElement("input");
 	ipt.type = "button";
 	ipt.className = "pubd-rpcchk";
-	ipt.value = "检查路径"
+	ipt.value = "检查路径";
 	ipt.onclick = function() {
 		if (dlg.rpcchk.runing) return;
 		if (dlg.rpcurl.value.length < 1) {
@@ -1684,7 +1685,7 @@ function buildDlgConfig() {
 				dlg.rpcchk.innerHTML = "Aria2连接失败";
 			dlg.rpcchk.runing = false;
 		});
-	}
+	};
 	dd.appendChild(ipt);
 	dl_ss.appendChild(dd);
 
@@ -1698,7 +1699,7 @@ function buildDlgConfig() {
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].https2http = this.checked;
-	}
+	};
 	dd.appendChild(chk_https2http);
 	dl_ss.appendChild(dd);
 
@@ -1716,12 +1717,12 @@ function buildDlgConfig() {
 	downfilter.className = "pubd-downfilter";
 	downfilter.name = "pubd-downfilter";
 	downfilter.id = downfilter.name;
-	downfilter.placeholder = "符合条件的图片将不会被发送到Aria2"
+	downfilter.placeholder = "符合条件的图片将不会被发送到Aria2";
 	downfilter.onchange = function() {
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].downfilter = downfilter.value;
-	}
+	};
 	dlg.downfilter = downfilter;
 	dd.appendChild(downfilter);
 	dl_ss.appendChild(dd);
@@ -1736,12 +1737,12 @@ function buildDlgConfig() {
 	savedir.className = "pubd-savedir";
 	savedir.name = "pubd-savedir";
 	savedir.id = savedir.name;
-	savedir.placeholder = "文件下载到的目录"
+	savedir.placeholder = "文件下载到的目录";
 	savedir.onchange = function() {
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].savedir = savedir.value;
-	}
+	};
 	dlg.savedir = savedir;
 	dd.appendChild(savedir);
 	dl_ss.appendChild(dd);
@@ -1760,12 +1761,12 @@ function buildDlgConfig() {
 	savepath.className = "pubd-savepath";
 	savepath.name = "pubd-savepath";
 	savepath.id = savepath.name;
-	savepath.placeholder = "分组保存的文件夹和文件名"
+	savepath.placeholder = "分组保存的文件夹和文件名";
 	savepath.onchange = function() {
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].savepath = savepath.value;
-	}
+	};
 	dlg.savepath = savepath;
 	dd.appendChild(savepath);
 	dl_ss.appendChild(dd);
@@ -1784,13 +1785,13 @@ function buildDlgConfig() {
 	textout.className = "pubd-textout";
 	textout.name = "pubd-textout";
 	textout.id = textout.name;
-	textout.placeholder = "直接输出文本信息时的格式"
+	textout.placeholder = "直接输出文本信息时的格式";
 	textout.wrap = "off";
 	textout.onchange = function() {
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].textout = textout.value;
-	}
+	};
 	dlg.textout = textout;
 	dd.appendChild(textout);
 	dl_ss.appendChild(dd);
@@ -1839,7 +1840,7 @@ function buildDlgConfig() {
 		dlg.schemes[schemeIndex].maskAdd(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
 		dlg.addMask(dlg.mask_name.value, dlg.mask_logic.value, dlg.mask_content.value);
 		dlg.mask_name.value = dlg.mask_logic.value = dlg.mask_content.value = "";
-	}
+	};
 	dd.appendChild(ipt);
 	var mask_remove = document.createElement("input");
 	mask_remove.type = "button";
@@ -1856,7 +1857,7 @@ function buildDlgConfig() {
 		for (var mi = maskIndex; mi < dlg.masklist.options.length; mi++) {
 			dlg.masklist.options[mi].value = mi;
 		}
-	}
+	};
 	dd.appendChild(mask_remove);
 
 	//▼掩码内容
@@ -1874,11 +1875,11 @@ function buildDlgConfig() {
 	//▼掩码列表
 	var dd = document.createElement("dd");
 	dd.className = "pubd-mask-list-bar";
-	var masklist = new Select("pubd-mask-list", "pubd-mask-list")
+	var masklist = new Select("pubd-mask-list", "pubd-mask-list");
 	masklist.size = 5;
 	masklist.onchange = function() { //读取选中的掩码
 		dlg.selectMask(this.selectedIndex);
-	}
+	};
 	dlg.masklist = masklist;
 	dd.appendChild(masklist);
 	//▲掩码列表
@@ -1888,11 +1889,11 @@ function buildDlgConfig() {
 	var dt = document.createElement("dt");
 	dl.appendChild(dt);
 	var dd = document.createElement("dd");
-	dd.className = "pubd-config-savebar"
+	dd.className = "pubd-config-savebar";
 	var ipt = document.createElement("input");
 	ipt.type = "button";
 	ipt.className = "pubd-reset";
-	ipt.value = "清空选项"
+	ipt.value = "清空选项";
 	ipt.onclick = function() {
 		if (confirm("您确定要将PUBD保存的所有设置，以及方案全部删除吗？\n（⚠️不可恢复）")==true){
 			dlg.reset();
@@ -1900,15 +1901,15 @@ function buildDlgConfig() {
 		}else{
 			return false;
 		}
-	}
+	};
 	dd.appendChild(ipt);
 	var ipt = document.createElement("input");
 	ipt.type = "button";
 	ipt.className = "pubd-save";
-	ipt.value = "保存选项"
+	ipt.value = "保存选项";
 	ipt.onclick = function() {
 		dlg.save();
-	}
+	};
 	dd.appendChild(ipt);
 	dl.appendChild(dd);
 
@@ -1943,7 +1944,7 @@ function buildDlgConfig() {
 			pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
 			pubd.dialog.downthis.reloadSchemes();
 			pubd.dialog.downillust.reloadSchemes();
-		}
+		};
 		//重置设置函数
 	dlg.reset = function() {
 			GM_deleteValue("pubd-auth"); //登陆相关信息
@@ -1956,7 +1957,7 @@ function buildDlgConfig() {
 			GM_deleteValue("pubd-defaultscheme"); //默认方案
 			GM_deleteValue("pubd-configversion"); //设置版本
 			GM_notification({text:"已清空重置设置", title:scriptName, image:scriptIcon});
-		}
+		};
 		//窗口关闭
 	dlg.close = function() {
 		dlg.stop_token_animate();
@@ -2112,31 +2113,31 @@ function buildDlgLogin() {
 					dlg.error.replace("网络请求发生错误");
 				}
 			);
-		}
+		};
 		//添加错误功能
 	error_msg_list.clear = function() {
 		this.innerHTML = ""; //清空当前信息
-	}
+	};
 	error_msg_list.add = function(text) {
 		var error_msg_list_item = document.createElement("li");
 		error_msg_list_item.className = "error-msg-list-item";
 		error_msg_list_item.innerHTML = text;
 		this.appendChild(error_msg_list_item);
-	}
+	};
 	error_msg_list.adds = function(arr) {
 		arr.forEach(
 			function(item) {
 				error_msg_list.add(item);
 			}
-		)
-	}
+		);
+	};
 	error_msg_list.replace = function(text) {
 		this.clear();
 		if (typeof(text) == "object") //数组
 			this.adds(text);
 		else //单文本
 			this.add(text);
-	}
+	};
 	dlg.error = error_msg_list;
 	//窗口关闭
 	dlg.close = function() {
@@ -2191,19 +2192,19 @@ function buildDlgDown(caption, classname, id) {
 		dlg.downSchemeDom.options.length = 0;
 		dlg.schemes.forEach(function(item, index) {
 			dlg.downSchemeDom.add(item.name, index);
-		})
+		});
 		if (getValueDefault("pubd-defaultscheme",0) >= 0)
 			dlg.selectScheme(getValueDefault("pubd-defaultscheme",0));
 		else if (dlg.downSchemeDom.options.length > 0)
 			dlg.selectScheme(0);
-	}
+	};
 
 	//选择一个方案，同时读取设置
 	dlg.selectScheme = function(index) {
 		if (index == undefined) index = 0;
 		if (dlg.downSchemeDom.options.length < 1 || dlg.downSchemeDom.selectedOptions.length < 1) { return; }
 		dlg.downSchemeDom.selectedIndex = index;
-	}
+	};
 
 	var dt = document.createElement("dt");
 	dl.appendChild(dt);
@@ -2218,7 +2219,7 @@ function buildDlgDown(caption, classname, id) {
 	var dt = document.createElement("dt");
 	dl.appendChild(dt);
 	var dd = document.createElement("dd");
-	dd.className = "pubd-downthis-downbar"
+	dd.className = "pubd-downthis-downbar";
 
 	var textdown = document.createElement("input");
 	textdown.type = "button";
@@ -2226,7 +2227,7 @@ function buildDlgDown(caption, classname, id) {
 	textdown.value = "输出\n文本";
 	textdown.onclick = function() {
 		dlg.textdownload();
-	}
+	};
 	textdown.disabled = true;
 	dlg.textdown = textdown;
 	dd.appendChild(textdown);
@@ -2237,7 +2238,7 @@ function buildDlgDown(caption, classname, id) {
 	startdown.value = "发送到Aria2";
 	startdown.onclick = function() {
 		dlg.startdownload();
-	}
+	};
 	startdown.disabled = true;
 	dlg.startdown = startdown;
 	dd.appendChild(startdown);
@@ -2247,7 +2248,7 @@ function buildDlgDown(caption, classname, id) {
 	var dt = document.createElement("dt");
 	dl.appendChild(dt);
 	var dd = document.createElement("dd");
-	dd.className = "pubd-down-textout-bar"
+	dd.className = "pubd-down-textout-bar";
 	dl.appendChild(dd);
 
 	var ipt = document.createElement("textarea");
@@ -2283,7 +2284,7 @@ function buildDlgDownThis(userid) {
 		};
 		this.illusts = new Works();
 		this.bookmarks = new Works();
-	}
+	};
 
 	var dlg = new buildDlgDown("下载当前画师", "pubd-down pubd-downthis", "pubd-downthis");
 	dlg.infoCard.infos = {"ID":userid};
@@ -2300,8 +2301,8 @@ function buildDlgDownThis(userid) {
 	var radio1 = frm.content.appendChild(new LabelInput("他的作品", "pubd-down-content", "pubd-down-content", "radio", "0", true));
 	var radio2 = frm.content.appendChild(new LabelInput("他的收藏", "pubd-down-content", "pubd-down-content", "radio", "1", true));
 	dlg.dcType = [radio1.input, radio2.input];
-	radio1.input.onclick = function() { reAnalyse(this) };
-	radio2.input.onclick = function() { reAnalyse(this) };
+	radio1.input.onclick = function() { reAnalyse(this); };
+	radio2.input.onclick = function() { reAnalyse(this); };
 
 	function reAnalyse(radio) {
 		if (radio.checked == true) {
@@ -2310,7 +2311,7 @@ function buildDlgDownThis(userid) {
 			else
 				dlg.user.illusts.break = true; //radio值为1，使作品中断
 
-			dlg.analyse(radio.value, dlg.infoCard.infos["ID"]);
+			dlg.analyse(radio.value, dlg.infoCard.infos.ID);
 		}
 	}
 
@@ -2331,7 +2332,7 @@ function buildDlgDownThis(userid) {
 		dlg.user.illusts.break = true; //使作品中断
 		dlg.user.bookmarks.break = true; //使收藏中断
 		pubd.downbreak = true; //使下载中断
-	}
+	};
 	dlg.logTextarea.parentNode.previousElementSibling.appendChild(btnBreak);
 
 	//分析
@@ -2415,7 +2416,7 @@ function buildDlgDownThis(userid) {
 										console.error("抓取头像失败", response);
 										return;
 									}
-								})
+								});
 							}else
 							{
 								var newData = data ? Object.assign(data,jore) : jore;
@@ -2429,7 +2430,7 @@ function buildDlgDownThis(userid) {
 									console.debug(`${newData.user.name} 已${data?"更新":"添加"}到用户数据库`,newData);
 								};
 							}
-						}
+						};
 						usersStoreRequest.onerror = function(event) {// 错误处理
 							console.error(`${jore.user.name} 数据库里没有？`,jore);
 						};
@@ -2514,7 +2515,7 @@ function buildDlgDownThis(userid) {
 					//返回所有动图
 					var ugoiras = works.item.filter(function(item) {
 						return item.type == "ugoira";
-					})
+					});
 					dlg.log("共存在 " + ugoiras.length + " 件动图");
 					if (ugoiras.some(function(item) { //如果有没有帧数据的动图
 							return item.ugoira_metadata == undefined;
@@ -2523,7 +2524,7 @@ function buildDlgDownThis(userid) {
 							dlg.log("由于用户设置，跳过获取动图帧数。");
 						} else {
 							analyseUgoira(works, ugoiras, function() { //开始分析动图
-								analyseWorks(user, contentType, apiurl) //开始获取下一页
+								analyseWorks(user, contentType, apiurl); //开始获取下一页
 							});
 							return;
 						}
@@ -2602,7 +2603,7 @@ function buildDlgDownThis(userid) {
 							illustsStoreRequest.onsuccess = function(event) {
 								//console.debug(`${work.title} 已添加到作品数据库`);
 							};
-						})
+						});
 
 						dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
 						if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
@@ -2632,7 +2633,7 @@ function buildDlgDownThis(userid) {
 						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
 						dlg.startdown.disabled = false;
 					}
-				)
+				);
 			}
 
 			function analyseUgoira(works, ugoirasItems, callback) {
@@ -2705,9 +2706,9 @@ function buildDlgDownThis(userid) {
 						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
 						dlg.startdown.disabled = false;
 					}
-				)
+				);
 			}
-		}
+		};
 	//输出文本按钮
 	dlg.textdownload = function() {
 			if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中方案"); return; }
@@ -2740,9 +2741,9 @@ function buildDlgDownThis(userid) {
 				dlg.textoutTextarea.classList.remove("display-none");
 				dlg.log("文本信息输出成功");
 			} catch (error) {
-				console.log(error)
+				console.log(error);
 			}
-		}
+		};
 	//开始下载按钮
 	dlg.startdownload = function() {
 			dlg.textoutTextarea.classList.add("display-none");
@@ -2799,10 +2800,10 @@ function buildDlgDownThis(userid) {
 						var ntype = parseInt(getValueDefault("pubd-noticeType", 0));
 						if (ntype == 3)
 							window.close();
-					},
+					}
 				);
 			});
-		}
+		};
 	//启动初始化
 	dlg.initialise = function(arg) {
 		var dcType = 0;
@@ -2815,13 +2816,13 @@ function buildDlgDownThis(userid) {
 		let uid = arg.id;
 		if (arg && arg.id>0) //提供了ID
 		{
-			if (arg.id != dlg.infoCard.infos["ID"])
+			if (arg.id != dlg.infoCard.infos.ID)
 			{ //更换新的id
 				dlg.infoCard.thumbnail = "";
 				dlg.infoCard.infos = {"ID":arg.id}; //初始化窗口id
 				dlg.user = new UserInfo(); //重置用户数据
 			}
-		}else if(!dlg.infoCard.infos["ID"]) //没有ID
+		}else if(!dlg.infoCard.infos.ID) //没有ID
 		{
 			uid = parseInt(prompt("没有用户ID，请手动输入。", "ID缺失"),10);
 			dlg.infoCard.infos = {"ID":uid}; //初始化窗口id
@@ -2971,7 +2972,7 @@ function buildDlgDownIllust(illustid) {
 					dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
 					dlg.startdown.disabled = false;
 				}
-			)
+			);
 		}
 
 		function analyseUgoira(work, callback) {
@@ -3018,9 +3019,9 @@ function buildDlgDownIllust(illustid) {
 					dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
 					dlg.startdown.disabled = false;
 				}
-			)
+			);
 		}
-	}
+	};
 	//输出文本按钮
 	dlg.textdownload = function() {
 		var illust = dlg.work;
@@ -3048,9 +3049,9 @@ function buildDlgDownIllust(illustid) {
 			dlg.textoutTextarea.classList.remove("display-none");
 			dlg.log("文本信息输出成功");
 		} catch (error) {
-			console.log(error)
+			console.log(error);
 		}
-	}
+	};
 	//开始下载按钮
 	dlg.startdownload = function() {
 			dlg.textoutTextarea.classList.add("display-none");
@@ -3074,22 +3075,22 @@ function buildDlgDownIllust(illustid) {
 				aria2 = null;
 				dlg.log("😄 当前作品下载信息发送完毕");
 			});
-		}
+		};
 	//启动初始化
 	dlg.initialise = function(arg) {
 		if (arg && arg.id>0) //提供了ID
 		{
-			if (arg.id != dlg.infoCard.infos["ID"])
+			if (arg.id != dlg.infoCard.infos.ID)
 			{ //更换新的id
 				dlg.infoCard.thumbnail = "";
 				dlg.infoCard.infos = {"ID":arg.id}; //初始化窗口id
 				dlg.work = null; //重置作品数据
 			}
-		}else if(!dlg.infoCard.infos["ID"]) //没有ID
+		}else if(!dlg.infoCard.infos.ID) //没有ID
 		{
 			dlg.infoCard.infos = {"ID":parseInt(prompt("没有作品ID，请手动输入。", "ID缺失"))}; //初始化窗口id
 		}
-		dlg.analyse(dlg.infoCard.infos["ID"], function(){
+		dlg.analyse(dlg.infoCard.infos.ID, function(){
 			if (getValueDefault("pubd-autodownload",false)) { //自动开始
 				dlg.log("🅰️自动开始发送");
 				dlg.startdownload();
@@ -3129,13 +3130,13 @@ function buildDlgImportData() {
 			{//返回文本框的内容
 				arg.callback(ipt.value);
 				dlg.hide();
-			}
+			};
 		}else
 		{
 			btn.onclick = function()
 			{
 				alert("窗口异常启动，未提供回调函数");
-			}
+			};
 		}
 	};
 	return dlg;
@@ -3196,7 +3197,7 @@ function buildDlgMultiple() {
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-new";
-	ipt.value = "新建"
+	ipt.value = "新建";
 	ipt.onclick = function() {
 		var schemName = prompt("请输入方案名", "我的方案");
 		if (schemName)
@@ -3208,19 +3209,19 @@ function buildDlgMultiple() {
 			dlg.loadScheme(scheme);
 			//dlg.reloadSchemes();
 		}
-	}
+	};
 
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-rename";
-	ipt.value = "重命名列表"
+	ipt.value = "重命名列表";
 	ipt.onclick = function() {
-	}
+	};
 
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-remove";
-	ipt.value = "删除"
+	ipt.value = "删除";
 	ipt.onclick = function() {
 		if (dlg.downSchemeDom.options.length < 1) { alert("已经没有方案了"); return; }
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中方案"); return; }
@@ -3230,7 +3231,7 @@ function buildDlgMultiple() {
 		var index = dlg.downSchemeDom.selectedIndex;
 		if (index < 0) dlg.reloadSchemes(); //没有选中的，重置
 		else dlg.loadScheme(dlg.schemes[index]);
-	}
+	};
 
 	var dd = dl.appendChild(document.createElement("dd"));
 	var frm = dd.appendChild(new Frame("当前列表", "pubd-frm-userlist"));
@@ -3241,36 +3242,36 @@ function buildDlgMultiple() {
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-this-add";
-	ipt.value = "添加画师ID"
+	ipt.value = "添加画师ID";
 	ipt.onclick = function() {
-	}
+	};
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-this-remove";
-	ipt.value = "删除选中画师"
+	ipt.value = "删除选中画师";
 	ipt.onclick = function() {
-	}
+	};
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-this-reset-getdata";
-	ipt.value = "重置数据获取状态"
+	ipt.value = "重置数据获取状态";
 	ipt.onclick = function() {
-	}
+	};
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-this-reset-downloaded";
-	ipt.value = "重置下载状态"
+	ipt.value = "重置下载状态";
 	ipt.onclick = function() {
-	}
+	};
 
 	var dt = dl_ul_frm.appendChild(document.createElement("dt"));
 	dt.innerHTML = "画师列表";
 	var ipt = dt.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-break";
-	ipt.value = "中断操作"
+	ipt.value = "中断操作";
 	ipt.onclick = function() {
-	}
+	};
 	var dd = dl_ul_frm.appendChild(document.createElement("dd"));
 	var dl_ul = dd.appendChild(document.createElement("ul"));
 	dlg.ulDom = dl_ul;
@@ -3282,22 +3283,22 @@ function buildDlgMultiple() {
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-this-getdata";
-	ipt.value = "获取画师数据"
+	ipt.value = "获取画师数据";
 	ipt.onclick = function() {
-	}
+	};
 
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-textdown";
-	ipt.value = "输出文本"
+	ipt.value = "输出文本";
 	ipt.onclick = function() {
-	}
+	};
 	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-userlist-download";
-	ipt.value = "下载列表内画师作品"
+	ipt.value = "下载列表内画师作品";
 	ipt.onclick = function() {
-	}
+	};
 
 	//启动初始化
 	dlg.initialise = function(arg) {
@@ -3323,7 +3324,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 		var illust = illusts.shift(); //读取首个作品
 		sendToAria2_Page(aria2, illust, 0, userInfo, scheme, downP, function() {
 			sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, downP, callback); //发送下一个作品
-		})
+		});
 		return; //不再继续执行
 	}else if (termwiseType == 1) //部分逐项（每作品合并）
 	{
@@ -3349,16 +3350,16 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 				continue;
 			} else {
 				var aria2_method = {'methodName':'aria2.addUri','params':[]};
-				var url = (scheme.https2http //https替换成http
-							? illust.url_without_page.replace(/^https:\/\//igm, "http://")
-							: illust.url_without_page)
-					+ page + "." + illust.extention;
+				var url = (scheme.https2http ? //https替换成http
+							illust.url_without_page.replace(/^https:\/\//igm, "http://") :
+							illust.url_without_page) +
+						page + "." + illust.extention;
 					aria2_method.params.push([url]); //添加下载链接
 				var options = {
 					"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
 					"referer": Referer,
 					"user-agent": UA,
-				}
+				};
 				if (scheme.savedir.length > 0) {
 					options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
 				}
@@ -3403,16 +3404,16 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 					continue;
 				} else {
 					var aria2_method = {'methodName':'aria2.addUri','params':[]};
-					var url = (scheme.https2http //https替换成http
-								? illust.url_without_page.replace(/^https:\/\//igm, "http://")
-								: illust.url_without_page)
-						+ page + "." + illust.extention;
+					var url = (scheme.https2http ? //https替换成http
+								illust.url_without_page.replace(/^https:\/\//igm, "http://") :
+								illust.url_without_page) +
+							page + "." + illust.extention;
 						aria2_method.params.push([url]); //添加下载链接
 					var options = {
 						"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
 						"referer": Referer,
 						"user-agent": UA,
-					}
+					};
 					if (scheme.savedir.length > 0) {
 						options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
 					}
@@ -3467,10 +3468,10 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 		callback();
 		return;
 	}
-	var url = (scheme.https2http //https替换成http
-		? illust.url_without_page.replace(/^https:\/\//igm, "http://")
-		: illust.url_without_page)
-		+ page + "." + illust.extention;
+	var url = (scheme.https2http ? //https替换成http
+				illust.url_without_page.replace(/^https:\/\//igm, "http://") :
+				illust.url_without_page) +
+			page + "." + illust.extention;
 
 	if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
 		//跳过此次下载
@@ -3482,7 +3483,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 			"out": replacePathSafe(showMask(scheme.savepath, scheme.masklist, userInfo, illust, page), 1),
 			"referer": Referer,
 			"user-agent": UA,
-		}
+		};
 
 		if (scheme.savedir.length > 0) {
 			options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
@@ -3518,6 +3519,8 @@ function showMask(oldStr, maskList, user, illust, page) {
 	var regPattern = "%{(.*?(?:[^\\\\](?:\\\\{2})+|[^\\\\]))}"; //新的，支持转义符
 	var regResult = null;
 
+	/* jshint ignore:start */
+
 	//不断循环直到没有掩码
 	while ((regResult = new RegExp(regPattern).exec(newStr)) != null) {
 		var mskO = regResult[0], //包含括号的原始掩码
@@ -3550,6 +3553,8 @@ function showMask(oldStr, maskList, user, illust, page) {
 			}
 		}
 	}
+	
+	/* jshint ignore:end */
 
 	return newStr;
 }
@@ -3557,7 +3562,9 @@ function showMask(oldStr, maskList, user, illust, page) {
 function returnLogicValue(logic, user, illust, page) {
 	try {
 		if (logic.length == 0) return false;
+		/* jshint ignore:start */
 		const evTemp = Boolean(eval(logic));
+		/* jshint ignore:end */
 		return evTemp;
 	} catch (e) {
 		console.error("逻辑运算出现了异常情况，逻辑内容：","(" + logic + ")", e);
@@ -3588,14 +3595,14 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 
 //开始构建UI
 function findInsertPlace(btnStart) {
-	var btnStartInsertPlace = document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
-							||document.querySelector("#root>div:nth-of-type(2)>div>div>aside>section") //新版作品页
-							//||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
-							||document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div") //新版关注页
-							||document.querySelector("._user-profile-card") //老版用户资料页
-							||document.querySelector(".ui-layout-west aside") //老版作品页
-							||document.querySelector(".introduction") //未登录页面
-							;
+	var btnStartInsertPlace = document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") || //2018年10月8日 新版用户资料首页
+							  document.querySelector("#root>div:nth-of-type(2)>div>div>aside>section") || //新版作品页
+							//document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") || //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
+							  document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div") || //新版关注页
+							  document.querySelector("._user-profile-card") || //老版用户资料页
+							  document.querySelector(".ui-layout-west aside") || //老版作品页
+							  document.querySelector(".introduction") //未登录页面
+							  ;
 	if (btnStartInsertPlace == undefined)
 	{
 		console.error("PUBD：未找到开始按钮插入点。");
@@ -3681,7 +3688,7 @@ function start(touch) {
 			(document.body.clientWidth - 440)/2,
 			window.pageYOffset+100,
 			{id:getCurrentUserId()}
-		)
+		);
 	});
 
 	if (mdev)
@@ -3711,7 +3718,7 @@ function start(touch) {
 				if (needAddArr.length>0)
 				{
 					console.log(`新增了${needAddArr.length}个收藏`);
-					pubd.fastStarList.importArray(needAddArr);;
+					pubd.fastStarList.importArray(needAddArr);
 					GM_setValue("pubd-faststar-list",pubd.fastStarList.users);
 				}
 			}}
@@ -3732,13 +3739,6 @@ function start(touch) {
 	//对于新版P站的SPA结构需要循环寻找插入点，每秒循环
 	if (window.MutationObserver && vueRoot) //如果支持MutationObserver，且是vue框架
 	{
-		function newInsertStart(){
-			//不存在开始按钮就重新插入
-			if (document.querySelector("#pubd-start") == undefined)
-			{
-				findInsertPlace(btnStartBox);
-			}
-		}
 		var observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
 			//第一次
 			if (document.querySelector("#pubd-start") == undefined)
@@ -3782,7 +3782,7 @@ function start(touch) {
 										}
 									}
 								})
-							)
+							);
 						}
 						if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(recommendList))))
 						{ //如果被删除的节点里有推荐列表，重新标空
