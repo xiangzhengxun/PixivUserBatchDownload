@@ -867,3 +867,7 @@ border: 1px solid #becad7;
     box-sizing: border-box;
 }
 /*▲多画师下载窗口内容*/
+:root [id^="pubd-"]
+{/*启用夜间模式时出现文字变白的BUG*/
+    color: rgb(31, 31, 31);
+}
