@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.10.95
+// @version		5.10.96
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -31,10 +31,9 @@
 // @exclude		*://www.pixiv.net/idea*
 // @exclude		*://www.pixiv.net/novel*
 // @exclude		*://www.pixiv.net/cate_r18*
-// @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年3月23日
+// @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年6月22日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
-// @require     https://cdn.staticfile.org/localforage/1.7.3/localforage.min.js
 // @grant       unsafeWindow
 // @grant       window.close
 // @grant       window.focus
@@ -62,7 +61,11 @@ if (
 	self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
 	window.frames.length != parent.frames.length || //iframe判断方式2
 	self != top //iframe判断方式3
-){return;}//iframe退出执行
+	|| location.pathname.substr(1).length == 0 //当在P占首页的时候，也不需要生效
+){
+	console.log("PUBD：本页面不需要执行。");
+	return;
+}//iframe退出执行
 //获取当前是否是本地开发状态
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
 
@@ -2255,7 +2258,7 @@ function buildDlgDownThis(userid) {
 						works.runing = true;
 						dlg.user.done = true;
 						dlg.user.info = Object.assign(dlg.user.info, jore);
-						dlg.infoCard.thumbnail = jore.user.profile_image_urls.medium.replace(/_170./g, ".");//将170大小的头像换成原本大小
+						dlg.infoCard.thumbnail = jore.user.profile_image_urls.medium;
 						dlg.infoCard.infos = Object.assign(dlg.infoCard.infos, {
 							"昵称": jore.user.name,
 							"作品投稿数": jore.profile.total_illusts + jore.profile.total_manga,
