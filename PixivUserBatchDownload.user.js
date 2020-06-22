@@ -2255,7 +2255,7 @@ function buildDlgDownThis(userid) {
 						works.runing = true;
 						dlg.user.done = true;
 						dlg.user.info = Object.assign(dlg.user.info, jore);
-						dlg.infoCard.thumbnail = jore.user.profile_image_urls.medium;
+						dlg.infoCard.thumbnail = jore.user.profile_image_urls.medium.replace(/_170./g, ".");//将170大小的头像换成原本大小
 						dlg.infoCard.infos = Object.assign(dlg.infoCard.infos, {
 							"昵称": jore.user.name,
 							"作品投稿数": jore.profile.total_illusts + jore.profile.total_manga,
