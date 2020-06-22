@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.10.96
+// @version		5.10.97
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -3518,7 +3518,7 @@ function start(touch) {
 							//console.log('推荐列表改变',mutationsList);
 							mutationsList.forEach(mutation=>
 								mutation.addedNodes.forEach(linode=>{ //这个node是每个新增列表里的li
-									const userLink = linode.querySelector("div>div:nth-of-type(2)>div>a");
+									const userLink = linode.querySelector("div>div:last-of-type>div>a");
 									const uidRes = /\d+/.exec(userLink.pathname);
 									if (uidRes.length)
 									{
