@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.11.95
+// @version		5.11.97
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -31,7 +31,7 @@
 // @exclude		*://www.pixiv.net/idea*
 // @exclude		*://www.pixiv.net/novel*
 // @exclude		*://www.pixiv.net/cate_r18*
-// @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年3月23日
+// @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年6月22日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
 // @grant       unsafeWindow
@@ -65,10 +65,11 @@ if (
 	self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
 	window.frames.length != parent.frames.length || //iframe判断方式2
 	self != top //iframe判断方式3
+	|| location.pathname.substr(1).length == 0 //当在P占首页的时候，也不需要生效
 ){
-	console.log('还是检测到了iframe',self.frameElement);
-	return; //iframe退出执行
-}
+	console.log("PUBD：本页面不需要执行。");
+	return;
+}//iframe退出执行
 //获取当前是否是本地开发状态
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
 

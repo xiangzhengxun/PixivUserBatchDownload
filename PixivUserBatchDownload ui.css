@@ -168,9 +168,10 @@
 	height: 0;
 	margin: 0 4px;
 }
-.pubd-menu-setting
-{/*菜单项“选项”*/
-}
+/*菜单项“选项”*/
+/*.pubd-menu-setting
+{
+}*/
 .pubd-menu-item .pubd-icon
 {/*菜单项图标*/
 	margin: 0 2px;
@@ -789,9 +790,9 @@ border: 1px solid #becad7;
 	height : 100px;
     resize:none;
 }
-.pubd-down .pubd-down-downbar
+/*.pubd-down .pubd-down-downbar
 {
-}
+}*/
 .pubd-down .pubd-textdown
 {/*文本下载按钮*/
 	width: calc(20% - 5px);
@@ -867,3 +868,9 @@ border: 1px solid #becad7;
     box-sizing: border-box;
 }
 /*▲多画师下载窗口内容*/
+.pubd-start,
+.pubd-menu,
+.pubd-dialog
+{/*启用夜间模式时出现文字变白的BUG*/
+    color: rgb(31, 31, 31);
+}
