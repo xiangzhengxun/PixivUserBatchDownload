@@ -116,11 +116,11 @@ const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\
 const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
-const userMainPageCssPath = "#root>div:nth-of-type(2)>div>div:nth-of-type(2)>nav>a";
+const userMainPageCssPath = "#root>div:nth-of-type(3)>div>div:nth-of-type(2)>nav>a";
 //作品页，收藏按钮的CSS位置（用来获取当前作品ID）
-const artWorkStarCssPath = "#root>div:nth-of-type(2)>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
+const artWorkStarCssPath = "#root>div:nth-of-type(3)>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
 //作品页，作者头像链接的CSS位置（用来获取作者ID）
-const artWorkUserHeadCssPath = "#root>div:nth-of-type(2)>div>div>aside>section a";
+const artWorkUserHeadCssPath = "#root>div:nth-of-type(3)>div>div>aside>section>h2>div>a";
 
 //Header使用
 const PixivAppVersion = "5.0.169"; //Pixiv APP的版本
@@ -3361,10 +3361,10 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 
 //开始构建UI
 function findInsertPlace(btnStart) {
-	var btnStartInsertPlace = document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
-							||document.querySelector("#root>div:nth-of-type(2)>div>div>aside>section") //新版作品页
+	var btnStartInsertPlace = document.querySelector("#root>div:nth-of-type(3)>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") //2018年10月8日 新版用户资料首页
+							||document.querySelector("#root>div:nth-of-type(3)>div>div>aside>section") //新版作品页
 							//||document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
-							||document.querySelector("#root>div:nth-of-type(2)>div>div>div>div:nth-of-type(2)>div") //新版关注页
+							||document.querySelector("#root>div:nth-of-type(3)>div>div>div>div:nth-of-type(2)>div") //新版关注页
 							||document.querySelector("._user-profile-card") //老版用户资料页
 							||document.querySelector(".ui-layout-west aside") //老版作品页
 							||document.querySelector(".introduction") //未登录页面
