@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.11.98
+// @version		5.11.99
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -143,11 +143,7 @@ const device_token = "pixiv"; //每个设备不一样，不过好像随便写也
 var thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
 	mainDiv = null, //储存vue框架下P站页面主要内容的DIV位置
-	//btnStartInsertPlace = null, //储存开始按钮插入点
-	findInsertPlaceHook = null, //储存插入点循环钩子（循环函数指针）
-	//observer = null, //储存DOM变动监听钩子
-	downIllustMenuId = null, //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
-	recommendList = null; //推荐作品列表Dom位置
+	downIllustMenuId = null; //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
 
 /*
  * 初始化数据库
@@ -1269,20 +1265,20 @@ function checkStar()
 
 //构建开始按钮
 function buildbtnStart() {
-	var btnStart = document.createElement("div");
+	const btnStart = document.createElement("div");
 	btnStart.id = "pubd-start";
 	btnStart.className = "pubd-start";
 	//添加图标
-	var star = btnStart.star = btnStart.appendChild(document.createElement("i"));
+	const star = btnStart.star = btnStart.appendChild(document.createElement("i"));
 	star.className = "pubd-icon star";
 	star.title = "快速收藏当前画师（开发中功能，目前没用）";
 	//添加文字
-	var caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
+	const caption = btnStart.caption = btnStart.appendChild(document.createElement("div"));
 	caption.className = "text";
 	caption.innerHTML = "使用PUBD扒图";
 	caption.title = "快速下载当前画师";
 	//添加文字
-	var menu = btnStart.menu = btnStart.appendChild(document.createElement("i"));
+	const menu = btnStart.menu = btnStart.appendChild(document.createElement("i"));
 	menu.className = "pubd-icon menu";
 	menu.title = "PUBD菜单";
 
@@ -3660,48 +3656,8 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 	return nstr;
 }
 
-//开始构建UI
-function findInsertPlace(btnStart) {
-	var btnStartInsertPlace = document.querySelector("#root>div:nth-of-type(3)>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)") || //2018年10月8日 新版用户资料首页
-							  document.querySelector("#root>div:nth-of-type(3)>div>div>aside>section") || //新版作品页
-							//document.querySelector("#root>div:nth-of-type(5)>div>div>div>div>div>div>div>div") || //新版FANBOOK页，但是并不支持收费的东西，所以就隐藏了吧
-							  document.querySelector("#root>div:nth-of-type(3)>div>div>div>div:nth-of-type(2)>div") || //新版关注页
-							  document.querySelector("._user-profile-card") || //老版用户资料页
-							  document.querySelector(".ui-layout-west aside") || //老版作品页
-							  document.querySelector(".introduction") //未登录页面
-							  ;
-	if (btnStartInsertPlace == undefined)
-	{
-		console.error("PUBD：未找到开始按钮插入点。");
-		return;
-	}else
-	{
-		//第一张作品图像
-		var artWorkLink = document.querySelector(artWorkStarCssPath);
-		if (artWorkLink) //如果是作品页面，显示下载当前作品按钮
-		{
-			pubd.menu.downillust.classList.remove("display-none");
-			downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
-				pubd.dialog.downillust.show(
-					(document.body.clientWidth - 500)/2,
-					window.pageYOffset+150,
-					{id:getQueryString('illust_id',artWorkLink)}
-				);
-			});
-		}else
-		{
-			pubd.menu.downillust.classList.add("display-none");
-			GM_unregisterMenuCommand(downIllustMenuId);
-		}
-		checkStar(); //检查是否有收藏
-		//插入开始操作按钮
-		btnStartInsertPlace.appendChild(btnStart);
-		console.log("PUBD：网页发生变动，已重新呈现开始按钮。");
-		clearInterval(findInsertPlaceHook); //停止循环
-	}
-}
 //主引导程序
-function start(touch) {
+function Main(touch) {
 	if (touch) //手机版
 	{ //手机版退出执行
 		//alert("PUBD暂不支持手机版");
@@ -3712,7 +3668,8 @@ function start(touch) {
 	if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
 
 	//载入设置
-	pubd.auth = new Auth().loadFromAuth(GM_getValue("pubd-auth"));
+	pubd.auth = new Auth()
+	pubd.auth.loadFromAuth(GM_getValue("pubd-auth"));
 
 	pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",[]));
 	//对下载方案的修改添加监听
@@ -3793,87 +3750,116 @@ function start(touch) {
 	});
 
 
-	//开始操作按钮
+	//建立开始按钮
 	let btnStartBox = document.createElement("div");
 	btnStartBox.className = "pubd-btnStartInsertPlace";
 	pubd.start = btnStartBox.appendChild(buildbtnStart());
 	pubd.menu = btnStartBox.appendChild(buildbtnMenu());
+	//添加开始按钮，开始按钮内容直接固定为 btnStartBox
+	function insertStartBtn(btnStartInsertPlace)
+	{
+		if (btnStartInsertPlace == undefined)
+		{
+			console.error("PUBD：未找到开始按钮插入点。");
+			return false;
+		}else
+		{
+			//第一张作品图像
+			var artWorkLink = document.querySelector(artWorkStarCssPath);
+			if (artWorkLink) //如果是作品页面，显示下载当前作品按钮
+			{
+				pubd.menu.downillust.classList.remove("display-none");
+				downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
+					pubd.dialog.downillust.show(
+						(document.body.clientWidth - 500)/2,
+						window.pageYOffset+150,
+						{id:getQueryString('illust_id',artWorkLink)}
+					);
+				});
+			}else
+			{
+				pubd.menu.downillust.classList.add("display-none");
+				GM_unregisterMenuCommand(downIllustMenuId);
+			}
+			checkStar(); //检查是否有收藏
+			//插入开始操作按钮
+			btnStartInsertPlace.appendChild(btnStartBox);
+			console.log("PUBD：网页发生变动，已重新呈现开始按钮。");
+			return true;
+		}
+	}
 
-	//findInsertPlaceHook = setInterval(function(){
-	//	findInsertPlace(btnStartBox);
-	//}, 1000);
-	//对于新版P站的SPA结构需要循环寻找插入点，每秒循环
+	//储存能够独占区分不同页面的路径，并且可以同时作为开始按钮插入点
+	const mainDivSearchCssSelectorArray = [
+		':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
+		':scope>div>div>aside>section', //作品页
+		':scope>div>div:nth-of-type(2)>div>div', //关注页
+	]
 	if (window.MutationObserver && vueRoot) //如果支持MutationObserver，且是vue框架
 	{
+		let reInsertStart = true; //是否需要重新插入开始按钮
+		let recommendList = null; //推荐作品列表Dom位置
 		let observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
-			const mainDivSearchCssSelectorArray = [
-				':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
-				':scope>div>div>aside>section', //作品页
-				':scope>div>div:nth-of-type(2)>div>div', //关注页
-			]
-			mainDiv = mutationsList.find(mutation=>
-				Array.from(mutation.addedNodes).some(node=>
-					mainDivSearchCssSelectorArray.some(cssS=>
-						node.querySelector(cssS) != undefined
-					)
-				)
-			).addedNodes[0];
-			//console.log("插入按钮前",vueRoot.querySelectorAll(':scope>div'),mutationsList);
-			console.log("搜索到的主DIV",mainDiv);
-			//第一次
-			if (document.querySelector("#pubd-start") == undefined)
-			{ //不存在开始按钮就重新插入
-				findInsertPlace(btnStartBox);
-				//成功后就结束
-				observerFirstOnce.disconnect();
-				let observerContinued = new MutationObserver(function(mutationsList, observer) {
-					//console.log(mutationsList);
-					if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(btnStartBox))))
-					{ //如果被删除的节点里有我们的开始按钮，就重新恢复
-						findInsertPlace(btnStartBox);
-					}
-					//作品页面显示推荐的部分
-					const otherWorks = document.querySelector("#root>div:nth-of-type(3)>div>aside:nth-of-type(2)");
-					if (otherWorks)
-					{ //已发现推荐列表大部位
-						if (mutationsList.some(mutation=>otherWorks.contains(mutation.target) && //目标属于推荐部分
-							Array.from(mutation.addedNodes).some(node=>node.nodeName == "SECTION" || node.querySelector("section")) //新增node要么是section，要么包括section
-						)) //当改变目标为这个aside，并且新增的是section时
+			//如果被删除的节点里有我们的开始按钮，就重新插入
+			if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(btnStartBox))))
+			{
+				reInsertStart = true;
+			}
+			//搜索新的主div并插入开始按钮
+			if (reInsertStart)
+			{
+				Array.from(vueRoot.children).some(node=>
+					mainDivSearchCssSelectorArray.some(cssS=>{
+						let btnStartInsertPlace = node.querySelector(cssS);
+						if(btnStartInsertPlace != undefined)
 						{
-							recommendList = otherWorks.querySelector("section>div:nth-of-type(2)>ul");
-							//console.log('储存推荐列表节点',recommendList);
-						}
-					}
-					if (recommendList)
-					{
-						if (mutationsList.some(mutation=>mutation.target==recommendList))
-						{ //当改变目标为推荐列表时，并且新增的是section时
-							//console.log('推荐列表改变',mutationsList);
-							mutationsList.forEach(mutation=>
-								mutation.addedNodes.forEach(linode=>{ //这个node是每个新增列表里的li
-									const userLink = linode.querySelector("div>div:last-of-type>div>a");
-									const uidRes = /\d+/.exec(userLink.pathname);
-									if (uidRes.length)
-									{
-										const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
-										if (pubd.fastStarList.includes(uid))
-										{
-											linode.classList.add("pubd-stared"); //添加隐藏用的css
-										}
-									}
-								})
-							);
-						}
-						if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(recommendList))))
-						{ //如果被删除的节点里有推荐列表，重新标空
-							recommendList = null;
-						}
-					}
-				});
-				observerContinued.observe(vueRoot, {childList: true,subtree:true});
+							mainDiv = node; //重新选择主div
+							reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
+							return true;
+						}else return false;
+					})
+				);
+			}
+
+			//作品页面显示推荐的部分
+			const otherWorks = mainDiv.querySelector(":scope>div>aside:nth-of-type(2)");
+			if (otherWorks)
+			{ //已发现推荐列表大部位
+				if (mutationsList.some(mutation=>otherWorks.contains(mutation.target) && //目标属于推荐部分
+					Array.from(mutation.addedNodes).some(node=>node.nodeName == "SECTION" || node.querySelector("section")) //新增node要么是section，要么包括section
+				)) //当改变目标为这个aside，并且新增的是section时
+				{
+					recommendList = otherWorks.querySelector("section>div:nth-of-type(2)>ul");
+					//console.log('储存推荐列表节点',recommendList);
+				}
+			}
+			if (recommendList)
+			{
+				if (mutationsList.some(mutation=>mutation.target==recommendList))
+				{ //当改变目标为推荐列表时，并且新增的是section时
+					//console.log('推荐列表改变',mutationsList);
+					mutationsList.forEach(mutation=>
+						mutation.addedNodes.forEach(linode=>{ //这个node是每个新增列表里的li
+							const userLink = linode.querySelector("div>div:last-of-type>div>a");
+							const uidRes = /\d+/.exec(userLink.pathname);
+							if (uidRes.length)
+							{
+								const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
+								if (pubd.fastStarList.includes(uid))
+								{
+									linode.classList.add("pubd-stared"); //添加隐藏用的css
+								}
+							}
+						})
+					);
+				}
+				if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(recommendList))))
+				{ //如果被删除的节点里有推荐列表，重新标空
+					recommendList = null;
+				}
 			}
 		});
-		observerFirstOnce.observe(vueRoot, {childList: true,subtree:true});
+		observerFirstOnce.observe(vueRoot, {childList:true, subtree:true});
 	}else if(vueRoot == undefined)
 	{
 		alert('PUBD：P站又改版了，程序得修改');
@@ -3883,5 +3869,5 @@ function start(touch) {
 	}
 }
 
-start(pubd.touch); //开始主程序
+Main(pubd.touch); //开始主程序
 })();
