@@ -34,7 +34,7 @@
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年6月22日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
-// @grant       unsafeWindow
+//-@grant       unsafeWindow
 // @grant       window.close
 // @grant       window.focus
 // @grant       GM_xmlhttpRequest
@@ -60,16 +60,12 @@
 (function() {
     'use strict';
 
-//非顶级页面退出程序
-if (
-	self.frameElement && self.frameElement.tagName == "IFRAME" || //iframe判断方式1
-	window.frames.length != parent.frames.length || //iframe判断方式2
-	self != top //iframe判断方式3
-	|| location.pathname.substr(1).length == 0 //当在P占首页的时候，也不需要生效
-){
+if (location.pathname.substr(1).length == 0) //当在P站首页的时候，不需要生效
+{
 	console.log("PUBD：本页面不需要执行。");
 	return;
-}//iframe退出执行
+}
+
 //获取当前是否是本地开发状态
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
 
@@ -97,11 +93,11 @@ const scriptName = (defaultName=>{ //本程序的名称
 
 const pubd = { //储存程序设置
 	configVersion: 1, //当前设置版本，用于提醒是否需要重置
-	touch: false, //是触屏
-	loggedIn: false, //登陆了
-	start: null, //开始按钮
-	menu: null, //菜单
-	dialog: { //窗口些个
+	touch: false, //是手机版（未启用）
+	loggedIn: false, //登陆了（未启用）
+	start: null, //开始按钮指针
+	menu: null, //菜单指针
+	dialog: { //窗口们的指针
 		config: null, //设置窗口
 		login: null, //登陆窗口
 		downthis: null, //下载当前窗口
@@ -109,26 +105,36 @@ const pubd = { //储存程序设置
 	},
 	auth: null, //储存账号密码
 	downSchemes: [], //储存下载方案
-	downbreak: false, //是否停止发送Aria2的Flag
+	downbreak: false, //是否停止发送Aria2的flag
 	fastStarList: null, //储存快速收藏的简单数字
 	starUserlists: [], //储存完整的下载列表
 };
 
 //vue框架的root div
 const vueRoot = document.querySelector("#root");
+//储存vue框架下P站页面主要内容的DIV位置，现在由程序自行搜索判断，搜索依据为 mainDivSearchCssSelectorArray。
+//后面的 :scope 基本都是指的 mainDiv
+var mainDiv = null;
+//#root下能够独占区分不同页面的路径
+//本来开始按钮插入点可以另外设置，但是刚好可以用，于是就用了同一个了
+const mainDivSearchCssSelectorArray = [
+	':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
+	':scope>div>div>aside>section', //作品页
+	':scope>div>div:nth-of-type(2)>div>div', //关注页
+];
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
-const userMainPageCssPath = "#root>div:nth-of-type(3)>div>div:nth-of-type(2)>nav>a";
+const userMainPageCssPath = ":scope>div>div:nth-of-type(2)>nav>a";
 //作品页，收藏按钮的CSS位置（用来获取当前作品ID）
-const artWorkStarCssPath = "#root>div:nth-of-type(3)>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
+const artWorkStarCssPath = ":scope>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
 //作品页，作者头像链接的CSS位置（用来获取作者ID）
-const artWorkUserHeadCssPath = "#root>div:nth-of-type(3)>div>div>aside>section>h2>div>a";
+const artWorkUserHeadCssPath = ":scope>div>div>aside>section>h2>div>a";
 
 //匹配P站内容的正则表达式
 const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
 const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
-const PixivAppVersion = "5.0.187"; //Pixiv APP的版本
+const PixivAppVersion = "5.0.200"; //Pixiv APP的版本
 const AndroidVersion = "10.0.0"; //安卓的版本
 const UA = "PixivAndroidApp/" + PixivAppVersion + " (Android " + AndroidVersion + "; Android SDK built for x64)"; //向P站请求数据时的UA
 const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat，目前是固定值
@@ -142,150 +148,64 @@ const device_token = "pixiv"; //每个设备不一样，不过好像随便写也
 
 var thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
-	mainDiv = null, //储存vue框架下P站页面主要内容的DIV位置
 	downIllustMenuId = null; //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
 
 /*
  * 初始化数据库
  */
-const dbName = "PUBD";
-var db;
-const DBOpenRequest = indexedDB.open(dbName);
+if (mdev)
+{
+	const dbName = "PUBD";
+	var db;
+	const DBOpenRequest = indexedDB.open(dbName);
 
-DBOpenRequest.onsuccess = function(event) {
-	db = event.target.result; //DBOpenRequest.result;
-	console.log("PUBD：数据库已可使用");
-};
-DBOpenRequest.onerror = function(event) {
-	// 错误处理
-	console.log("PUBD：数据库无法启用",event);
-};
-DBOpenRequest.onupgradeneeded = function(event) {
-	let db = event.target.result;
-
-	// 建立一个对象仓库来存储用户的相关信息，我们选择 user.id 作为键路径（key path）
-	// 因为 user.id 可以保证是不重复的
-	let usersStore = db.createObjectStore("users", { keyPath: "user.id" });
-	// 建立一个索引来通过姓名来搜索用户。名字可能会重复，所以我们不能使用 unique 索引
-	usersStore.createIndex("name", "user.name", { unique: false });
-	// 使用账户建立索引，我们确保用户的账户不会重复，所以我们使用 unique 索引
-	usersStore.createIndex("account", "user.account", { unique: true });
-
-	let illustsStore = db.createObjectStore("illusts", { keyPath: "id" });
-	illustsStore.createIndex("type", "type", { unique: false });
-	illustsStore.createIndex("userid", "user.id", { unique: false });
-	// 使用事务的 oncomplete 事件确保在插入数据前对象仓库已经创建完毕
-	illustsStore.transaction.oncomplete = function(event) {
-		console.log("PUBD：数据库建立完毕");
+	DBOpenRequest.onsuccess = function(event) {
+		db = event.target.result; //DBOpenRequest.result;
+		console.log("PUBD：数据库已可使用");
 	};
-};
+	DBOpenRequest.onerror = function(event) {
+		// 错误处理
+		console.log("PUBD：数据库无法启用",event);
+	};
+	DBOpenRequest.onupgradeneeded = function(event) {
+		let db = event.target.result;
+
+		// 建立一个对象仓库来存储用户的相关信息，我们选择 user.id 作为键路径（key path）
+		// 因为 user.id 可以保证是不重复的
+		let usersStore = db.createObjectStore("users", { keyPath: "user.id" });
+		// 建立一个索引来通过姓名来搜索用户。名字可能会重复，所以我们不能使用 unique 索引
+		usersStore.createIndex("name", "user.name", { unique: false });
+		// 使用账户建立索引，我们确保用户的账户不会重复，所以我们使用 unique 索引
+		usersStore.createIndex("account", "user.account", { unique: true });
+
+		let illustsStore = db.createObjectStore("illusts", { keyPath: "id" });
+		illustsStore.createIndex("type", "type", { unique: false });
+		illustsStore.createIndex("userid", "user.id", { unique: false });
+		// 使用事务的 oncomplete 事件确保在插入数据前对象仓库已经创建完毕
+		illustsStore.transaction.oncomplete = function(event) {
+			console.log("PUBD：数据库建立完毕");
+		};
+	};
+}
 /*
  * 获取初始状态
  */
-//1、获取原网页数据对象
-if (typeof(unsafeWindow) != "undefined")
+//尝试获取当前页面画师ID
+const metaPreloadData = document.querySelector('#meta-preload-data'); //HTML源代码里有，会被前端删掉的数据
+if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页面信息
 {
-	const metaPreloadData = document.querySelector('#meta-preload-data'); //HTML源代码里有，会被前端删掉的数据
-	const globalInitData = unsafeWindow.globalInitData; //新版的插画页面信息-已失效
-	const pixiv = unsafeWindow.pixiv; //原来的信息-已失效
-//2、获取是否为登录状态与当前页面画师ID
-	if (metaPreloadData == undefined && pixiv == undefined && globalInitData == undefined)
-	{
-		console.error("PUBD：当前网页没有找到 preloadData 元数据或 pixiv 对象或 globalInitData 对象");
-	}
-	else
-	{
-		if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页面信息
-		{
-			pubd.loggedIn = true;
-			console.log("PUBD：本页面抢救出 metaPreloadData 对象：",metaPreloadData);
-			const preloadData = JSON.parse(metaPreloadData.content);
-			console.log("PUBD：metaPreloadData 中的 preloadData 元数据：",preloadData);
-			if (preloadData.user) thisPageUserid = parseInt(Object.keys(preloadData.user)[0]);
-			if (preloadData.illust) thisPageIllustid = parseInt(Object.keys(preloadData.illust)[0]); //必须判断是否存在，否则会出现can't convert undefined to object错误
-		}
-		else if (globalInitData != undefined) //新版的插画页面信息
-		{
-			pubd.loggedIn = true;
-			console.log("PUBD：本页面存在 globalInitData 对象：",globalInitData);
-			if (globalInitData.preload.user) thisPageUserid = parseInt(Object.keys(globalInitData.preload.user)[0]); //id不是属性值，而是子对象名，所以需要通过这样的方式获取
-			if (globalInitData.preload.illust) thisPageIllustid = parseInt(Object.keys(globalInitData.preload.illust)[0]);
-		}
-		else if (pixiv != undefined) //原来的信息
-		{
-			console.log("PUBD：本页面存在 pixiv 对象：",pixiv);
-			thisPageUserid = parseInt(pixiv.context.userId);
-			if (pixiv.user.loggedIn)
-			{
-				pubd.loggedIn = true; //判断是否已经登陆
-			}
-		}
-	}
+	pubd.loggedIn = true;
+	console.log("PUBD：本页面抢救出 metaPreloadData 对象：",metaPreloadData);
+	const preloadData = JSON.parse(metaPreloadData.content);
+	console.log("PUBD：metaPreloadData 中的 preloadData 元数据：",preloadData);
+	if (preloadData.user) thisPageUserid = parseInt(Object.keys(preloadData.user)[0]);
+	if (preloadData.illust) thisPageIllustid = parseInt(Object.keys(preloadData.illust)[0]); //必须判断是否存在，否则会出现can't convert undefined to object错误
 }
-//3、获取是否为手机版
+//获取是否为手机版
 if (location.host.includes("touch")) //typeof(pixiv.AutoView)!="undefined"
 {
 	pubd.touch = true;
 	console.info("PUBD：当前访问的是P站触屏手机版，我没开发。");
-} else {
-	//console.info("PUBD：当前访问的是P站桌面版");
-}
-
-//仿GM_notification函数v1.2，发送网页通知。
-//此函数非Debug用，为了替换选项较少但是兼容其格式的GM_notification插件
-function GM_notification(text, title, image, onclick) {
-	const options = {};
-	let rTitle, rText;
-	let ondone, onclose;
-	const dataMode = Boolean(typeof(text) == "string"); //GM_notification有两种模式，普通4参数模式和option对象模式
-	if (dataMode)
-	{ //普通模式
-		rTitle = title;
-		rText = text;
-		options.body = text;
-		options.icon = image;
-	}else
-	{ //选项模式
-		const details = text;
-		rTitle = details.title;
-		rText = details.text;
-		if (details.text) options.body = details.text;
-		if (details.image) options.icon = details.image;
-		if (details.timeout) options.timestamp = details.timeout;
-		ondone = title;
-		onclose = image;
-		//if (details.highlight) options.highlight = details.highlight; //没找到这个功能
-	}
-
-	function sendNotification(general){
-		const n = new Notification(rTitle, options);
-		if (general)
-		{ //普通模式
-			if (onclick) n.onclick = onclick;
-		}else
-		{ //选项模式，这里和TamperMonkey API不一样，区分了关闭和点击。
-			if (ondone) n.onclick = ondone;
-			if (onclose) n.onclose = onclose;
-		}
-	}
-	// 先检查浏览器是否支持
-	if (!("Notification" in window)) {
-		alert(rTitle + "\r\n" + rText);
-	// 检查用户是否同意接受通知
-	} else if (Notification.permission === "granted") {
-		Notification.requestPermission(function(permission) {
-			sendNotification(dataMode);
-		});
-	}
-	// 否则我们需要向用户获取权限
-	else if (Notification.permission !== 'denied') {
-		Notification.requestPermission(function(permission) {
-			// 如果用户同意，就可以向他们发送通知
-			if (permission === "granted") {
-				sendNotification(dataMode);
-			}
-		});
-	}
 }
 
 /*
@@ -1065,6 +985,62 @@ var Aria2 = (function() {
 /*
  * 自定义函数区
  */
+//仿GM_notification函数v1.2，发送网页通知。
+//此函数非Debug用，为了替换选项较少但是兼容其格式的GM_notification插件
+function GM_notification(text, title, image, onclick) {
+	const options = {};
+	let rTitle, rText;
+	let ondone, onclose;
+	const dataMode = Boolean(typeof(text) == "string"); //GM_notification有两种模式，普通4参数模式和option对象模式
+	if (dataMode)
+	{ //普通模式
+		rTitle = title;
+		rText = text;
+		options.body = text;
+		options.icon = image;
+	}else
+	{ //选项模式
+		const details = text;
+		rTitle = details.title;
+		rText = details.text;
+		if (details.text) options.body = details.text;
+		if (details.image) options.icon = details.image;
+		if (details.timeout) options.timestamp = details.timeout;
+		ondone = title;
+		onclose = image;
+		//if (details.highlight) options.highlight = details.highlight; //没找到这个功能
+	}
+
+	function sendNotification(general){
+		const n = new Notification(rTitle, options);
+		if (general)
+		{ //普通模式
+			if (onclick) n.onclick = onclick;
+		}else
+		{ //选项模式，这里和TamperMonkey API不一样，区分了关闭和点击。
+			if (ondone) n.onclick = ondone;
+			if (onclose) n.onclose = onclose;
+		}
+	}
+	// 先检查浏览器是否支持
+	if (!("Notification" in window)) {
+		alert(rTitle + "\r\n" + rText);
+	// 检查用户是否同意接受通知
+	} else if (Notification.permission === "granted") {
+		Notification.requestPermission(function(permission) {
+			sendNotification(dataMode);
+		});
+	}
+	// 否则我们需要向用户获取权限
+	else if (Notification.permission !== 'denied') {
+		Notification.requestPermission(function(permission) {
+			// 如果用户同意，就可以向他们发送通知
+			if (permission === "granted") {
+				sendNotification(dataMode);
+			}
+		});
+	}
+}
 //有默认值的获取设置
 function getValueDefault(name, defaultValue) {
 	var value = GM_getValue(name);
@@ -1216,9 +1192,9 @@ function getCurrentUserId()
 	var userid = getUserIdFromUrl(document.location);
 	if(!userid)
 	{
-		var userMainPageLink = document.querySelector(userMainPageCssPath); //作者主页的“主页”按钮
-		//var artWorkLink = document.querySelector(artWorkStarCssPath);
-		var userHeadLink = document.querySelector(artWorkUserHeadCssPath);
+		var userMainPageLink = mainDiv.querySelector(userMainPageCssPath); //作者主页的“主页”按钮
+		//var artWorkLink = mainDiv.querySelector(artWorkStarCssPath);
+		var userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
 		if (userMainPageLink) //如果是作者页面
 		{
 			userid = getUserIdFromUrl(userMainPageLink);
@@ -1313,7 +1289,7 @@ function buildbtnMenu() {
 	var menu = new pubdMenu("pubd-menu-main");
 	menu.id = "pubd-menu";
 	menu.downillust = menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
-		var artWorkLink = document.querySelector(artWorkStarCssPath);
+		var artWorkLink = mainDiv.querySelector(artWorkStarCssPath);
 		pubd.dialog.downillust.show(
 			(document.body.clientWidth - 500)/2,
 			window.pageYOffset+150,
@@ -2380,74 +2356,71 @@ function buildDlgDownThis(userid) {
 						dlg.user.done = true;
 						dlg.user.info = Object.assign(dlg.user.info, jore);
 
-						const usersStore = db.transaction("users", "readwrite").objectStore("users");
-						let usersStoreRequest = usersStore.get(jore.user.id);
-						usersStoreRequest.onsuccess = function(event) {
-							// 获取我们想要更新的数据
-							let data = event.target.result;
-							if (data)
-								console.log("上次的头像",data.user.profile_image_urls);
-							if (!data || //没有老数据
-								!data.avatarBlob || //没有头像
-								data.user.profile_image_urls.medium != jore.user.profile_image_urls.medium //换了头像
-								)
-							{
-								console.debug("需要更新头像图片",jore.user.profile_image_urls);
-								GM_xmlhttpRequest({
-									url: jore.user.profile_image_urls.medium,
-									method: "get",
-									responseType: "blob",
-									headers: new HeadersObject(),
-									onload: function(response) {
-										console.info("用户头像Blob结果", response.response);
-										var obj_url = URL.createObjectURL(response.response);
-										var newImg = new Image();
-										newImg.src = obj_url;
-										URL.revokeObjectURL(obj_url);
-										document.body.appendChild(newImg);
+						if (mdev)
+						{
+							const usersStore = db.transaction("users", "readwrite").objectStore("users");
+							let usersStoreRequest = usersStore.get(jore.user.id);
+							usersStoreRequest.onsuccess = function(event) {
+								// 获取我们想要更新的数据
+								let data = event.target.result;
+								if (data)
+									console.log("上次的头像",data.user.profile_image_urls);
+								if (!data || //没有老数据
+									!data.avatarBlob || //没有头像
+									data.user.profile_image_urls.medium != jore.user.profile_image_urls.medium //换了头像
+									)
+								{
+									console.debug("需要更新头像图片",jore.user.profile_image_urls);
+									GM_xmlhttpRequest({
+										url: jore.user.profile_image_urls.medium,
+										method: "get",
+										responseType: "blob",
+										headers: new HeadersObject(),
+										onload: function(response) {
+											console.info("用户头像Blob结果", response.response);
+											var obj_url = URL.createObjectURL(response.response);
+											var newImg = new Image();
+											newImg.src = obj_url;
+											URL.revokeObjectURL(obj_url);
+											document.body.appendChild(newImg);
 
-										var newData = data ? Object.assign(data,jore) : jore;
-										newData.avatarBlob = response.response;
-										// 把更新过的对象放回数据库
-										const usersStore = db.transaction("users", "readwrite").objectStore("users");
-										var requestUpdate = usersStore.put(newData);
-										
-										requestUpdate.onerror = function(event) {// 错误处理
-											console.error(`${newData.user.name} 更新数据库头像发生错误`,newData);
-										};
-										requestUpdate.onsuccess = function(event) {// 完成，数据已更新！
-											console.debug(`${newData.user.name} 已${data?"更新":"添加"}到头像用户数据库`,newData);
-										};
-										return;
-									},
-									onerror: function(response) {
-										console.error("抓取头像失败", response);
-										return;
-									}
-								});
-							}else
-							{
-								var newData = data ? Object.assign(data,jore) : jore;
-								// 把更新过的对象放回数据库
-								var requestUpdate = usersStore.put(newData);
-								
-								requestUpdate.onerror = function(event) {// 错误处理
-									console.error(`${newData.user.name} 发生错误`,newData);
-								};
-								requestUpdate.onsuccess = function(event) {// 完成，数据已更新！
-									console.debug(`${newData.user.name} 已${data?"更新":"添加"}到用户数据库`,newData);
-								};
-							}
-						};
-						usersStoreRequest.onerror = function(event) {// 错误处理
-							console.error(`${jore.user.name} 数据库里没有？`,jore);
-						};
-
-
-						/*const usersStoreRequest = usersStore.put(jore);
-						usersStoreRequest.onsuccess = function(event) {
-							console.debug(`${jore.user.name} 已添加到用户数据库`,jore);
-						}*/
+											var newData = data ? Object.assign(data,jore) : jore;
+											newData.avatarBlob = response.response;
+											// 把更新过的对象放回数据库
+											const usersStore = db.transaction("users", "readwrite").objectStore("users");
+											var requestUpdate = usersStore.put(newData);
+											
+											requestUpdate.onerror = function(event) {// 错误处理
+												console.error(`${newData.user.name} 更新数据库头像发生错误`,newData);
+											};
+											requestUpdate.onsuccess = function(event) {// 完成，数据已更新！
+												console.debug(`${newData.user.name} 已${data?"更新":"添加"}到头像用户数据库`,newData);
+											};
+											return;
+										},
+										onerror: function(response) {
+											console.error("抓取头像失败", response);
+											return;
+										}
+									});
+								}else
+								{
+									var newData = data ? Object.assign(data,jore) : jore;
+									// 把更新过的对象放回数据库
+									var requestUpdate = usersStore.put(newData);
+									
+									requestUpdate.onerror = function(event) {// 错误处理
+										console.error(`${newData.user.name} 发生错误`,newData);
+									};
+									requestUpdate.onsuccess = function(event) {// 完成，数据已更新！
+										console.debug(`${newData.user.name} 已${data?"更新":"添加"}到用户数据库`,newData);
+									};
+								}
+							};
+							usersStoreRequest.onerror = function(event) {// 错误处理
+								console.error(`${jore.user.name} 数据库里没有？`,jore);
+							};
+						}
 
 						dlg.infoCard.thumbnail = jore.user.profile_image_urls.medium;
 						dlg.infoCard.infos = Object.assign(dlg.infoCard.infos, {
@@ -2575,43 +2548,47 @@ function buildDlgDownThis(userid) {
 					function(jore) { //onload_suceess_Cb
 						works.runing = true;
 						var illusts = jore.illusts;
-						const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
-						
-						illusts.forEach(function(work) {
-							const original = work.page_count > 1 ?
-								work.meta_pages[0].image_urls.original : //漫画多图
-								work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
 
-							const regSrc = new RegExp(illustPattern, "ig");
-							const regRes = regSrc.exec(original);
-							if (regRes) {
-								//然后添加扩展名等
-								work.url_without_page = regRes[1];
-								work.domain = regRes[2];
-								work.filename = regRes[3];
-								work.token = regRes[4];
-								work.extention = regRes[5];
-							} else {
-								const regSrcL = new RegExp(limitingPattern, "ig");
-								const regResL = regSrcL.exec(original);
-								if (regResL) {
-									dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
-									work.url_without_page = regResL[1];
-									work.domain = regResL[2];
-									work.filename = regResL[3];
-									work.token = regResL[4];
-									work.extention = regResL[5];
+						if (mdev)
+						{
+							const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+							
+							illusts.forEach(function(work) {
+								const original = work.page_count > 1 ?
+									work.meta_pages[0].image_urls.original : //漫画多图
+									work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
+
+								const regSrc = new RegExp(illustPattern, "ig");
+								const regRes = regSrc.exec(original);
+								if (regRes) {
+									//然后添加扩展名等
+									work.url_without_page = regRes[1];
+									work.domain = regRes[2];
+									work.filename = regRes[3];
+									work.token = regRes[4];
+									work.extention = regRes[5];
 								} else {
-									dlg.log(contentName + " " + work.id + " 原图格式未知。");
+									const regSrcL = new RegExp(limitingPattern, "ig");
+									const regResL = regSrcL.exec(original);
+									if (regResL) {
+										dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
+										work.url_without_page = regResL[1];
+										work.domain = regResL[2];
+										work.filename = regResL[3];
+										work.token = regResL[4];
+										work.extention = regResL[5];
+									} else {
+										dlg.log(contentName + " " + work.id + " 原图格式未知。");
+									}
 								}
-							}
-							works.item.push(work);
+								works.item.push(work);
 
-							const illustsStoreRequest = illustsStore.put(work);
-							illustsStoreRequest.onsuccess = function(event) {
-								//console.debug(`${work.title} 已添加到作品数据库`);
-							};
-						});
+								const illustsStoreRequest = illustsStore.put(work);
+								illustsStoreRequest.onsuccess = function(event) {
+									//console.debug(`${work.title} 已添加到作品数据库`);
+								};
+							});
+						}
 
 						dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
 						if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
@@ -2672,11 +2649,14 @@ function buildDlgDownThis(userid) {
 						//var illusts = jore.illusts;
 						work = Object.assign(work, jore);
 
-						const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
-						const illustsStoreRequest = illustsStore.put(work);
-						illustsStoreRequest.onsuccess = function(event) {
-							console.debug(`${work.title} 已更新动画帧数据到数据库`);
-						};
+						if (mdev)
+						{
+							const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+							const illustsStoreRequest = illustsStore.put(work);
+							illustsStoreRequest.onsuccess = function(event) {
+								console.debug(`${work.title} 已更新动画帧数据到数据库`);
+							};
+						}
 
 						dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
 						dlg.progress.set(1 - dealItems.length / ugoirasItems.length); //设置当前下载进度
@@ -2919,10 +2899,13 @@ function buildDlgDownIllust(illustid) {
 						}
 					}
 					
-					const illustsStoreRequest = db.transaction("illusts", "readwrite").objectStore("illusts").put(work);
-					illustsStoreRequest.onsuccess = function(event) {
-						console.debug(`${work.title} 已添加到作品数据库`);
-					};
+					if (mdev)
+					{
+						const illustsStoreRequest = db.transaction("illusts", "readwrite").objectStore("illusts").put(work);
+						illustsStoreRequest.onsuccess = function(event) {
+							console.debug(`${work.title} 已添加到作品数据库`);
+						};
+					}
 
 					dlg.infoCard.thumbnail = work.image_urls.square_medium;
 					var iType = "插画";
@@ -2988,10 +2971,13 @@ function buildDlgDownIllust(illustid) {
 				work.id,
 				function(jore) { //onload_suceess_Cb
 					work = Object.assign(work, jore);
-					const illustsStoreRequest = db.transaction("illusts", "readwrite").objectStore("illusts").put(work);
-					illustsStoreRequest.onsuccess = function(event) {
-						console.debug(`${work.title} 已更新动画帧数据到数据库`);
-					};
+					if (mdev)
+					{
+						const illustsStoreRequest = db.transaction("illusts", "readwrite").objectStore("illusts").put(work);
+						illustsStoreRequest.onsuccess = function(event) {
+							console.debug(`${work.title} 已更新动画帧数据到数据库`);
+						};
+					}
 					dlg.log("动图信息获取完成");
 					callback(); //开始获取下一项
 				},
@@ -3765,7 +3751,7 @@ function Main(touch) {
 		}else
 		{
 			//第一张作品图像
-			var artWorkLink = document.querySelector(artWorkStarCssPath);
+			var artWorkLink = mainDiv.querySelector(artWorkStarCssPath);
 			if (artWorkLink) //如果是作品页面，显示下载当前作品按钮
 			{
 				pubd.menu.downillust.classList.remove("display-none");
@@ -3789,12 +3775,6 @@ function Main(touch) {
 		}
 	}
 
-	//储存能够独占区分不同页面的路径，并且可以同时作为开始按钮插入点
-	const mainDivSearchCssSelectorArray = [
-		':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
-		':scope>div>div>aside>section', //作品页
-		':scope>div>div:nth-of-type(2)>div>div', //关注页
-	]
 	if (window.MutationObserver && vueRoot) //如果支持MutationObserver，且是vue框架
 	{
 		let reInsertStart = true; //是否需要重新插入开始按钮
