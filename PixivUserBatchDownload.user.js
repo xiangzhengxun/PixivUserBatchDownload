@@ -346,10 +346,12 @@ class UsersStarList{
 		if (isNaN(userid)) userid = parseInt(userid,10);
 		if (this.users.includes(userid))
 		{
+			console.log('有这个人')
 			this.remove(userid);
 			return false;
 		}else
 		{
+			console.log('没这个人')
 			this.add(userid);
 			return true;
 		}
@@ -359,10 +361,12 @@ class UsersStarList{
 		const arrMaxLength = 500000;
 		if (arr.length>arrMaxLength)
 		{
-			alert(`最多仅允许添加 ${arrMaxLength.toLocaleString()} 个数据。`);
+			alert(`PUBD：收藏用户最多仅允许添加 ${arrMaxLength.toLocaleString()} 个数据。`);
 			arr = arr.splice(500000); //删除50万以后的
 		}
-		this.users = this.users.push(...arr).uniq();
+		arr = arr.uniq();
+		this.users = this.users.push(...arr);
+		this.users = this.users.uniq();
 	}
 }
 //一个本程序使用的headers数据
@@ -3665,7 +3669,7 @@ function Main(touch) {
 	//pubd.fastStarList = getValueDefault("pubd-faststar-list",[]);
 	pubd.fastStarList = new UsersStarList("快速收藏",getValueDefault("pubd-faststar-list",[]));
 	GM_addValueChangeListener("pubd-faststar-list", function(name, old_value, new_value, remote) {
-		pubd.fastStarList.importArray(new_value);
+		pubd.fastStarList.users = new_value;
 		checkStar();
 		//将来还需要在更改收藏时，就自动刷新所有的其他推荐列表
 		//put my code
