@@ -114,6 +114,8 @@ const pubd = { //储存程序设置
 	starUserlists: [], //储存完整的下载列表
 };
 
+//vue框架的root div
+const vueRoot = document.querySelector("#root");
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
 const userMainPageCssPath = "#root>div:nth-of-type(3)>div>div:nth-of-type(2)>nav>a";
 //作品页，收藏按钮的CSS位置（用来获取当前作品ID）
@@ -140,9 +142,10 @@ const device_token = "pixiv"; //每个设备不一样，不过好像随便写也
 
 var thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
+	mainDiv = null, //储存vue框架下P站页面主要内容的DIV位置
+	//btnStartInsertPlace = null, //储存开始按钮插入点
 	findInsertPlaceHook = null, //储存插入点循环钩子（循环函数指针）
-	observer = null, //储存DOM变动监听钩子
-	btnStartInsertPlace = null, //储存开始按钮插入点
+	//observer = null, //储存DOM变动监听钩子
 	downIllustMenuId = null, //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
 	recommendList = null; //推荐作品列表Dom位置
 
@@ -3709,8 +3712,7 @@ function start(touch) {
 	if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
 
 	//载入设置
-	pubd.auth = new Auth();
-	pubd.auth.loadFromAuth(GM_getValue("pubd-auth"));
+	pubd.auth = new Auth().loadFromAuth(GM_getValue("pubd-auth"));
 
 	pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",[]));
 	//对下载方案的修改添加监听
@@ -3733,7 +3735,7 @@ function start(touch) {
 	});
 
 	//预先添加所有视窗，即便没有操作按钮也能通过菜单打开
-	var btnDlgInsertPlace = document.body;
+	let btnDlgInsertPlace = document.body; //视窗插入点，直接插入到body就行
 	pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig());
 	pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin());
 	pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(thisPageUserid));
@@ -3792,26 +3794,39 @@ function start(touch) {
 
 
 	//开始操作按钮
-	var btnStartBox = document.createElement("div");
+	let btnStartBox = document.createElement("div");
 	btnStartBox.className = "pubd-btnStartInsertPlace";
 	pubd.start = btnStartBox.appendChild(buildbtnStart());
 	pubd.menu = btnStartBox.appendChild(buildbtnMenu());
 
-	findInsertPlaceHook = setInterval(function(){
-		findInsertPlace(btnStartBox);
-	}, 1000);
-	var vueRoot = document.querySelector("#root");
+	//findInsertPlaceHook = setInterval(function(){
+	//	findInsertPlace(btnStartBox);
+	//}, 1000);
 	//对于新版P站的SPA结构需要循环寻找插入点，每秒循环
 	if (window.MutationObserver && vueRoot) //如果支持MutationObserver，且是vue框架
 	{
-		var observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
+		let observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
+			const mainDivSearchCssSelectorArray = [
+				':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
+				':scope>div>div>aside>section', //作品页
+				':scope>div>div:nth-of-type(2)>div>div', //关注页
+			]
+			mainDiv = mutationsList.find(mutation=>
+				Array.from(mutation.addedNodes).some(node=>
+					mainDivSearchCssSelectorArray.some(cssS=>
+						node.querySelector(cssS) != undefined
+					)
+				)
+			).addedNodes[0];
+			//console.log("插入按钮前",vueRoot.querySelectorAll(':scope>div'),mutationsList);
+			console.log("搜索到的主DIV",mainDiv);
 			//第一次
 			if (document.querySelector("#pubd-start") == undefined)
 			{ //不存在开始按钮就重新插入
 				findInsertPlace(btnStartBox);
 				//成功后就结束
 				observerFirstOnce.disconnect();
-				var observerContinued = new MutationObserver(function(mutationsList, observer) {
+				let observerContinued = new MutationObserver(function(mutationsList, observer) {
 					//console.log(mutationsList);
 					if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(btnStartBox))))
 					{ //如果被删除的节点里有我们的开始按钮，就重新恢复
@@ -3859,6 +3874,12 @@ function start(touch) {
 			}
 		});
 		observerFirstOnce.observe(vueRoot, {childList: true,subtree:true});
+	}else if(vueRoot == undefined)
+	{
+		alert('PUBD：P站又改版了，程序得修改');
+	}else
+	{
+		alert('PUBD：您的浏览器不支持 MutationObserver，请使用最新浏览器。');
 	}
 }
 
