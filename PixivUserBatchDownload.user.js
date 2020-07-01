@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.10.97
+// @version		5.10.98
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -84,8 +84,7 @@ if (typeof(GM_info)!="undefined")
 	{
 		var i18n = (navigator.language||navigator.userLanguage).replace("-","_"); //获取浏览器语言
 		scriptName = GM_info.script.name_i18n[i18n]; //支持Tampermonkey
-	}
-	else
+	} else
 	{
 		scriptName = GM_info.script.localizedName || //支持Greasemonkey 油猴子 3.x
 					GM_info.script.name; //支持Violentmonkey 暴力猴
@@ -111,10 +110,6 @@ var pubd = { //储存程序设置
 	staruserlists: [], //储存完整的下载列表
 };
 
-//匹配P站内容的正则表达式
-const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
-const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
-const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
 const userMainPageCssPath = "#root>div:nth-of-type(3)>div>div:nth-of-type(2)>nav>a";
 //作品页，收藏按钮的CSS位置（用来获取当前作品ID）
@@ -122,6 +117,10 @@ const artWorkStarCssPath = "#root>div:nth-of-type(3)>div>div>main>section>div>di
 //作品页，作者头像链接的CSS位置（用来获取作者ID）
 const artWorkUserHeadCssPath = "#root>div:nth-of-type(3)>div>div>aside>section>h2>div>a";
 
+//匹配P站内容的正则表达式
+const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
+const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
+const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
 const PixivAppVersion = "5.0.169"; //Pixiv APP的版本
 const AndroidVersion = "9"; //安卓的版本
@@ -3500,7 +3499,7 @@ function start(touch) {
 						findInsertPlace(btnStartBox);
 					}
 					//作品页面显示推荐的部分
-					const otherWorks = document.querySelector("#root>div:nth-of-type(2)>div>aside:nth-of-type(2)");
+					const otherWorks = document.querySelector("#root>div:nth-of-type(3)>div>aside:nth-of-type(2)");
 					if (otherWorks)
 					{ //已发现推荐列表大部位
 						if (mutationsList.some(mutation=>otherWorks.contains(mutation.target) && //目标属于推荐部分
