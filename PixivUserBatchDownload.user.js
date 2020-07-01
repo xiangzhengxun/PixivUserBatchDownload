@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.11.99
+// @version		5.11.100
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -2548,10 +2548,6 @@ function buildDlgDownThis(userid) {
 					function(jore) { //onload_suceess_Cb
 						works.runing = true;
 						var illusts = jore.illusts;
-
-						if (mdev)
-						{
-							const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
 							
 							illusts.forEach(function(work) {
 								const original = work.page_count > 1 ?
@@ -2583,12 +2579,15 @@ function buildDlgDownThis(userid) {
 								}
 								works.item.push(work);
 
-								const illustsStoreRequest = illustsStore.put(work);
-								illustsStoreRequest.onsuccess = function(event) {
-									//console.debug(`${work.title} 已添加到作品数据库`);
-								};
+								if (mdev)
+								{
+									const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+									const illustsStoreRequest = illustsStore.put(work);
+									illustsStoreRequest.onsuccess = function(event) {
+										//console.debug(`${work.title} 已添加到作品数据库`);
+									};
+								}
 							});
-						}
 
 						dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
 						if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
