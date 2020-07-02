@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.11.101
+// @version		5.11.102
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -195,9 +195,9 @@ const metaPreloadData = document.querySelector('#meta-preload-data'); //HTML源�
 if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页面信息
 {
 	pubd.loggedIn = true;
-	console.log("PUBD：本页面抢救出 metaPreloadData 对象：",metaPreloadData);
+	if (mdev) console.log("PUBD：本页面抢救出 metaPreloadData 对象：",metaPreloadData);
 	const preloadData = JSON.parse(metaPreloadData.content);
-	console.log("PUBD：metaPreloadData 中的 preloadData 元数据：",preloadData);
+	if (mdev) console.log("PUBD：metaPreloadData 中的 preloadData 元数据：",preloadData);
 	if (preloadData.user) thisPageUserid = parseInt(Object.keys(preloadData.user)[0]);
 	if (preloadData.illust) thisPageIllustid = parseInt(Object.keys(preloadData.illust)[0]); //必须判断是否存在，否则会出现can't convert undefined to object错误
 }
@@ -1067,7 +1067,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 
 			if (jo)
 			{
-				console.log("请求URL %s，结果 %o",url,JSON.parse(response.responseText));
+				if (mdev) console.log("请求URL %s，结果 %o",url,JSON.parse(response.responseText));
 				//jo.error.message 是JSON字符串的错误信息，Token错误的时候返回的又是普通字符串
 				//jo.error.user_message 是单行文本的错误信息
 				if (jo.error) {
@@ -3659,7 +3659,7 @@ function Main(touch) {
 	GM_addValueChangeListener("pubd-faststar-list", function(name, old_value, new_value, remote) {
 		pubd.fastStarList = null;
 		pubd.fastStarList = new UsersStarList("快速收藏",getValueDefault("pubd-faststar-list",[]));
-		console.log('收藏有变化',pubd.fastStarList.users);
+		if (mdev) console.log('收藏有变化',pubd.fastStarList.users);
 		checkStar();
 		//将来还需要在更改收藏时，就自动刷新所有的其他推荐列表
 		//put my code
