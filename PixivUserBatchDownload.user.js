@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.11.102
+// @version		5.11.103
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -60,12 +60,6 @@
 (function() {
     'use strict';
 
-if (location.pathname.substr(1).length == 0) //当在P站首页的时候，不需要生效
-{
-	console.log("PUBD：本页面不需要执行。");
-	return;
-}
-
 //获取当前是否是本地开发状态
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
 
@@ -119,6 +113,7 @@ var mainDiv = null;
 //本来开始按钮插入点可以另外设置，但是刚好可以用，于是就用了同一个了
 const mainDivSearchCssSelectorArray = [
 	':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
+	':scope>div>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页2
 	':scope>div>div>aside>section', //作品页
 	':scope>div>div:nth-of-type(2)>div>div', //关注页
 ];
@@ -1169,18 +1164,18 @@ function getCurrentUserId()
 {
 	//从URL获取作者ID
 	function getUserIdFromUrl(url) {
-		var userid = parseInt(getQueryString("id",url),10); //老地址：https://www.pixiv.net/member_illust.php?id=3896348
+		let userid = parseInt(getQueryString("id",url),10); //老地址：https://www.pixiv.net/member_illust.php?id=3896348
 		if (!userid)
 		{
-			var regSrc = new RegExp("users/(\\d+)", "ig"); //新地址：https://www.pixiv.net/users/3896348
-			var regRes = regSrc.exec(url.pathname);
+			const regSrc = new RegExp("users/(\\d+)", "ig"); //新地址：https://www.pixiv.net/users/3896348
+			const regRes = regSrc.exec(url.pathname);
 			if (regRes) {
 				return parseInt(regRes[1],10);
 			}
 		}
 		return userid;
 	}
-	var userid = getUserIdFromUrl(document.location);
+	let userid = getUserIdFromUrl(document.location);
 	if(!userid)
 	{
 		var userMainPageLink = mainDiv.querySelector(userMainPageCssPath); //作者主页的“主页”按钮
@@ -3773,14 +3768,21 @@ function Main(touch) {
 		let reInsertStart = true; //是否需要重新插入开始按钮
 		let recommendList = null; //推荐作品列表Dom位置
 		let observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
+			if (location.pathname.substr(1).length == 0) //当在P站首页的时候，不需要生效
+			{
+				console.log("PUBD：本页面不需要执行。");
+				return;
+			}
 			//如果被删除的节点里有我们的开始按钮，就重新插入
 			if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(btnStartBox))))
 			{
+				console.log('已经添加的开始按钮因为页面改动被删除了');
 				reInsertStart = true;
 			}
 			//搜索新的主div并插入开始按钮
 			if (reInsertStart)
 			{
+				console.log('root下面的div %o',Array.from(vueRoot.children));
 				Array.from(vueRoot.children).some(node=>
 					mainDivSearchCssSelectorArray.some(cssS=>{
 						let btnStartInsertPlace = node.querySelector(cssS);
@@ -3788,6 +3790,7 @@ function Main(touch) {
 						{
 							mainDiv = node; //重新选择主div
 							reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
+							console.log('开始按钮添加到了 %o 下的 %o',node,btnStartInsertPlace);
 							return true;
 						}else return false;
 					})
