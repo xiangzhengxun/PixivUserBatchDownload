@@ -3,7 +3,7 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.11.103
+// @version		5.11.104
 // @author      Mapaler <mapaler@163.com>
 // @copyright	2018+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -23,14 +23,20 @@
 // @exclude		*://www.pixiv.net/upload.php*
 // @exclude		*://www.pixiv.net/messages.php*
 // @exclude		*://www.pixiv.net/ranking.php*
+// @exclude		*://www.pixiv.net/info.php*
+// @exclude		*://www.pixiv.net/ranking_report_user.php*
 // @exclude		*://www.pixiv.net/setting*
 // @exclude		*://www.pixiv.net/stacc*
 // @exclude		*://www.pixiv.net/premium*
 // @exclude		*://www.pixiv.net/discovery*
 // @exclude		*://www.pixiv.net/howto*
 // @exclude		*://www.pixiv.net/idea*
+// @exclude		*://www.pixiv.net/ads*
+// @exclude		*://www.pixiv.net/terms*
 // @exclude		*://www.pixiv.net/novel*
 // @exclude		*://www.pixiv.net/cate_r18*
+// @exclude		*://www.pixiv.net/manage*
+// @exclude		*://www.pixiv.net/report*
 // @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年6月22日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
@@ -2195,8 +2201,8 @@ function buildDlgDown(caption, classname, id) {
 	textdown.type = "button";
 	textdown.className = "pubd-textdown";
 	textdown.value = "输出\n文本";
-	textdown.onclick = function() {
-		dlg.textdownload();
+	textdown.onclick = function(event) {
+		dlg.textdownload(event);
 	};
 	textdown.disabled = true;
 	dlg.textdown = textdown;
@@ -2683,7 +2689,7 @@ function buildDlgDownThis(userid) {
 			}
 		};
 	//输出文本按钮
-	dlg.textdownload = function() {
+	dlg.textdownload = function(event) {
 			if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中方案"); return; }
 			var scheme = dlg.schemes[dlg.downSchemeDom.selectedIndex];
 			var contentType = dlg.dcType[1].checked ? 1 : 0;
@@ -2692,25 +2698,31 @@ function buildDlgDownThis(userid) {
 			dlg.log("正在生成文本信息");
 
 			try {
-				var outTxtArr = illustsItems.map(function(illust) {
-					var page_count = illust.page_count;
-					if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
-					{
-						page_count = illust.ugoira_metadata.frames.length;
-					}
-					var outArr = []; //输出内容
-					for (var pi = 0; pi < page_count; pi++) {
-						if (returnLogicValue(scheme.downfilter, userInfo, illust, pi) || new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) {
-							//跳过此次输出
-							continue;
-						}else{
-							outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, illust, pi));
+				var outTxtArr;
+				if (event.ctrlKey)
+				{
+					outTxtArr = showMask(scheme.textout, scheme.masklist, userInfo, null, 0);
+				}else
+				{
+					outTxtArr = illustsItems.map(function(illust) {
+						var page_count = illust.page_count;
+						if (illust.type == "ugoira" && illust.ugoira_metadata) //动图
+						{
+							page_count = illust.ugoira_metadata.frames.length;
 						}
-					}
-					return outArr.join("");
-				});
-				var outTxt = outTxtArr.join("");
-				dlg.textoutTextarea.value = outTxt;
+						var outArr = []; //输出内容
+						for (var pi = 0; pi < page_count; pi++) {
+							if (returnLogicValue(scheme.downfilter, userInfo, illust, pi) || new RegExp(limitingFilenamePattern, "ig").exec(illust.filename)) {
+								//跳过此次输出
+								continue;
+							}else{
+								outArr.push(showMask(scheme.textout, scheme.masklist, userInfo, illust, pi));
+							}
+						}
+						return outArr.join("");
+					}).join("");
+				}
+				dlg.textoutTextarea.value = outTxtArr;
 				dlg.textoutTextarea.classList.remove("display-none");
 				dlg.log("文本信息输出成功");
 			} catch (error) {
@@ -3003,7 +3015,7 @@ function buildDlgDownIllust(illustid) {
 		}
 	};
 	//输出文本按钮
-	dlg.textdownload = function() {
+	dlg.textdownload = function(event) {
 		var illust = dlg.work;
 		if (illust == undefined) {dlg.log("没有获取作品数据。"); return;}
 		if (dlg.downSchemeDom.selectedOptions.length < 1) { alert("没有选中方案"); return; }
@@ -3613,8 +3625,7 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 	{
 		return "";
 	}
-	var nstr = str; //新字符
-	nstr = nstr.toString();
+	let nstr = str.toString(); //新字符
 	nstr = nstr.replace(/\u0000-\u001F\u007F-\u00A0/ig, ""); //替换所有的控制字符
 	var patternStrs = [
 		"[\\*\\?\"<>\\|]",                 //只替换路径中完全不能出现的特殊字符
@@ -3838,7 +3849,7 @@ function Main(touch) {
 		observerFirstOnce.observe(vueRoot, {childList:true, subtree:true});
 	}else if(vueRoot == undefined)
 	{
-		alert('PUBD：P站又改版了，程序得修改');
+		console.log('PUBD：未找到 root div，可能P站又改版了，程序得修改。');
 	}else
 	{
 		alert('PUBD：您的浏览器不支持 MutationObserver，请使用最新浏览器。');
