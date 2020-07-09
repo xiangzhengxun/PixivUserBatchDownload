@@ -35,7 +35,7 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @exclude		*://www.pixiv.net/manage*
 // @exclude		*://www.pixiv.net/report*
-// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年6月22日
+// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年7月9日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
 // @grant		unsafeWindow
