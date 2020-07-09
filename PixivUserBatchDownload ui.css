@@ -11,6 +11,7 @@
 {
 	position: relative;
 	margin: 0 0 0 auto;
+    display: inline-block;
 }
  /*推荐作品列表里已经收藏了的作者*/
 .pubd-stared
@@ -102,7 +103,7 @@
 {/*菜单*/
 	z-index: 1000;
 	position: absolute;
-	margin: 0;
+    margin: 0;
 	text-align: left;
 	width: 152px;
 	background-color: #fafafa;
@@ -231,9 +232,22 @@ dt:first-child
 	/*transition: box-shadow ease-in-out 0.1s;*/
     backdrop-filter: blur(5px); /*未来的浏览器能支持就好了*/
 }
-.pubd-dialog:hover
-{/*对话框悬停*/
+.pubd-touch .pubd-dialog
+{/*手机版界面的对话框*/
+    box-sizing: content-box;
+    top:0 !important;
+    left:-9px !important;
+    width: 100% !important;
 }
+.pubd-touch #pubd-config
+{
+    height: 900px;
+}
+/*对话框悬停
+.pubd-dialog:hover
+{
+}
+*/
 .pubd-dlg-active
 {/*对话框激活*/
 	box-shadow: white 0 0 3px inset,white 0 0 3px inset,#72BBFE 0 0 8px,#72BBFE 0 0 8px;
@@ -517,14 +531,13 @@ border: 1px solid #becad7;
 }
 .pubd-browsing-restriction
 {/*访问P站设置的链接*/
-	float:right;
-    text-decoration:underline;
+    text-decoration:underline !important;
 }
 .pubd-token-info
 {/*token信息栏*/
 	transition: height 0.5s ease-in-out;
 	overflow: hidden;
-	height: 30px;
+	height: 50px;
 }
 .pubd-config
 {/*设置初始宽度与高度*/
@@ -550,7 +563,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 393px);
+	height: calc(100% - 413px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/

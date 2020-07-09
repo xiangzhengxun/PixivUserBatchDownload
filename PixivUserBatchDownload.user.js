@@ -3,20 +3,18 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @version		5.11.105
-// @author      Mapaler <mapaler@163.com>
-// @copyright	2018+, Mapaler <mapaler@163.com>
-// @namespace	http://www.mapaler.com/
-// @icon		https://www.pixiv.net/favicon.ico
-// @homepage	https://github.com/Mapaler/PixivUserBatchDownload
-// @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
 // @description	Batch download pixiv user's images in one key.
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @homepage    https://github.com/Mapaler/PixivUserBatchDownload
-// @supportURL  https://github.com/Mapaler/PixivUserBatchDownload/issues
-// @updateURL   https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.meta.js
+// @version		5.12.106
+// @author		Mapaler <mapaler@163.com>
+// @copyright	2016~2020+, Mapaler <mapaler@163.com>
+// @namespace	http://www.mapaler.com/
+// @icon		https://www.pixiv.net/favicon.ico
+// @homepage	https://github.com/Mapaler/PixivUserBatchDownload
+// @supportURL	https://github.com/Mapaler/PixivUserBatchDownload/issues
+// @updateURL	https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.meta.js
 //-@downloadURL https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
 // @include		*://www.pixiv.net/*
 // @exclude		*://www.pixiv.net/search.php*
@@ -37,28 +35,28 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @exclude		*://www.pixiv.net/manage*
 // @exclude		*://www.pixiv.net/report*
-// @resource    pubd-style  https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年6月22日
+// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年6月22日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
-//-@grant       unsafeWindow
-// @grant       window.close
-// @grant       window.focus
-// @grant       GM_xmlhttpRequest
-// @grant       GM_getValue
-// @grant       GM_setValue
-// @grant       GM_deleteValue
-//-@grant       GM_listValues
-// @grant       GM_addStyle
-// @grant       GM_getResourceText
-//-@grant       GM_getResourceURL
-// @grant       GM_addValueChangeListener
-//-@grant       GM_notification
-// @grant       GM_registerMenuCommand
-// @grant       GM_unregisterMenuCommand
-// @connect     pixiv.net
-// @connect     pximg.net
-// @connect     localhost
-// @connect     127.0.0.1
+// @grant		unsafeWindow
+// @grant		window.close
+// @grant		window.focus
+// @grant		GM_xmlhttpRequest
+// @grant		GM_getValue
+// @grant		GM_setValue
+// @grant		GM_deleteValue
+//-@grant		GM_listValues
+// @grant		GM_addStyle
+// @grant		GM_getResourceText
+//-@grant		GM_getResourceURL
+// @grant		GM_addValueChangeListener
+//-@grant		GM_notification
+// @grant		GM_registerMenuCommand
+// @grant		GM_unregisterMenuCommand
+// @connect		pixiv.net
+// @connect		pximg.net
+// @connect		localhost
+// @connect		127.0.0.1
 // @noframes
 // ==/UserScript==
 
@@ -112,12 +110,15 @@ const pubd = { //储存程序设置
 
 //vue框架的root div
 const vueRoot = document.querySelector("#root");
+const wrapper = document.querySelector("#wrapper"); //仍然少量存在的老板页面
 //储存vue框架下P站页面主要内容的DIV位置，现在由程序自行搜索判断，搜索依据为 mainDivSearchCssSelectorArray。
 //后面的 :scope 基本都是指的 mainDiv
 var mainDiv = null;
 //#root下能够独占区分不同页面的路径
 //本来开始按钮插入点可以另外设置，但是刚好可以用，于是就用了同一个了
 const mainDivSearchCssSelectorArray = [
+	'#spa-contents .user-stats', //手机版用户页
+	'#spa-contents .user-details-card', //手机版作品页
 	':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
 	':scope>div>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页，版本2
 	':scope>div>div>aside>section', //作品页
@@ -203,6 +204,11 @@ if (typeof(unsafeWindow) != "undefined")
 		{
 			pubd.loggedIn = true;
 		}
+		if (/touch/i.test(pixiv.touchSourcePath))
+		{
+			pubd.touch = true; //新版的手机页面也还是老板结构-2020年7月9日
+			document.body.classList.add('pubd-touch');
+		}
 	}
 }
 //尝试获取当前页面画师ID
@@ -216,11 +222,10 @@ if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页�
 	if (preloadData.user) thisPageUserid = parseInt(Object.keys(preloadData.user)[0]);
 	if (preloadData.illust) thisPageIllustid = parseInt(Object.keys(preloadData.illust)[0]); //必须判断是否存在，否则会出现can't convert undefined to object错误
 }
-//获取是否为手机版
+//获取是否为老的手机版
 if (location.host.includes("touch")) //typeof(pixiv.AutoView)!="undefined"
 {
 	pubd.touch = true;
-	console.info("PUBD：当前访问的是P站触屏手机版，我没开发。");
 }
 
 /*
@@ -1154,9 +1159,9 @@ function getCurrentUserId()
 		userid = thisPageUserid;
 		if (mainDiv)
 		{
-			var userMainPageLink = mainDiv.querySelector(userMainPageCssPath); //作者主页的“主页”按钮
+			const userMainPageLink = mainDiv.querySelector(userMainPageCssPath); //作者主页的“主页”按钮
 			//var artWorkLink = mainDiv.querySelector(artWorkStarCssPath);
-			var userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
+			const userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
 			if (userMainPageLink) //如果是作者页面
 			{
 				userid = getUserIdFromUrl(userMainPageLink);
@@ -1164,6 +1169,14 @@ function getCurrentUserId()
 			if (userHeadLink) //如果是作品页面
 			{
 				userid = getUserIdFromUrl(userHeadLink);
+			}
+			if(pubd.touch)
+			{
+				const touch_userHeadLink = mainDiv.querySelector('.user-details-card .user-details-icon'); //如果是作品页面
+				if (touch_userHeadLink) //如果是作品页面
+				{
+					userid = getUserIdFromUrl(touch_userHeadLink);
+				}
 			}
 		}
 	}
@@ -1249,11 +1262,14 @@ function buildbtnMenu() {
 	var menu = new pubdMenu("pubd-menu-main");
 	menu.id = "pubd-menu";
 	menu.downillust = menu.add("下载当前作品", "pubd-menu-this-illust", function(e) {
-		var artWorkLink = mainDiv.querySelector(artWorkStarCssPath);
 		pubd.dialog.downillust.show(
 			(document.body.clientWidth - 500)/2,
 			window.pageYOffset+150,
-			{id:getQueryString('illust_id',artWorkLink)}
+			{id:getQueryString('illust_id',
+			pubd.touch ? 
+			mainDiv.querySelector('.illust-details-content .work-stats>a') : //手机版
+			mainDiv.querySelector(artWorkStarCssPath) //新版Vue结构
+			)}
 		);
 		menu.hide();
 	});
@@ -1273,21 +1289,6 @@ function buildbtnMenu() {
 				alert("这个功能也没有开发")
 			}
 		);
-	*/
-	/*
-	if (typeof(pixiv.context.userId) != "undefined")
-	{
-	menu.add("收藏作者","",function()
-			{
-
-				pubd.staruser.push(pixiv.context.userId);
-				var starStr = JSON.stringify(pubd.staruser);
-				GM_setValue("pubd-staruser",starStr); //下载方案
-
-				menu.hide();
-			}
-		);
-	}
 	*/
 	menu.add(0);
 	if (mdev) menu.downmult = menu.add("多画师下载", "pubd-menu-multiple", function(e) {
@@ -1344,16 +1345,18 @@ function buildDlgConfig() {
 	};
 	dd.appendChild(checkbox);
 
+	var dd = document.createElement("dd");
+	dl_t.appendChild(dd);
+	dd.className = "pubd-token-info height-none";
+	dlg.token_info = dd;
+
 	var a_setting = document.createElement("a");
 	a_setting.className = "pubd-browsing-restriction";
 	a_setting.href = "http://www.pixiv.net/setting_user.php#over-18";
 	a_setting.target = "_blank";
 	a_setting.innerHTML = "设置我的账户浏览限制";
 	dd.appendChild(a_setting);
-	var dd = document.createElement("dd");
-	dl_t.appendChild(dd);
-	dd.className = "pubd-token-info height-none";
-	dlg.token_info = dd;
+
 	var progress = new Progress("pubd-token-expires", true);
 	dlg.token_expires = progress;
 	dd.appendChild(progress);
@@ -3609,13 +3612,6 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 
 //主引导程序
 function Main(touch) {
-	if (touch) //手机版
-	{ //手机版退出执行
-		//alert("PUBD暂不支持手机版");
-		clearInterval(findInsertPlaceHook);
-		return;
-	}
-
 	if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
 
 	//载入设置
@@ -3717,25 +3713,24 @@ function Main(touch) {
 			return false;
 		}else
 		{
-			if (mainDiv)
-			{ //添加下载当前图片的菜单，但是只对新版vue结构生效
-				//第一张作品图像
-				var artWorkLink = mainDiv.querySelector(artWorkStarCssPath);
-				if (artWorkLink) //如果是作品页面，显示下载当前作品按钮
-				{
-					pubd.menu.downillust.classList.remove("display-none");
-					downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
-						pubd.dialog.downillust.show(
-							(document.body.clientWidth - 500)/2,
-							window.pageYOffset+150,
-							{id:getQueryString('illust_id',artWorkLink)}
-						);
-					});
-				}else
-				{
-					pubd.menu.downillust.classList.add("display-none");
-					GM_unregisterMenuCommand(downIllustMenuId);
-				}
+			if (/^\/artworks\//i.test(location.pathname)) //如果是作品页面，显示下载当前作品按钮
+			{
+				pubd.menu.downillust.classList.remove("display-none");
+				downIllustMenuId = GM_registerMenuCommand("PUBD-下载该作品", function(){
+					pubd.dialog.downillust.show(
+						(document.body.clientWidth - 500)/2,
+						window.pageYOffset+150,
+						{id:getQueryString('illust_id',
+							pubd.touch ? 
+							mainDiv.querySelector('.illust-details-content .work-stats>a') : //手机版
+							mainDiv.querySelector(artWorkStarCssPath) //新版Vue结构
+							)}
+					);
+				});
+			}else
+			{
+				pubd.menu.downillust.classList.add("display-none");
+				GM_unregisterMenuCommand(downIllustMenuId);
 			}
 			checkStar(); //检查是否有收藏
 			//插入开始操作按钮
@@ -3745,7 +3740,12 @@ function Main(touch) {
 		}
 	}
 
-	if (window.MutationObserver && vueRoot) //如果支持MutationObserver，且是vue框架
+	/*
+	手机版网页的root
+	#spa-contents 会被删掉重新添加，所以只能用更上一层
+	*/
+	const touchRoot = wrapper ? wrapper.querySelector("#contents") : null;
+	if (window.MutationObserver && (vueRoot || touch)) //如果支持MutationObserver，且是vue框架
 	{
 		let reInsertStart = true; //是否需要重新插入开始按钮
 		let recommendList = null; //推荐作品列表Dom位置
@@ -3764,15 +3764,13 @@ function Main(touch) {
 			//搜索新的主div并插入开始按钮
 			if (reInsertStart)
 			{
-				console.log('root下面的div %o',Array.from(vueRoot.children));
-				Array.from(vueRoot.children).some(node=>
+				Array.from((touch ? touchRoot : vueRoot).children).some(node=>
 					mainDivSearchCssSelectorArray.some(cssS=>{
 						let btnStartInsertPlace = node.querySelector(cssS);
 						if(btnStartInsertPlace != undefined)
 						{
 							mainDiv = node; //重新选择主div
 							reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
-							console.log('开始按钮添加到了 %o 下的 %o',node,btnStartInsertPlace);
 							return true;
 						}else return false;
 					})
@@ -3780,7 +3778,7 @@ function Main(touch) {
 			}
 
 			//作品页面显示推荐的部分
-			const otherWorks = mainDiv.querySelector(":scope>div>aside:nth-of-type(2)");
+			const otherWorks = touch ? null : mainDiv.querySelector(":scope>div>aside:nth-of-type(2)");
 			if (otherWorks)
 			{ //已发现推荐列表大部位
 				if (mutationsList.some(mutation=>otherWorks.contains(mutation.target) && //目标属于推荐部分
@@ -3817,15 +3815,16 @@ function Main(touch) {
 				}
 			}
 		});
-		observerFirstOnce.observe(vueRoot, {childList:true, subtree:true});
+		observerFirstOnce.observe(touch ? touchRoot : vueRoot, {childList:true, subtree:true});
 	}else if(vueRoot == undefined)
 	{
-		if (document.querySelector("#wrapper")) //仍然少量存在的老板页面
+		if (wrapper) //仍然少量存在的老板页面
 		{
 			console.log('PUBD：你访问的是仍然少量存在的老板页面。');
 			insertStartBtn(document.querySelector("._user-profile-card")) || //老版用户资料页
 			insertStartBtn(document.querySelector(".ui-layout-west aside")) || //老版作品页
-			insertStartBtn(document.querySelector(".introduction")); //老版未登录页面
+			insertStartBtn(document.querySelector(".introduction")) //老版未登录页面
+			;
 		}else
 		{
 			console.log('PUBD：未找到 root div，可能P站又改版了，程序得修改。');
