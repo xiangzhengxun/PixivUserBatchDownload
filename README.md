@@ -62,9 +62,9 @@ PixivUserBatchDownload © Mapaler 2020
 * Pixiv APP-API 分析来自 [PixivPy](//github.com/upbit/pixivpy)。
 
 ## 友情链接
-[仙尊 Pixiv 图片批量下载器](//github.com/xuejianxianzun/XZPixivDownloader)  
+**[![](https://raw.githubusercontent.com/xuejianxianzun/PixivBatchDownloader/master/static/icon/logo48.png)PixivBatchDownloader](//github.com/xuejianxianzun/PixivBatchDownloader)**  
 功能介绍：  
 * 支持多种页面里的批量下载，可以设置多种筛选条件
 * 有一些辅助功能，如去除广告、快速收藏、看图模式等
 * 下载不依赖第三方工具
-* 支持多语言（机翻）
+* 支持多语言
