@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.13.108
+// @version		5.13.109
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -156,6 +156,7 @@ var thisPageUserid = null, //当前页面的画师ID
 
 const startDelayAjaxTimes = 100; //开始执行延迟的ajax次数
 const ajaxDelayDuration = 1000; //每次延迟的时间
+const changeTermwiseCount = 6000; //图片数量大于这个值就从按作者发送切换为按图片发送
 
 /*
  * 初始化数据库
@@ -2728,9 +2729,9 @@ function buildDlgDownThis(userid) {
 			var illustsItems = works.item.concat(); //为了不改变原数组，新建一个数组
 
 			let termwiseType = parseInt(getValueDefault("pubd-termwiseType", 2));
-			if (works.picCount > 10000 && termwiseType ==2)
+			if (works.picCount > changeTermwiseCount && termwiseType ==2)
 			{
-				dlg.log("图片数量超过1万张，自动切换为使用按作品逐项发送模式。");
+				dlg.log(`图片总数超过${changeTermwiseCount}张，自动切换为使用按作品逐项发送模式。`);
 				termwiseType = 1;
 			}
 			if (termwiseType == 0)
