@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.13.107
+// @version		5.13.108
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -2619,7 +2619,7 @@ function buildDlgDownThis(userid) {
 				var work = dealItems[0]; //当前处理的图
 
 				setTimeout(()=>{
-					if (pubd.ajaxTimes == startDelayAjaxTimes) console.log(dlog(`已提交超过 ${startDelayAjaxTimes} 次请求，为避免被P站限速，现在开始每次请求将间隔 ${ajaxDelayDuration/1000} 秒。`));
+					if (pubd.ajaxTimes == startDelayAjaxTimes) dlg.log(`已提交超过 ${startDelayAjaxTimes} 次请求，为避免被P站限流，现在开始每次请求将间隔 ${ajaxDelayDuration/1000} 秒。`);
 					getUgoiraMeta(
 						work.id,
 						function(jore) { //onload_suceess_Cb
