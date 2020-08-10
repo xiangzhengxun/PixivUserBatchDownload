@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.12.106
+// @version		5.13.107
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -105,6 +105,7 @@ const pubd = { //储存程序设置
 	auth: null, //储存账号密码
 	downSchemes: [], //储存下载方案
 	downbreak: false, //是否停止发送Aria2的flag
+	ajaxTimes: 0, //已经从P站获取信息的次数（用来判断是否要减速）
 	fastStarList: null, //储存快速收藏的简单数字
 	starUserlists: [], //储存完整的下载列表
 };
@@ -152,6 +153,9 @@ const device_token = "pixiv"; //每个设备不一样，不过好像随便写也
 var thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
 	downIllustMenuId = null; //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
+
+const startDelayAjaxTimes = 100; //开始执行延迟的ajax次数
+const ajaxDelayDuration = 1000; //每次延迟的时间
 
 /*
  * 初始化数据库
@@ -1047,17 +1051,22 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 				if (jo.error) {
 					if (jo.error.message.includes("Error occurred at the OAuth process.")) {
 						if (auth.needlogin) {
-							console.warn(dlog("Token过期，或其他错误"),jo);
-							reLogin(
-								function(){
+							console.warn(dlog("授权 Token 过期，或其他授权相关错误"),jo);
+							reLogin(()=>{
 									xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
 								},
 								onload_hasError_Cb
 							);
 						} else {
-							console.info(dlog("非登录模式获取信息失败"),jo);
+							console.info(dlog("非登录模式尝试获取信息失败"),jo);
 							onload_hasError_Cb(jo);
 						}
+						return;
+					}else if (jo.error.message.includes("Rate Limit")) {
+						console.warn(dlog("获取信息速度太快，触发P站速度限制，1分钟后自动重试。"),jo);
+						setTimeout(()=>{
+							xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
+						}, 1000 * 60)
 						return;
 					}else
 					{
@@ -2296,6 +2305,7 @@ function buildDlgDownThis(userid) {
 			}
 			works.break = false; //暂停flag为false
 			works.runing = true; //运行状态为true
+			pubd.ajaxTimes = 0; //ajax提交次数恢复为0
 
 			dlg.textdown.disabled = true; //禁用下载按钮
 			dlg.startdown.disabled = true; //禁用输出文本按钮
@@ -2313,6 +2323,7 @@ function buildDlgDownThis(userid) {
 			function startAnalyseUser(userid, contentType) {
 
 				dlg.log("开始获取ID为 " + userid + " 的用户信息");
+				++pubd.ajaxTimes;
 				xhrGenneral(
 					"https://app-api.pixiv.net/v1/user/detail?user_id=" + userid,
 					function(jore) { //onload_suceess_Cb
@@ -2439,7 +2450,6 @@ function buildDlgDownThis(userid) {
 				if (works.item.length > 0) { //断点续传
 					dlg.log(contentName + " 断点续传进度 " + works.item.length + "/" + total);
 					dlg.progress.set(works.item.length / total); //设置当前下载进度
-					apiurl = works.next_url;
 				}
 				analyseWorks(user, contentType, apiurl); //开始获取第一页
 			}
@@ -2507,81 +2517,84 @@ function buildDlgDownThis(userid) {
 					return;
 				}
 
-				xhrGenneral(
-					apiurl,
-					function(jore) { //onload_suceess_Cb
-						works.runing = true;
-						var illusts = jore.illusts;
-							
-							illusts.forEach(function(work) {
-								const original = work.page_count > 1 ?
-									work.meta_pages[0].image_urls.original : //漫画多图
-									work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
-
-								const regSrc = new RegExp(illustPattern, "ig");
-								const regRes = regSrc.exec(original);
-								if (regRes) {
-									//然后添加扩展名等
-									work.url_without_page = regRes[1];
-									work.domain = regRes[2];
-									work.filename = regRes[3];
-									work.token = regRes[4];
-									work.extention = regRes[5];
-								} else {
-									const regSrcL = new RegExp(limitingPattern, "ig");
-									const regResL = regSrcL.exec(original);
-									if (regResL) {
-										dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
-										work.url_without_page = regResL[1];
-										work.domain = regResL[2];
-										work.filename = regResL[3];
-										work.token = regResL[4];
-										work.extention = regResL[5];
+				setTimeout(()=>{
+					xhrGenneral(
+						apiurl,
+						function(jore) { //onload_suceess_Cb
+							works.runing = true;
+							var illusts = jore.illusts;
+								
+								illusts.forEach(function(work) {
+									const original = work.page_count > 1 ?
+										work.meta_pages[0].image_urls.original : //漫画多图
+										work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
+	
+									const regSrc = new RegExp(illustPattern, "ig");
+									const regRes = regSrc.exec(original);
+									if (regRes) {
+										//然后添加扩展名等
+										work.url_without_page = regRes[1];
+										work.domain = regRes[2];
+										work.filename = regRes[3];
+										work.token = regRes[4];
+										work.extention = regRes[5];
 									} else {
-										dlg.log(contentName + " " + work.id + " 原图格式未知。");
+										const regSrcL = new RegExp(limitingPattern, "ig");
+										const regResL = regSrcL.exec(original);
+										if (regResL) {
+											dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
+											work.url_without_page = regResL[1];
+											work.domain = regResL[2];
+											work.filename = regResL[3];
+											work.token = regResL[4];
+											work.extention = regResL[5];
+										} else {
+											dlg.log(contentName + " " + work.id + " 原图格式未知。");
+										}
 									}
-								}
-								works.item.push(work);
-
-								if (mdev)
-								{
-									const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
-									const illustsStoreRequest = illustsStore.put(work);
-									illustsStoreRequest.onsuccess = function(event) {
-										//console.debug(`${work.title} 已添加到作品数据库`);
-									};
-								}
-							});
-
-						dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
-						if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
-						if (jore.next_url) { //还有下一页
-							works.next_url = jore.next_url;
-						} else { //没有下一页
-							works.done = true;
+									works.item.push(work);
+	
+									if (mdev)
+									{
+										const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+										const illustsStoreRequest = illustsStore.put(work);
+										illustsStoreRequest.onsuccess = function(event) {
+											//console.debug(`${work.title} 已添加到作品数据库`);
+										};
+									}
+								});
+	
+							dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
+							if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
+							if (jore.next_url) { //还有下一页
+								works.next_url = jore.next_url;
+							} else { //没有下一页
+								works.done = true;
+							}
+							analyseWorks(user, contentType, jore.next_url); //开始获取下一页
+						},
+						function(jore) { //onload_haserror_Cb //返回错误消息
+							works.runing = false;
+							dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+							dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+							dlg.startdown.disabled = false;
+							return;
+						},
+						function(re) { //onload_notjson_Cb //返回不是JSON
+							dlg.log("错误：返回不是JSON，或本程序异常");
+							works.runing = false;
+							dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+							dlg.startdown.disabled = false;
+						},
+						function(re) { //onerror_Cb //网络请求发生错误
+							dlg.log("错误：网络请求发生错误");
+							works.runing = false;
+							dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+							dlg.startdown.disabled = false;
 						}
-						analyseWorks(user, contentType, jore.next_url); //开始获取下一页
-					},
-					function(jore) { //onload_haserror_Cb //返回错误消息
-						works.runing = false;
-						dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
-						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-						dlg.startdown.disabled = false;
-						return;
-					},
-					function(re) { //onload_notjson_Cb //返回不是JSON
-						dlg.log("错误：返回不是JSON，或本程序异常");
-						works.runing = false;
-						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-						dlg.startdown.disabled = false;
-					},
-					function(re) { //onerror_Cb //网络请求发生错误
-						dlg.log("错误：网络请求发生错误");
-						works.runing = false;
-						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-						dlg.startdown.disabled = false;
-					}
-				);
+					);
+				},pubd.ajaxTimes++ > startDelayAjaxTimes ? ajaxDelayDuration : 0);
+				
 			}
 
 			function analyseUgoira(works, ugoirasItems, callback) {
@@ -2605,59 +2618,62 @@ function buildDlgDownThis(userid) {
 
 				var work = dealItems[0]; //当前处理的图
 
-				getUgoiraMeta(
-					work.id,
-					function(jore) { //onload_suceess_Cb
-						works.runing = true;
-						//var illusts = jore.illusts;
-						work = Object.assign(work, jore);
+				setTimeout(()=>{
+					if (pubd.ajaxTimes == startDelayAjaxTimes) console.log(dlog(`已提交超过 ${startDelayAjaxTimes} 次请求，为避免被P站限速，现在开始每次请求将间隔 ${ajaxDelayDuration/1000} 秒。`));
+					getUgoiraMeta(
+						work.id,
+						function(jore) { //onload_suceess_Cb
+							works.runing = true;
+							//var illusts = jore.illusts;
+							work = Object.assign(work, jore);
 
-						if (mdev)
-						{
-							const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
-							const illustsStoreRequest = illustsStore.put(work);
-							illustsStoreRequest.onsuccess = function(event) {
-								console.debug(`${work.title} 已更新动画帧数据到数据库`);
-							};
-						}
+							if (mdev)
+							{
+								const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+								const illustsStoreRequest = illustsStore.put(work);
+								illustsStoreRequest.onsuccess = function(event) {
+									console.debug(`${work.title} 已更新动画帧数据到数据库`);
+								};
+							}
 
-						dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
-						dlg.progress.set(1 - dealItems.length / ugoirasItems.length); //设置当前下载进度
-						analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
-					},
-					function(jore) { //onload_haserror_Cb //返回错误消息
-						if(work.restrict > 0) //非公共权限
-						{ //添加一条空信息
-							work.ugoira_metadata = {
-								frames: [],
-								zip_urls: {
-									medium: "",
-								},
-							};
-							dlg.log("无访问权限，跳过本条。");
+							dlg.log("动图信息 获取进度 " + (ugoirasItems.length - dealItems.length + 1) + "/" + ugoirasItems.length);
+							dlg.progress.set(1 - dealItems.length / ugoirasItems.length); //设置当前下载进度
 							analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
-						}else
-						{
+						},
+						function(jore) { //onload_haserror_Cb //返回错误消息
+							if(work.restrict > 0) //非公共权限
+							{ //添加一条空信息
+								work.ugoira_metadata = {
+									frames: [],
+									zip_urls: {
+										medium: "",
+									},
+								};
+								dlg.log("无访问权限，跳过本条。");
+								analyseUgoira(works, ugoirasItems, callback); //开始获取下一项
+							}else
+							{
+								works.runing = false;
+								dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+								dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+								dlg.startdown.disabled = false;
+							}
+							return;
+						},
+						function(re) { //onload_notjson_Cb //返回不是JSON
+							dlg.log("错误：返回不是JSON，或本程序异常");
 							works.runing = false;
-							dlg.log("错误信息：" + (jore.error.message || jore.error.user_message));
+							dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
+							dlg.startdown.disabled = false;
+						},
+						function(re) { //onerror_Cb //网络请求发生错误
+							dlg.log("错误：网络请求发生错误");
+							works.runing = false;
 							dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
 							dlg.startdown.disabled = false;
 						}
-						return;
-					},
-					function(re) { //onload_notjson_Cb //返回不是JSON
-						dlg.log("错误：返回不是JSON，或本程序异常");
-						works.runing = false;
-						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-						dlg.startdown.disabled = false;
-					},
-					function(re) { //onerror_Cb //网络请求发生错误
-						dlg.log("错误：网络请求发生错误");
-						works.runing = false;
-						dlg.textdown.disabled = false; //错误暂停时，可以操作目前的进度。
-						dlg.startdown.disabled = false;
-					}
-				);
+					);
+				},pubd.ajaxTimes++ > startDelayAjaxTimes ? ajaxDelayDuration : 0);
 			}
 		};
 	//输出文本按钮
@@ -2711,7 +2727,12 @@ function buildDlgDownThis(userid) {
 			var works = (contentType == 0 ? dlg.user.illusts : dlg.user.bookmarks);
 			var illustsItems = works.item.concat(); //为了不改变原数组，新建一个数组
 
-			var termwiseType = parseInt(getValueDefault("pubd-termwiseType", 2));
+			let termwiseType = parseInt(getValueDefault("pubd-termwiseType", 2));
+			if (works.picCount > 10000 && termwiseType ==2)
+			{
+				dlg.log("图片数量超过1万张，自动切换为使用按作品逐项发送模式。");
+				termwiseType = 1;
+			}
 			if (termwiseType == 0)
 				dlg.log("开始按图片逐项发送（约 "+works.picCount+" 次请求），⏳请耐心等待。");
 			else if (termwiseType == 1)
