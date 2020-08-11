@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.13.110
+// @version		5.13.112
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -17,7 +17,6 @@
 // @updateURL	https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.meta.js
 //-@downloadURL https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
 // @include		*://www.pixiv.net/*
-// @exclude		*://www.pixiv.net/search.php*
 // @exclude		*://www.pixiv.net/upload.php*
 // @exclude		*://www.pixiv.net/messages.php*
 // @exclude		*://www.pixiv.net/ranking.php*
@@ -35,7 +34,8 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @exclude		*://www.pixiv.net/manage*
 // @exclude		*://www.pixiv.net/report*
-// @exclude		*://www.pixiv.net/tags*
+//-@exclude		*://www.pixiv.net/search.php*
+//-@exclude		*://www.pixiv.net/tags*
 // @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年7月9日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
@@ -126,6 +126,9 @@ const mainDivSearchCssSelectorArray = [
 	':scope>div>div>aside>section', //作品页
 	':scope>div>div:nth-of-type(2)>div>div', //关注页
 ];
+//搜索页，列表的ul位置（用来显示收藏状态）
+const searchListCssPath = ':scope>div>div:nth-of-type(5)>div>section:nth-of-type(2)>div:nth-of-type(2)>ul';
+
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
 const userMainPageCssPath = ":scope>div>div:nth-of-type(2)>nav>a";
 //作品页，收藏按钮的CSS位置（用来获取当前作品ID）
@@ -290,11 +293,12 @@ class UsersStarList{
 	constructor(title,userArr = []){
 		this.title = title;
 		this.users = new Set(Array.from(userArr));
+		this.users.delete(null);
 	}
 	add(userid)
 	{
 		if (isNaN(userid)) userid = parseInt(userid,10);
-		this.users.add(userid);
+		if (!isNaN(userid) && userid != null) this.users.add(userid);
 	}
 	delete(userid)
 	{
@@ -310,7 +314,7 @@ class UsersStarList{
 	{ //切换有无
 		if (isNaN(userid)) userid = parseInt(userid,10);
 		const _users = this.users;
-		if (_users.has(userid))
+		if (_users.has(userid) || isNaN(userid) || userid == null)
 		{
 			_users.delete(userid);
 			return false;
@@ -323,6 +327,7 @@ class UsersStarList{
 	importArray(arr)
 	{
 		const arrMaxLength = 500000;
+		arr = arr.filter(uid=>!isNaN(uid));
 		if (arr.length>arrMaxLength)
 		{
 			alert(`PUBD：收藏用户最多仅允许添加 ${arrMaxLength.toLocaleString()} 个数据。`);
@@ -1207,7 +1212,7 @@ function toggleStar(userid)
 		pubd.start.star.classList.remove("stars");
 	}
 
-	GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray().sort());
+	GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray());
 }
 //检查是否有画师并改变星星状态
 function checkStar()
@@ -2816,8 +2821,11 @@ function buildDlgDownThis(userid) {
 			if (!pubd.fastStarList.has(userid)) { //不存在，则添加
 				pubd.fastStarList.add(uid);
 				pubd.start.star.classList.add("stars");
-				GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray().sort());
+				GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray());
 				console.debug(`已将 ${uid} 添加到快速收藏`);
+			}else if (mdev)
+			{
+				console.debug(`快速收藏中已存在 ${uid}`);
 			}
 
 			dlg.analyse(dcType, uid, function(){
@@ -3740,7 +3748,7 @@ function Main(touch) {
 				{
 					console.log(`新增了${needAddArr.length}个收藏`);
 					pubd.fastStarList.importArray(needAddArr);
-					GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray().sort());
+					GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray());
 				}
 			}}
 		);
@@ -3796,36 +3804,63 @@ function Main(touch) {
 	if (window.MutationObserver && (vueRoot || touch)) //如果支持MutationObserver，且是vue框架
 	{
 		let reInsertStart = true; //是否需要重新插入开始按钮
+		let changeIllustUser = new MutationObserver(function(mutationsList, observer) {
+			if (mdev) console.log("作者链接 href 改变了",mutationsList);
+			checkStar();
+		});
 		let observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
 			if (location.pathname.substr(1).length == 0) //当在P站首页的时候，不需要生效
 			{
 				console.log("PUBD：本页面不需要执行。");
 				return;
 			}
-			//如果被删除的节点里有我们的开始按钮，就重新插入
-			if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(btnStartBox))))
+
+			//如果被删除的节点里有我们的开始按钮，就重新插入；或者搜索列表被删除
+			if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>(node.contains(btnStartBox) || node.contains(recommendList)))))
 			{
 				console.log('已经添加的开始按钮因为页面改动被删除了');
+				mainDiv = null;
 				reInsertStart = true;
 			}
+
 			//搜索新的主div并插入开始按钮
 			if (reInsertStart)
 			{
 				Array.from((touch ? touchRoot : vueRoot).children).some(node=>
-					mainDivSearchCssSelectorArray.some(cssS=>{
-						let btnStartInsertPlace = node.querySelector(cssS);
-						if(btnStartInsertPlace != undefined)
+					{
+						recommendList = node.querySelector(searchListCssPath);
+						if (recommendList)
 						{
+							if (mdev) console.log("发现搜索列表",recommendList);
 							mainDiv = node; //重新选择主div
-							reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
+							reInsertStart = false;
 							return true;
-						}else return false;
-					})
+						}
+						else
+						{
+							return mainDivSearchCssSelectorArray.some(cssS=>{
+								let btnStartInsertPlace = node.querySelector(cssS);
+								if(btnStartInsertPlace != undefined)
+								{
+									if (mdev) console.log("开始按钮插入点CSS路径为",cssS);
+									mainDiv = node; //重新选择主div
+									reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
+
+									const userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
+									if (userHeadLink) //如果是作品页面
+									{
+										changeIllustUser.observe(userHeadLink, {attributeFilter:["href"]});
+									}
+									return true;
+								}else return false;
+							});
+						}
+					}
 				);
 			}
 
 			//作品页面显示推荐的部分
-			const otherWorks = touch ? null : mainDiv.querySelector(":scope>div>aside:nth-of-type(2)");
+			const otherWorks = (touch || !mainDiv) ? null : mainDiv.querySelector(":scope>div>aside:nth-of-type(2)");
 			if (otherWorks)
 			{ //已发现推荐列表大部位
 				if (mutationsList.some(mutation=>otherWorks.contains(mutation.target) && //目标属于推荐部分
@@ -3838,12 +3873,13 @@ function Main(touch) {
 			}
 			if (recommendList)
 			{
-				if (mutationsList.some(mutation=>mutation.target==recommendList))
+				let mutationsList_target = mutationsList.filter(mutation=>mutation.target==recommendList);
+				if (mutationsList_target.length)
 				{ //当改变目标为推荐列表时，并且新增的是section时
-					//console.log('推荐列表改变',mutationsList);
-					mutationsList.forEach(mutation=>
+					mutationsList_target.forEach(mutation=>
 						mutation.addedNodes.forEach(linode=>{ //这个node是每个新增列表里的li
 							const userLink = linode.querySelector("div>div:last-of-type>div>a");
+							if (!userLink) return;
 							const uidRes = /\d+/.exec(userLink.pathname);
 							if (uidRes.length)
 							{
