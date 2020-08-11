@@ -152,7 +152,8 @@ const device_token = "pixiv"; //每个设备不一样，不过好像随便写也
 
 var thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
-	downIllustMenuId = null; //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
+	downIllustMenuId = null, //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
+	recommendList = null; //推荐作品列表Dom位置
 
 const startDelayAjaxTimes = 100; //开始执行延迟的ajax次数
 const ajaxDelayDuration = 1000; //每次延迟的时间
@@ -1205,6 +1206,7 @@ function toggleStar(userid)
 	{ //删除
 		pubd.start.star.classList.remove("stars");
 	}
+
 	GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray());
 }
 //检查是否有画师并改变星星状态
@@ -1212,6 +1214,7 @@ function checkStar()
 {
 	const userid = getCurrentUserId();
 	const res = pubd.fastStarList.has(userid);
+	
 	if (res)
 	{ //存在，则标记
 		pubd.start.star.classList.add("stars");
@@ -3654,6 +3657,28 @@ function Main(touch) {
 		pubd.fastStarList = new UsersStarList("快速收藏",getValueDefault("pubd-faststar-list",[]));
 		if (mdev) console.log('收藏有变化',pubd.fastStarList.users);
 		checkStar();
+
+		//更改推荐列表里的收藏显示状态
+		if (recommendList)
+		{
+			const liNodes = recommendList.querySelectorAll(":scope>li");
+			liNodes.forEach(linode=>{ //这个node是每个新增列表里的li
+				const userLink = linode.querySelector("div>div:last-of-type>div>a");
+				const uidRes = /\d+/.exec(userLink.pathname);
+				if (uidRes.length)
+				{
+					const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
+					if (res)
+					{
+						linode.classList.add("pubd-stared"); //添加隐藏用的css
+					}
+					else
+					{
+						linode.classList.remove("pubd-stared"); //添加隐藏用的css
+					}
+				}
+			})
+		}
 		//将来还需要在更改收藏时，就自动刷新所有的其他推荐列表
 		//put my code
 	});
@@ -3771,7 +3796,6 @@ function Main(touch) {
 	if (window.MutationObserver && (vueRoot || touch)) //如果支持MutationObserver，且是vue框架
 	{
 		let reInsertStart = true; //是否需要重新插入开始按钮
-		let recommendList = null; //推荐作品列表Dom位置
 		let observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
 			if (location.pathname.substr(1).length == 0) //当在P站首页的时候，不需要生效
 			{
