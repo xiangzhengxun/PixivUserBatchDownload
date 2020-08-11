@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.13.109
+// @version		5.13.110
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -1207,7 +1207,7 @@ function toggleStar(userid)
 		pubd.start.star.classList.remove("stars");
 	}
 
-	GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray());
+	GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray().sort());
 }
 //检查是否有画师并改变星星状态
 function checkStar()
@@ -2816,7 +2816,7 @@ function buildDlgDownThis(userid) {
 			if (!pubd.fastStarList.has(userid)) { //不存在，则添加
 				pubd.fastStarList.add(uid);
 				pubd.start.star.classList.add("stars");
-				GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray());
+				GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray().sort());
 				console.debug(`已将 ${uid} 添加到快速收藏`);
 			}
 
@@ -3668,7 +3668,7 @@ function Main(touch) {
 				if (uidRes.length)
 				{
 					const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
-					if (res)
+					if (pubd.fastStarList.has(uid))
 					{
 						linode.classList.add("pubd-stared"); //添加隐藏用的css
 					}
@@ -3740,7 +3740,7 @@ function Main(touch) {
 				{
 					console.log(`新增了${needAddArr.length}个收藏`);
 					pubd.fastStarList.importArray(needAddArr);
-					GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray());
+					GM_setValue("pubd-faststar-list",pubd.fastStarList.exportArray().sort());
 				}
 			}}
 		);
