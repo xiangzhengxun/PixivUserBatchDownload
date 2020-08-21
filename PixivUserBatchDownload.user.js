@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.13.112
+// @version		5.13.114
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -39,7 +39,7 @@
 // @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年7月9日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
-// @grant		unsafeWindow
+//-@grant		unsafeWindow
 // @grant		window.close
 // @grant		window.focus
 // @grant		GM_xmlhttpRequest
@@ -110,9 +110,6 @@ const pubd = { //储存程序设置
 	starUserlists: [], //储存完整的下载列表
 };
 
-//vue框架的root div
-const vueRoot = document.querySelector("#root");
-const wrapper = document.querySelector("#wrapper"); //仍然少量存在的老板页面
 //储存vue框架下P站页面主要内容的DIV位置，现在由程序自行搜索判断，搜索依据为 mainDivSearchCssSelectorArray。
 //后面的 :scope 基本都是指的 mainDiv
 var mainDiv = null;
@@ -203,24 +200,25 @@ if (mdev)
  * 获取初始状态
  */
 //尝试获取旧版网页对象
-if (typeof(unsafeWindow) != "undefined")
+/*if (typeof(unsafeWindow) != "undefined")
 { //原来的信息-除少部分页面外已失效2020年7月9日
 	const pixiv = unsafeWindow.pixiv;
-	if (pixiv != undefined)
+}*/
+if (typeof(pixiv) != "undefined")
+{
+	if (mdev) console.log("PUBD：本页面存在 pixiv 对象：",pixiv);
+	thisPageUserid = parseInt(pixiv.context.userId);
+	if (pixiv.user.loggedIn)
 	{
-		if (mdev) console.log("PUBD：本页面存在 pixiv 对象：",pixiv);
-		thisPageUserid = parseInt(pixiv.context.userId);
-		if (pixiv.user.loggedIn)
-		{
-			pubd.loggedIn = true;
-		}
-		if (/touch/i.test(pixiv.touchSourcePath))
-		{
-			pubd.touch = true; //新版的手机页面也还是老板结构-2020年7月9日
-			document.body.classList.add('pubd-touch');
-		}
+		pubd.loggedIn = true;
+	}
+	if (/touch/i.test(pixiv.touchSourcePath))
+	{
+		pubd.touch = true; //新版的手机页面也还是老板结构-2020年7月9日
+		document.body.classList.add('pubd-touch');
 	}
 }
+
 //尝试获取当前页面画师ID
 const metaPreloadData = document.querySelector('#meta-preload-data'); //HTML源代码里有，会被前端删掉的数据
 if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页面信息
@@ -236,6 +234,7 @@ if (metaPreloadData != undefined) //更加新的存在于HTML元数据中的页�
 if (location.host.includes("touch")) //typeof(pixiv.AutoView)!="undefined"
 {
 	pubd.touch = true;
+	document.body.classList.add('pubd-touch');
 }
 
 /*
@@ -3800,16 +3799,20 @@ function Main(touch) {
 	手机版网页的root
 	#spa-contents 会被删掉重新添加，所以只能用更上一层
 	*/
+	const vueRoot = document.querySelector("#root"); //vue框架的root div
+	const wrapper = document.querySelector("#wrapper"); //仍然少量存在的老板页面
 	const touchRoot = wrapper ? wrapper.querySelector("#contents") : null;
 	if (window.MutationObserver && (vueRoot || touch)) //如果支持MutationObserver，且是vue框架
 	{
 		let reInsertStart = true; //是否需要重新插入开始按钮
+		let subRoot = null; //P站改版，在root下面多了一层
 		let changeIllustUser = new MutationObserver(function(mutationsList, observer) {
 			if (mdev) console.log("作者链接 href 改变了",mutationsList);
 			checkStar();
 		});
-		let observerFirstOnce = new MutationObserver(function(mutationsList, observer) {
-			if (location.pathname.substr(1).length == 0) //当在P站首页的时候，不需要生效
+		let observerLoop = new MutationObserver(function(mutationsList, observer) {
+			//当在P站首页的时候，不需要生效
+			if (location.pathname.substr(1).length == 0)
 			{
 				console.log("PUBD：本页面不需要执行。");
 				return;
@@ -3826,17 +3829,16 @@ function Main(touch) {
 			//搜索新的主div并插入开始按钮
 			if (reInsertStart)
 			{
-				Array.from((touch ? touchRoot : vueRoot).children).some(node=>
+				Array.from((touch ? touchRoot : subRoot).children).some(node=>
 					{
 						recommendList = node.querySelector(searchListCssPath);
-						if (recommendList)
+						if (recommendList) //如果是搜索界面
 						{
 							if (mdev) console.log("发现搜索列表",recommendList);
 							mainDiv = node; //重新选择主div
 							reInsertStart = false;
 							return true;
-						}
-						else
+						}else //添加开始菜单
 						{
 							return mainDivSearchCssSelectorArray.some(cssS=>{
 								let btnStartInsertPlace = node.querySelector(cssS);
@@ -3898,7 +3900,28 @@ function Main(touch) {
 				}
 			}
 		});
-		observerFirstOnce.observe(touch ? touchRoot : vueRoot, {childList:true, subtree:true});
+		//只执行一次的，插找P站新的根节点的位置
+		let observerFindSubRoot = new MutationObserver(function(mutationsList, observer) {
+			mutationsList.some(mutation=>Array.from(mutation.addedNodes).some(node=>{
+				if(!node.id.length){
+					subRoot = node;
+					observer.disconnect();
+					if (mdev) console.log("子root为",subRoot);
+					observerLoop.observe(subRoot, {childList:true, subtree:true});
+					return true;
+				}else
+				{
+					return false;
+				}
+			}));
+		});
+		if (vueRoot)
+		{
+			observerFindSubRoot.observe(vueRoot, {childList:true, subtree:false});
+		}else
+		{
+			observerLoop.observe(touchRoot, {childList:true, subtree:true});
+		}
 	}else if(vueRoot == undefined)
 	{
 		if (wrapper) //仍然少量存在的老板页面
