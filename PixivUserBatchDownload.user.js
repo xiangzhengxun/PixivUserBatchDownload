@@ -39,6 +39,8 @@
 // @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2020年7月9日
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
+// @require		https://cdn.staticfile.org/crypto-js/4.0.0/sha256.min.js
+// @require		https://cdn.staticfile.org/crypto-js/4.0.0/enc-base64.min.js
 //-@grant		unsafeWindow
 // @grant		window.close
 // @grant		window.focus
@@ -63,7 +65,7 @@
 
 /*jshint esversion: 6, shadow: true */
 (function() {
-    'use strict';
+	'use strict';
 
 //获取当前是否是本地开发状态
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
@@ -1351,21 +1353,11 @@ function buildDlgConfig() {
 	dl_t.appendChild(dd);
 	var checkbox = new LabelInput("开启登陆功能，解除浏览限制", "pubd-needlogin", "pubd-needlogin", "checkbox", "1", true);
 	dlg.needlogin = checkbox.input;
-	dlg.needlogin.onclick = function() {
-		if (dlg.needlogin.checked) {
-			dlg.token_info.classList.remove("height-none");
-			dlg.start_token_animate();
-		} else {
-			dlg.token_info.classList.add("height-none");
-			dlg.stop_token_animate();
-		}
-		pubd.dialog.login.cptBtns.close.click();
-	};
 	dd.appendChild(checkbox);
 
 	var dd = document.createElement("dd");
 	dl_t.appendChild(dd);
-	dd.className = "pubd-token-info height-none";
+	dd.className = "pubd-token-info";
 	dlg.token_info = dd;
 
 	var a_setting = document.createElement("a");
@@ -1880,50 +1872,50 @@ function buildDlgConfig() {
 
 	//保存设置函数
 	dlg.save = function() {
-			pubd.auth.needlogin = dlg.needlogin.checked;
-			pubd.auth.save();
+		pubd.auth.needlogin = dlg.needlogin.checked;
+		pubd.auth.save();
 
-			//作品发送完成后，如何处理通知
-			var noticeType = 0;
-			dlg.noticeType.some(function(item){
-				if (item.checked) noticeType = parseInt(item.value);
-				return item.checked;
-			});
-			//逐项发送模式
-			var termwiseType = 2;
-			dlg.termwiseType.some(function(item){
-				if (item.checked) termwiseType = parseInt(item.value);
-				return item.checked;
-			});
+		//作品发送完成后，如何处理通知
+		var noticeType = 0;
+		dlg.noticeType.some(function(item){
+			if (item.checked) noticeType = parseInt(item.value);
+			return item.checked;
+		});
+		//逐项发送模式
+		var termwiseType = 2;
+		dlg.termwiseType.some(function(item){
+			if (item.checked) termwiseType = parseInt(item.value);
+			return item.checked;
+		});
 
-			GM_setValue("pubd-getugoiraframe", dlg.getugoiraframe.checked); //获取动图帧数
-			GM_setValue("pubd-autoanalyse", dlg.autoanalyse.checked); //自动分析
-			GM_setValue("pubd-autodownload", dlg.autodownload.checked); //自动下载
-			GM_setValue("pubd-noticeType", noticeType); //处理通知
-			GM_setValue("pubd-termwiseType", termwiseType); //逐项发送
-			GM_setValue("pubd-downschemes", dlg.schemes); //下载方案
-			GM_setValue("pubd-defaultscheme", dlg.downSchemeDom.selectedIndex); //默认方案
-			GM_setValue("pubd-configversion", pubd.configVersion); //设置版本
+		GM_setValue("pubd-getugoiraframe", dlg.getugoiraframe.checked); //获取动图帧数
+		GM_setValue("pubd-autoanalyse", dlg.autoanalyse.checked); //自动分析
+		GM_setValue("pubd-autodownload", dlg.autodownload.checked); //自动下载
+		GM_setValue("pubd-noticeType", noticeType); //处理通知
+		GM_setValue("pubd-termwiseType", termwiseType); //逐项发送
+		GM_setValue("pubd-downschemes", dlg.schemes); //下载方案
+		GM_setValue("pubd-defaultscheme", dlg.downSchemeDom.selectedIndex); //默认方案
+		GM_setValue("pubd-configversion", pubd.configVersion); //设置版本
 
-			GM_notification({text:"设置已保存", title:scriptName, image:scriptIcon});
-			pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
-			pubd.dialog.downthis.reloadSchemes();
-			pubd.dialog.downillust.reloadSchemes();
-		};
-		//重置设置函数
+		GM_notification({text:"设置已保存", title:scriptName, image:scriptIcon});
+		pubd.downSchemes = NewDownSchemeArrayFromJson(dlg.schemes);
+		pubd.dialog.downthis.reloadSchemes();
+		pubd.dialog.downillust.reloadSchemes();
+	};
+	//重置设置函数
 	dlg.reset = function() {
-			GM_deleteValue("pubd-auth"); //登陆相关信息
-			GM_deleteValue("pubd-getugoiraframe"); //获取动图帧数
-			GM_deleteValue("pubd-autoanalyse"); //自动分析
-			GM_deleteValue("pubd-autodownload"); //自动下载
-			GM_deleteValue("pubd-noticeType"); //处理通知
-			GM_deleteValue("pubd-termwiseType"); //逐项发送
-			GM_deleteValue("pubd-downschemes"); //下载方案
-			GM_deleteValue("pubd-defaultscheme"); //默认方案
-			GM_deleteValue("pubd-configversion"); //设置版本
-			GM_notification({text:"已清空重置设置", title:scriptName, image:scriptIcon});
-		};
-		//窗口关闭
+		GM_deleteValue("pubd-auth"); //登陆相关信息
+		GM_deleteValue("pubd-getugoiraframe"); //获取动图帧数
+		GM_deleteValue("pubd-autoanalyse"); //自动分析
+		GM_deleteValue("pubd-autodownload"); //自动下载
+		GM_deleteValue("pubd-noticeType"); //处理通知
+		GM_deleteValue("pubd-termwiseType"); //逐项发送
+		GM_deleteValue("pubd-downschemes"); //下载方案
+		GM_deleteValue("pubd-defaultscheme"); //默认方案
+		GM_deleteValue("pubd-configversion"); //设置版本
+		GM_notification({text:"已清空重置设置", title:scriptName, image:scriptIcon});
+	};
+	//窗口关闭
 	dlg.close = function() {
 		dlg.stop_token_animate();
 	};
@@ -1931,14 +1923,6 @@ function buildDlgConfig() {
 	dlg.cptBtns.close.addEventListener("click", dlg.close);
 	//窗口初始化
 	dlg.initialise = function() {
-		dlg.needlogin.checked = pubd.auth.needlogin;
-		if (pubd.auth.needlogin) //如果要登陆，就显示Token区域，和动画
-		{
-			dlg.token_info.classList.remove("height-none");
-			dlg.start_token_animate();
-		} else {
-			dlg.token_info.classList.add("height-none");
-		}
 
 		dlg.getugoiraframe.checked = getValueDefault("pubd-getugoiraframe", true);
 		dlg.autoanalyse.checked = getValueDefault("pubd-autoanalyse", false);
@@ -2057,6 +2041,24 @@ function buildDlgLogin() {
 	dlg.remember = checkbox.input;
 	signup_form_nav.appendChild(checkbox);
 	dlgc.appendChild(container_login);
+
+	
+	/*var frm = new Frame("进行登录", "pubd-token");
+	dd.appendChild(frm);
+
+	var dl_t = document.createElement("dl");
+	frm.content.appendChild(dl_t);
+	
+	const code_verifier = "fff0316026eb9cbfe037261650772377";
+const base64url = require('base64-url');
+var CryptoJS = require("crypto-js");
+var bytes = CryptoJS.SHA256(code_verifier);
+console.log(bytes.toString(CryptoJS.enc.Base64));
+	
+	
+	*/
+
+
 
 	submit.onclick = function() {
 			dlg.error.replace("登陆中···");

@@ -1,6 +1,8 @@
 # PixivUserBatchDownload 5
 中文名：“[P站](//www.pixiv.net/member.php?id=3896348)画师个人作品批量下载工具”，简称 PUBD。
 
+**由于P站APP登陆模式改变，目前暂时不能用，我需要一定时间来编写适应新的登陆的程序。**  
+
 * #### 为什么要做 PUBD？
   PUBD 的理念是在阅览 Pixiv 的过程中，看见喜欢的画师，可以直接一键下载该画师的所有作品。
 
