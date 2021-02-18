@@ -1992,7 +1992,7 @@ function buildDlgLogin() {
 	logo_box.appendChild(logo);
 	var catchphrase = document.createElement("div");
 	catchphrase.className = "catchphrase";
-	catchphrase.innerHTML = "登陆获取你的账户许可，解除年龄限制";
+	catchphrase.innerHTML = "登陆获取你的账户许可";
 	logo_box.appendChild(catchphrase);
 	dlgc.appendChild(logo_box);
 	//实际登陆部分
@@ -2042,7 +2042,12 @@ function buildDlgLogin() {
 	signup_form_nav.appendChild(checkbox);
 	dlgc.appendChild(container_login);
 
-	
+	var frm = new Frame("登录认证", "pubd-auth-weblogin");
+	dlgc.appendChild(frm);
+
+
+	var frm = new Frame("获取通行证", "pubd-auth-applogin");
+	dlgc.appendChild(frm);
 	/*var frm = new Frame("进行登录", "pubd-token");
 	dd.appendChild(frm);
 
