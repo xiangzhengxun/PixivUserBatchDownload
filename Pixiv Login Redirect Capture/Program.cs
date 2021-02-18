@@ -19,7 +19,7 @@ namespace Pixiv_Login_Redirect_Capture
             Application.SetCompatibleTextRenderingDefault(false);
             if (args.Length > 0)
             {
-                Regex regex = new Regex(@"^pixiv:\\\\");
+                Regex regex = new Regex(@"^pixiv://");
                 if (regex.IsMatch(args[0]))
                 {
                     Application.Run(new PixivLink(args));
