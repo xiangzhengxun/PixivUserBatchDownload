@@ -104,6 +104,7 @@ const pubd = { //储存程序设置
 		downthis: null, //下载当前窗口
 		downillust: null, //下载当前作品窗口
 	},
+	oAuth: null, //储存账号密码
 	auth: null, //储存账号密码
 	downSchemes: [], //储存下载方案
 	downbreak: false, //是否停止发送Aria2的flag
@@ -140,8 +141,8 @@ const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\
 const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
-const PixivAppVersion = "5.0.200"; //Pixiv APP的版本
-const AndroidVersion = "10.0.0"; //安卓的版本
+const PixivAppVersion = "5.0.235"; //Pixiv APP的版本
+const AndroidVersion = "12.0.0"; //安卓的版本
 const UA = "PixivAndroidApp/" + PixivAppVersion + " (Android " + AndroidVersion + "; Android SDK built for x64)"; //向P站请求数据时的UA
 const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat，目前是固定值
 const Referer = "https://app-api.pixiv.net/";
@@ -150,7 +151,6 @@ const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
 const authURL = "https://oauth.secure.pixiv.net/auth/token";
 const client_id = "MOBrBDS8blbauoSck0ZfDbtuzpyT"; //安卓版固定数据
 const client_secret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"; //安卓版固定数据
-const device_token = "pixiv"; //每个设备不一样，不过好像随便写也没事
 
 var thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
@@ -370,10 +370,133 @@ var Works = function(){
 	this.runing = false; //是否正在运行的Flasg
 	this.next_url = ""; //储存下一页地址（断点续传）
 };
+
+Math.randomInteger = function(max, min = 0)
+{
+	return this.floor(this.random()*(max-min+1)+min);
+}
+class oAuth2
+{
+	constructor(existAuth){
+		if (typeof(existAuth) == "object")
+		{
+			Object.assign(this, existAuth);
+		}else
+		{
+			this.code_verifier = this.random_code_verifier();
+			this.login_time = null;
+			this.authorization_code = null;
+			this.auth_data = null;
+		}
+	}
+	random_code_verifier()
+	{
+		const len = Math.randomInteger(43, 128); //产生43~128位
+	
+		const unreservedChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+		const charsLength = unreservedChars.length;
+	
+		let array = new Uint8Array(len);
+		window.crypto.getRandomValues(array); //获取符合密码学要求的安全的随机值
+	
+		array = array.map(x => unreservedChars.charCodeAt(x % charsLength)); //将0~255转换到可选字符位置区间
+		const radomCode = String.fromCharCode(...array); //将数字变回字符串
+	
+		return radomCode;
+	}
+	get_code_challenge(code_challenge_method = "S265")
+	{
+		if (code_challenge_method = "S265")
+		{
+			const bytes = CryptoJS.SHA256(this.code_verifier);
+			const base64 = bytes.toString(CryptoJS.enc.Base64);
+			const base64url = this.base64_to_base64url(base64);
+			return base64url;
+		}
+		else
+		{
+			return this.code_verifier;
+		}
+	}
+	base64_to_base64url(base64)
+	{
+		let base64url = base64;
+		base64url = base64url.replace(/\=/g,'');
+		base64url = base64url.replace(/\+/g,'-');
+		base64url = base64url.replace(/\//g,'_');
+		return base64url;
+	}
+	get_login_url()
+	{
+		const loginURL = new URL("https://app-api.pixiv.net/web/v1/login");
+		loginURL.searchParams.set("code_challenge", this.get_code_challenge());
+		loginURL.searchParams.set("code_challenge_method","S256");
+		loginURL.searchParams.set("client","pixiv-android");
+		return loginURL;
+	}
+	login(authorization_code, options = {})
+	{
+		this.authorization_code = authorization_code;
+
+		const thisAuth = this;
+		const postObj = new URLSearchParams();
+		postObj.set("code_verifier", thisAuth.code_verifier);
+		postObj.set("code", thisAuth.authorization_code);
+		postObj.set("grant_type","authorization_code");
+		postObj.set("redirect_uri","https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback");
+		postObj.set("client_id", client_id);//安卓某个版本的数据
+		postObj.set("client_secret", client_secret);//安卓某个版本的数据
+		postObj.set("include_policy","true");
+
+		console.log(authURL);
+		//登陆的Auth API
+		GM_xmlhttpRequest({
+			url: authURL,
+			method: "post",
+			responseType: "text",
+			headers: new HeadersObject(),
+			data: postObj.toString(),
+			onload: function(response) {
+				let jo;
+				try {
+					jo = JSON.parse(response.responseText);
+				} catch (e) {
+					console.error("登录失败，返回可能不是JSON格式，或本程序异常。", e, response);
+					if(options.onload_notJson) options.onload_notJson(response.responseText);
+					return;
+				}
+	
+				if (jo)
+				{
+					if (jo.has_error || jo.errors) {
+						console.error("登录失败，返回错误消息", jo);
+						if(options.onload_hasError) options.onload_hasError(jo);
+						return;
+					} else { //登陆成功
+						thisAuth.auth_data = jo;
+						thisAuth.login_time = new Date().getTime();
+						console.info("登陆成功", jo);
+
+						if(options.onload) options.onload(jo);
+						return;
+					}
+				}
+			},
+			onerror: function(response) {
+				console.error("登录失败，网络请求发生错误", response);
+				if(options.onerror) options.onerror(response);
+				return;
+			}
+		});
+	}
+	save()
+	{
+		GM_setValue("pubd-oauth", this);
+	}
+}
 //一个认证方案
 var Auth = function (username, password, remember) {
 	this.response = null;
-	this.needlogin = false;
 	this.username = username || null;
 	this.password = password || null;
 	this.save_account = remember || false,
@@ -591,7 +714,7 @@ var Dialog = function(caption, classname, id) {
 	//构建标题栏按钮
 	function buildDlgCptBtn(text, classname, callback) {
 		if (!callback) classname = "";
-		var btn = document.createElement("a");
+		const btn = document.createElement("a");
 		btn.className = "dlg-cpt-btn" + (classname ? " " + classname : "");
 		if (typeof(callback) == "string") {
 			btn.target = "_blank";
@@ -1330,58 +1453,75 @@ function buildbtnMenu() {
 
 //构建设置对话框
 function buildDlgConfig() {
-	var dlg = new Dialog("PUBD选项 v" + scriptVersion, "pubd-config", "pubd-config");
+	const dlg = new Dialog("PUBD选项 v" + scriptVersion, "pubd-config", "pubd-config");
 	dlg.cptBtns.add("反馈", "dlg-btn-debug", "https://github.com/Mapaler/PixivUserBatchDownload/issues");
 	dlg.cptBtns.add("?", "dlg-btn-help", "https://github.com/Mapaler/PixivUserBatchDownload/wiki");
 	dlg.token_ani = null; //储存Token进度条动画句柄
-	var dlgc = dlg.content;
 
-	var dl = document.createElement("dl");
-	dlgc.appendChild(dl);
-	var dt = document.createElement("dt");
-	dl.appendChild(dt);
-	var dd = document.createElement("dd");
-	dl.appendChild(dd);
+	var dl = dlg.content.appendChild(document.createElement("dl"));
 
-	var frm = new Frame("Pixiv访问权限", "pubd-token");
-	dd.appendChild(frm);
+	var dt = dl.appendChild(document.createElement("dt"));
 
-	var dl_t = document.createElement("dl");
-	frm.content.appendChild(dl_t);
+	var dd = dl.appendChild(document.createElement("dd"));
 
-	var dd = document.createElement("dd");
-	dl_t.appendChild(dd);
-	var checkbox = new LabelInput("开启登陆功能，解除浏览限制", "pubd-needlogin", "pubd-needlogin", "checkbox", "1", true);
-	dlg.needlogin = checkbox.input;
-	dd.appendChild(checkbox);
+	const frmLogin = dlg.frmLogin = dd.appendChild(new Frame("Pixiv访问权限", "pubd-token"));
 
-	var dd = document.createElement("dd");
-	dl_t.appendChild(dd);
-	dd.className = "pubd-token-info";
-	dlg.token_info = dd;
+	var dl_t = frmLogin.content.appendChild(document.createElement("dl"));
 
-	var a_setting = document.createElement("a");
-	a_setting.className = "pubd-browsing-restriction";
-	a_setting.href = "http://www.pixiv.net/setting_user.php#over-18";
-	a_setting.target = "_blank";
-	a_setting.innerHTML = "设置我的账户浏览限制";
-	dd.appendChild(a_setting);
+	var dd_t = dl_t.appendChild(document.createElement("dd"));
 
-	var progress = new Progress("pubd-token-expires", true);
-	dlg.token_expires = progress;
-	dd.appendChild(progress);
+	var ul_t = dd_t.appendChild(document.createElement("ul"));
+	ul_t.className = "horizontal-list";
+	var li_t = ul_t.appendChild(document.createElement("li"));
+	const userAvatar = li_t.appendChild(document.createElement("div"));
+	userAvatar.className = "user-avatar";
+	userAvatar.img = userAvatar.appendChild(document.createElement("img"));
+	userAvatar.img.className = "avatar-img";
+
+	var li_t = ul_t.appendChild(document.createElement("li"));
+	const userName = li_t.appendChild(document.createElement("div"));
+	userName.className = "user-name";
+	const userAccount = li_t.appendChild(document.createElement("div"));
+	userAccount.className = "user-account";
+
+	var li_t = ul_t.appendChild(document.createElement("li"));
+	const btnLogin = li_t.appendChild(document.createElement("button"));
+	btnLogin.className = "pubd-tologin";
+	btnLogin.appendChild(document.createTextNode("登陆/注销"));
+	btnLogin.onclick = function(){
+		if (frmLogin.classList.contains("logged-in"))
+		{
+			//注销
+			//frmLogin.classList.remove("logged-in");
+		}else
+		{
+			//登陆
+			pubd.dialog.login.show(
+				(document.body.clientWidth - 370)/2,
+				window.pageYOffset+200
+			);
+		}
+	}
+
+	dl_t.appendChild(document.createElement("hr"));
+
+	var dt = dl_t.appendChild(document.createElement("dt"));
+	dt.appendChild(document.createTextNode("许可剩余时间"));
+
+	const tokenInfo = dlg.tokenInfo = dl_t.appendChild(document.createElement("dd"));
+	tokenInfo.className = "pubd-token-info";
+
+	const progress = dlg.tokenExpires = tokenInfo.appendChild(new Progress("pubd-token-expires", true));
+
 	//开始动画
 	dlg.start_token_animate = function() {
-			//if (!dlg.classList.contains("display-none"))
-			//{
-			dlg.stop_token_animate();
+			this.stop_token_animate();
 			requestAnimationFrame(token_animate);
-			dlg.token_ani = setInterval(function() { requestAnimationFrame(token_animate); }, 1000);
-			//}
+			this.token_ani = setInterval(function() { requestAnimationFrame(token_animate); }, 1000);
 		};
 		//停止动画
 	dlg.stop_token_animate = function() {
-			clearInterval(dlg.token_ani);
+			clearInterval(this.token_ani);
 		};
 		//动画具体实现
 	function token_animate() {
@@ -1399,17 +1539,12 @@ function buildDlgConfig() {
 		//console.log("Token有效剩余" + differ + "秒"); //检测动画后台是否停止
 	}
 
-	var ipt = document.createElement("input");
-	ipt.type = "button";
-	ipt.className = "pubd-tologin";
-	ipt.value = "账户登陆";
-	ipt.onclick = function(e) {
-		pubd.dialog.login.show(
-			(document.body.clientWidth - 370)/2,
-			window.pageYOffset+200
-		);
+	const btnRefresh = tokenInfo.appendChild(document.createElement("button"));
+	btnRefresh.className = "pubd-refresh-token";
+	btnRefresh.appendChild(document.createTextNode("刷新许可"));
+	btnRefresh.onclick = function() {
+		//刷新token
 	};
-	dd.appendChild(ipt);
 
 	//“通用分析选项”窗口选项
 	var dt = document.createElement("dt");
@@ -1982,148 +2117,118 @@ function reLogin(onload_suceess_Cb,onerror_Cb)
 //构建登陆对话框
 function buildDlgLogin() {
 	var dlg = new Dialog("登陆账户", "pubd-login", "pubd-login");
+	dlg.newAuth = null;
 
-	var dlgc = dlg.content;
-	//Logo部分
-	var logo_box = document.createElement("div");
-	logo_box.className = "logo-box";
-	var logo = document.createElement("div");
-	logo.className = "logo";
-	logo_box.appendChild(logo);
-	var catchphrase = document.createElement("div");
-	catchphrase.className = "catchphrase";
-	catchphrase.innerHTML = "登陆获取你的账户许可";
-	logo_box.appendChild(catchphrase);
-	dlgc.appendChild(logo_box);
-	//实际登陆部分
-	var container_login = document.createElement("div");
-	container_login.className = "container-login";
+	var frm = dlg.content.appendChild(new Frame("1.做好获取 APP 登陆连接的准备", "pubd-auth-help"));
+	const aHelp = frm.content.appendChild(document.createElement("a"));
+	aHelp.appendChild(document.createTextNode("如何获取 APP 登陆连接？"));
+	aHelp.target = "_blank";
+	aHelp.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki";
 
-	var input_field_group = document.createElement("div");
-	input_field_group.className = "input-field-group";
-	container_login.appendChild(input_field_group);
-	var input_field1 = document.createElement("div");
-	input_field1.className = "input-field";
-	var pid = document.createElement("input");
-	pid.type = "text";
-	pid.className = "pubd-username";
-	pid.name = "pubd-username";
-	pid.id = pid.name;
-	pid.placeholder = "邮箱地址/pixiv ID";
-	dlg.pid = pid;
-	input_field1.appendChild(pid);
-	input_field_group.appendChild(input_field1);
-	var input_field2 = document.createElement("div");
-	input_field2.className = "input-field";
-	var pass = document.createElement("input");
-	pass.type = "password";
-	pass.className = "pubd-password";
-	pass.name = "pubd-password";
-	pass.id = pass.name;
-	pass.placeholder = "密码";
-	dlg.pass = pass;
-	input_field2.appendChild(pass);
-	input_field_group.appendChild(input_field2);
+	var frm = dlg.content.appendChild(new Frame("2.进行官方 APP 登录", "pubd-auth-weblogin"));
+	const aLogin = frm.content.appendChild(document.createElement("a"));
+	aLogin.appendChild(document.createTextNode("访问官方登陆页面"));
+	aLogin.className = "pubd-login-official-link";
+	aLogin.target = "_blank";
 
-	var error_msg_list = document.createElement("ul"); //登陆错误信息
-	error_msg_list.className = "error-msg-list";
-	container_login.appendChild(error_msg_list);
+	var frm = dlg.content.appendChild(new Frame("3.填写 APP 登陆连接", "pubd-auth-applogin"));
+	dlg.content.appendChild(frm);
 
-	var submit = document.createElement("button");
-	submit.className = "submit";
-	submit.innerHTML = "登陆";
-	container_login.appendChild(submit);
+	var div = frm.content.appendChild(document.createElement("div"));
+	const pixivLink = div.appendChild(document.createElement("input"));
+	pixivLink.type = "url";
+	pixivLink.className = "pubd-pixiv-app-link";
+	pixivLink.placeholder = "例如：pixiv://account/login?code=xxxxxx&via=login";
 
-	var signup_form_nav = document.createElement("div");
-	signup_form_nav.className = "signup-form-nav";
-	container_login.appendChild(signup_form_nav);
-	var checkbox = new LabelInput("记住账号密码（警告：明文保存于本地）", "pubd-remember", "pubd-remember", "checkbox", "1", true);
-	dlg.remember = checkbox.input;
-	signup_form_nav.appendChild(checkbox);
-	dlgc.appendChild(container_login);
-
-	var frm = new Frame("登录认证", "pubd-auth-weblogin");
-	dlgc.appendChild(frm);
-
-
-	var frm = new Frame("获取通行证", "pubd-auth-applogin");
-	dlgc.appendChild(frm);
-	/*var frm = new Frame("进行登录", "pubd-token");
-	dd.appendChild(frm);
-
-	var dl_t = document.createElement("dl");
-	frm.content.appendChild(dl_t);
-	
-	const code_verifier = "fff0316026eb9cbfe037261650772377";
-const base64url = require('base64-url');
-var CryptoJS = require("crypto-js");
-var bytes = CryptoJS.SHA256(code_verifier);
-console.log(bytes.toString(CryptoJS.enc.Base64));
-	
-	
-	*/
-
-
-
-	submit.onclick = function() {
-			dlg.error.replace("登陆中···");
-
-			pubd.auth.newAccount(pid.value, pass.value, dlg.remember.checked);
-
-			pubd.auth.login(
-				function(jore) { //onload_suceess_Cb
-					dlg.error.replace("登陆成功");
-					pubd.dialog.config.start_token_animate();
-				},
-				function(jore) { //onload_haserror_Cb //返回错误消息
-					dlg.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
-				},
-				function(re) { //onload_notjson_Cb //返回不是JSON
-					dlg.error.replace("返回不是JSON，或本程序异常");
-				},
-				function(re) { //onerror_Cb //网络请求发生错误
-					dlg.error.replace("网络请求发生错误");
+	const btnLogin = div.appendChild(document.createElement("button"));
+	btnLogin.className = "pubd-login-auth";
+	btnLogin.appendChild(document.createTextNode("登陆"));
+	//登陆按钮
+	btnLogin.onclick = function() {
+		if (/^pixiv:\/\//i.test(pixivLink.value))
+		{
+			const loginLink = new URL(pixivLink.value);
+			const authorization_code = loginLink.searchParams.get("code");
+			if (authorization_code)
+			{
+				//使用token登陆
+				dlg.error.replace("登陆中···");
+				const options = {
+					onload:function(jore) { //onload_suceess_Cb
+						dlg.error.replace("登陆成功");
+						console.log(jore, dlg.newOAuth);
+						//pubd.dialog.config.start_token_animate();
+					},
+					onload_hasError:function(jore) { //onload_haserror_Cb //返回错误消息
+						dlg.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
+					},
+					onload_notJson:function(re) { //onload_notjson_Cb //返回不是JSON
+						dlg.error.replace(["服务器返回不是 JSON 格式", re]);
+					},
+					onerror:function(re) { //onerror_Cb //网络请求发生错误
+						dlg.error.replace("网络请求发生错误");
+					},
 				}
-			);
-		};
-		//添加错误功能
+				dlg.newOAuth.login(authorization_code, options);
+			}else
+			{
+				alert("PUBD：登陆链接中未找到 code");
+			}
+		}else
+		{
+			alert("PUBD：输入的链接格式不正确");
+		}
+	};
+
+	var error_msg_list = dlg.error = dlg.content.appendChild(document.createElement("ul")); //登陆错误信息
+	error_msg_list.className = "error-msg-list";
+	//添加错误显示功能
 	error_msg_list.clear = function() {
 		this.innerHTML = ""; //清空当前信息
 	};
-	error_msg_list.add = function(text) {
-		var error_msg_list_item = document.createElement("li");
-		error_msg_list_item.className = "error-msg-list-item";
-		error_msg_list_item.innerHTML = text;
-		this.appendChild(error_msg_list_item);
-	};
-	error_msg_list.adds = function(arr) {
-		arr.forEach(
-			function(item) {
-				error_msg_list.add(item);
-			}
-		);
-	};
-	error_msg_list.replace = function(text) {
-		this.clear();
-		if (typeof(text) == "object") //数组
-			this.adds(text);
+	
+	error_msg_list.add = function(arg) {
+		function addLine(str)
+		{
+			const li = document.createElement("li");
+			li.className = "error-msg-list-item";
+			li.appendChild(document.createTextNode(str));
+			return li;
+		}
+		const fragment = document.createDocumentFragment();
+		if (Array.isArray(arg)) //数组
+		{
+			arg.forEach(str=>fragment.appendChild(addLine(str)));
+		}
 		else //单文本
-			this.add(text);
+		{
+			fragment.appendChild(addLine(arg));
+		}
+		this.appendChild(fragment);
 	};
-	dlg.error = error_msg_list;
+
+	error_msg_list.replace = function(arg) {
+		this.clear();
+		this.add(arg);
+	};
+
 	//窗口关闭
 	dlg.close = function() {
-		pubd.auth.newAccount(pid.value, pass.value, dlg.remember.checked);
-		pubd.auth.save();
+		if (dlg.newOAuth.auth_data)
+		{
+			pubd.oAuth = dlg.newOAuth;
+			pubd.oAuth.save();
+		}
 	};
 	//关闭窗口按钮
 	dlg.cptBtns.close.addEventListener("click", dlg.close);
 	//窗口初始化
 	dlg.initialise = function() {
-		dlg.remember.checked = pubd.auth.save_account;
-		pid.value = pubd.auth.username || "";
-		pass.value = pubd.auth.password || "";
 		error_msg_list.clear();
+
+		//每次打开这个窗口，都创建一个新的认证
+		dlg.newOAuth = new oAuth2();
+		aLogin.href = dlg.newOAuth.get_login_url();
 	};
 	return dlg;
 }
@@ -3703,13 +3808,16 @@ function Main(touch) {
 	});
 
 	//预先添加所有视窗，即便没有操作按钮也能通过菜单打开
+	let fragment = document.createDocumentFragment();
+	pubd.dialog.config = fragment.appendChild(buildDlgConfig());
+	pubd.dialog.login = fragment.appendChild(buildDlgLogin());
+	pubd.dialog.downthis = fragment.appendChild(buildDlgDownThis(thisPageUserid));
+	pubd.dialog.downillust = fragment.appendChild(buildDlgDownIllust(thisPageIllustid));
+	pubd.dialog.importdata = fragment.appendChild(buildDlgImportData());
+	pubd.dialog.multiple = fragment.appendChild(buildDlgMultiple());
+
 	let btnDlgInsertPlace = document.body; //视窗插入点，直接插入到body就行
-	pubd.dialog.config = btnDlgInsertPlace.appendChild(buildDlgConfig());
-	pubd.dialog.login = btnDlgInsertPlace.appendChild(buildDlgLogin());
-	pubd.dialog.downthis = btnDlgInsertPlace.appendChild(buildDlgDownThis(thisPageUserid));
-	pubd.dialog.downillust = btnDlgInsertPlace.appendChild(buildDlgDownIllust(thisPageIllustid));
-	pubd.dialog.importdata = btnDlgInsertPlace.appendChild(buildDlgImportData());
-	pubd.dialog.multiple = btnDlgInsertPlace.appendChild(buildDlgMultiple());
+	btnDlgInsertPlace.appendChild(fragment);
 	
 	//添加Tampermonkey扩展菜单内的入口
 	GM_registerMenuCommand("PUBD-选项", function(){
