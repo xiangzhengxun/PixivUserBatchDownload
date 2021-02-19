@@ -505,6 +505,15 @@ to {background-position-x:calc(100% + 100px),0,0,0;}
 {/*用户信息框文字标题*/
 	background-color:#EEF;
 }
+.horizontal-list
+{ /*垂直排列的列表*/
+	padding: 0;
+	list-style: none;
+}
+.horizontal-list>li
+{
+	display: inline-block;
+}
 /*▼选项对话框相关*/
 .pubd-config
 {/*选项对话框宽度*/
@@ -524,26 +533,77 @@ border: 1px solid #becad7;
 .pubd-config .pubd-icon
 {/*选项对话框图标*/
 }
-.pubd-tologin,.pubd-downscheme-new,.pubd-downscheme-remove,.pubd-rpcchk,.pubd-reset,.pubd-save
+.pubd-tologin,
+.pubd-refresh-token,
+.pubd-downscheme-new,
+.pubd-downscheme-remove,
+.pubd-rpcchk,
+.pubd-reset,
+.pubd-save
 {/*选项面板按钮*/
 	width: 80px;
 	margin-left: 5px;
 	box-sizing: border-box;
 }
-.pubd-browsing-restriction
-{/*访问P站设置的链接*/
-    text-decoration:underline !important;
+
+.user-avatar
+{
+	border-radius: 50%;
+	overflow: hidden;
+	width: 40px;
+	height: 40px;
 }
-.pubd-config
-{/*设置初始宽度与高度*/
-	/*width: 400px;
-	height: 700px;*/
+.user-account
+{
+	color: rgba(0, 0, 0, 0.32);
+}
+.user-account::before
+{
+	content: "@";
+}
+.avatar-img
+{
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	object-position: center top;
+}
+.pubd-token .horizontal-list>li
+{
+	margin-right: 10px;
+	vertical-align: text-bottom;
+}
+.pubd-token .horizontal-list>li:last-of-type
+{
+	margin-right: 0;
+}
+.pubd-token .horizontal-list>li:nth-of-type(1)
+{
+	width: 40px;
+}
+.pubd-token .horizontal-list>li:nth-of-type(2)
+{
+	width: calc(100% - 40px - 80px - 5px - 20px);
+}
+.pubd-tologin
+{
+	height: 40px;
+}
+.pubd-token .horizontal-list>li:nth-of-type(3)
+{
+	text-align: center;
+	width: 80px;
 }
 .pubd-config .pubd-token-expires
 {/*token进度条*/
 	top: 5px;
-	width: calc(100% - 87px);
+	width: calc(100% - 85px);
 }
+.pubd-config .pubd-refresh-token
+{
+	height: 24px;
+}
+
 .pubd-config .pubd-frm-downthis label,
 .pubd-config .pubd-frm-clicknotification label,
 .pubd-config .pubd-frm-termwisetype label
@@ -558,7 +618,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 413px);
+	height: calc(100% - 430px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/
@@ -597,7 +657,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-textout-bar
 {/*文本输出模式格式-dd*/
-	height: calc(100% - 360px);
+	height: calc(100% - 340px);
 	min-height: 32px;
 }
 .pubd-config .pubd-mask-list-bar
