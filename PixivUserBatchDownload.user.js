@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.14.120
+// @version		5.15.121
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -101,11 +101,13 @@ const pubd = { //储存程序设置
 	dialog: { //窗口们的指针
 		config: null, //设置窗口
 		login: null, //登陆窗口
+		refresh_token: null, //刷新token窗口
 		downthis: null, //下载当前窗口
 		downillust: null, //下载当前作品窗口
+		importdata: null, //导入数据窗口（还未开发）
+		multiple: null, //多画师批量下载窗口（还未开发）
 	},
 	oAuth: null, //储存账号密码
-	auth: null, //储存账号密码
 	downSchemes: [], //储存下载方案
 	downbreak: false, //是否停止发送Aria2的flag
 	ajaxTimes: 0, //已经从P站获取信息的次数（用来判断是否要减速）
@@ -121,8 +123,9 @@ var mainDiv = null;
 const mainDivSearchCssSelectorArray = [
 	'#spa-contents .user-stats', //手机版用户页
 	'#spa-contents .user-details-card', //手机版作品页
-	':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页
-	':scope>div>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页，版本2
+	':scope>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页，版本3
+	':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页，版本2
+	':scope>div>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页
 	':scope>div>div>aside>section', //作品页
 	':scope>div>div:nth-of-type(2)>div>div', //关注页
 ];
@@ -344,7 +347,7 @@ class UsersStarList{
 }
 //一个本程序使用的headers数据
 class HeadersObject{
-	constructor(obj){
+	constructor(importObj){
 		const header = this;
 		const timeStr = new Date().toPixivString();
 		header["App-OS"] = "android";
@@ -355,10 +358,8 @@ class HeadersObject{
 		header["Referer"] = Referer; // jshint ignore:line
 		header["X-Client-Hash"] = CryptoJS.MD5(timeStr + X_Client_Hash_Salt).toString();
 		header["X-Client-Time"] = timeStr;
-		if (typeof(obj) == "object")
-		{
-			Object.entries(obj).forEach(entry=> header[entry[0]] = entry[1]);
-		}
+
+		if (typeof(obj) == "object") Object.assign(this, importObj);
 	}
 }
 
@@ -444,11 +445,10 @@ class oAuth2
 		postObj.set("code", authorization_code);
 		postObj.set("grant_type","authorization_code");
 		postObj.set("redirect_uri","https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback");
-		postObj.set("client_id", client_id);//安卓某个版本的数据
-		postObj.set("client_secret", client_secret);//安卓某个版本的数据
+		postObj.set("client_id", client_id);
+		postObj.set("client_secret", client_secret);
 		postObj.set("include_policy","true");
 
-		console.log(authURL);
 		//登陆的Auth API
 		GM_xmlhttpRequest({
 			url: authURL,
@@ -489,9 +489,55 @@ class oAuth2
 			}
 		});
 	}
-	refresh()
+	refresh_token(options = {})
 	{
+		const thisAuth = this;
+		const postObj = new URLSearchParams();
+		postObj.set("client_id", client_id);
+		postObj.set("client_secret", client_secret);
+		postObj.set("grant_type","refresh_token");
+		postObj.set("refresh_token",thisAuth.auth_data.refresh_token);
+		postObj.set("include_policy","true");
 
+		//登陆的Auth API
+		GM_xmlhttpRequest({
+			url: authURL,
+			method: "post",
+			responseType: "text",
+			headers: new HeadersObject(),
+			data: postObj.toString(),
+			onload: function(response) {
+				let jo;
+				try {
+					jo = JSON.parse(response.responseText);
+				} catch (e) {
+					console.error("刷新Token失败，返回可能不是JSON格式，或本程序异常。", e, response);
+					if(options.onload_notJson) options.onload_notJson(response.responseText);
+					return;
+				}
+	
+				if (jo)
+				{
+					if (jo.has_error || jo.errors) {
+						console.error("刷新Token失败，返回错误消息", jo);
+						if(options.onload_hasError) options.onload_hasError(jo);
+						return;
+					} else { //登陆成功
+						thisAuth.auth_data = jo;
+						thisAuth.login_time = new Date().getTime();
+						console.info("刷新Token成功", jo);
+
+						if(options.onload) options.onload(jo);
+						return;
+					}
+				}
+			},
+			onerror: function(response) {
+				console.error("刷新Token失败，网络请求发生错误", response);
+				if(options.onerror) options.onerror(response);
+				return;
+			}
+		});
 	}
 	save()
 	{
@@ -856,7 +902,7 @@ var Frame = function(title, classname) {
 };
 
 //创建带Label的Input类
-var LabelInput = function(text, classname, name, type, value, beforeText, title) {
+const LabelInput = function(text, classname, name, type, value, beforeText, title) {
 	var label = document.createElement("label");
 	if (text) label.appendChild(document.createTextNode(text));
 	label.className = classname;
@@ -875,56 +921,68 @@ var LabelInput = function(text, classname, name, type, value, beforeText, title)
 	return label;
 };
 
-//创建进度条类
-var Progress = function(classname, align_right) {
-	//强制保留pos位小数，如：2，会在2后面补上00.即2.00
-	function toDecimal2(num, pos) {
-		var f = parseFloat(num);
-		if (isNaN(f)) {
-			return false;
+//构建错误信息显示模块
+const ErrorMsg = function() {
+	const error_msg_list = document.createElement("ul");
+	error_msg_list.className = "error-msg-list";
+	//添加错误显示功能
+	error_msg_list.clear = function() {
+		this.innerHTML = ""; //清空当前信息
+	};
+	
+	error_msg_list.add = function(arg) {
+		function addLine(str)
+		{
+			const li = document.createElement("li");
+			li.className = "error-msg-list-item";
+			li.appendChild(document.createTextNode(str));
+			return li;
 		}
-		f = Math.round(num * Math.pow(10, pos)) / Math.pow(10, pos);
-		var s = f.toString();
-		var rs = s.indexOf('.');
-		if (pos > 0 && rs < 0) {
-			rs = s.length;
-			s += '.';
+		const fragment = document.createDocumentFragment();
+		if (Array.isArray(arg)) //数组
+		{
+			arg.forEach(str=>fragment.appendChild(addLine(str)));
 		}
-		while (s.length <= rs + pos) {
-			s += '0';
+		else //单文本
+		{
+			fragment.appendChild(addLine(arg));
 		}
-		return s;
-	}
+		this.appendChild(fragment);
+	};
 
-	var progress = document.createElement("div");
+	error_msg_list.replace = function(arg) {
+		this.clear();
+		this.add(arg);
+	};
+	return error_msg_list;
+}
+
+//创建进度条类
+const Progress = function(classname, align_right) {
+	const progress = document.createElement("div");
 	progress.className = "pubd-progress" + (classname ? " " + classname : "");
 	if (align_right) progress.classList.add("pubd-progress-right");
 
 	progress.scaleNum = 0;
 
-	var bar = progress.appendChild(document.createElement("div"));
+	const bar = progress.appendChild(document.createElement("div"));
 	bar.className = "pubd-progress-bar";
 
-	var txt = progress.appendChild(document.createElement("span"));
+	const txt = progress.appendChild(document.createElement("span"));
 	txt.className = "pubd-progress-text";
 
-	progress.set = function(scale, pos, str) {
-		if (pos == undefined) pos = 2;
-		var percentStr = toDecimal2((scale * 100), pos) + "%";
-		scale = scale > 1 ? 1 : (scale < 0 ? 0 : scale);
-		this.scaleNum = scale;
+	progress.set = function(scale, pos = 2, str = null) {
+		const percentStr = (scale * 100).toFixed(pos) + "%"; //百分比的数字
+		this.scaleNum = Math.min(Math.max(scale, 0), 1);
 		bar.style.width = percentStr;
-		if (str)
-			txt.innerHTML = str;
-		else
-			txt.innerHTML = percentStr;
+		txt.textContent = str || percentStr;
 	};
 	Object.defineProperty(progress , "scale", {
 		get() {
 			return this.scaleNum;
 		},
 		set(num) {
-			progress.set(num);
+			this.set(num);
 		}
 	});
 
@@ -1155,21 +1213,38 @@ function getValueDefault(name, defaultValue) {
 }
 //加入了Auth的网络请求函数
 function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb, dlog=str=>str) {
-	var headersObj = new HeadersObject();
-	var auth = pubd.auth;
-	if (auth.needlogin) {
-		var token_type = auth.response.token_type.substring(0, 1).toUpperCase() + auth.response.token_type.substring(1);
-		headersObj.Authorization = token_type + " " + auth.response.access_token;
+	const headersObj = new HeadersObject();
+	const auth = pubd.oAuth.auth_data;
+	if (auth) {
+		const token_type = auth.token_type[0].toUpperCase() + auth.token_type.substring(1);
+		headersObj.Authorization = token_type + " " + auth.access_token;
 	} else {
-		console.info(dlog("尝试非登录模式获取信息"));
+		console.info(dlog("未登录账户，尝试以非登录状态获取信息"));
 	}
+
+	//重新登陆
+	function reLogin(onload_suceess_Cb,onerror_Cb)
+	{
+		pubd.dialog.refresh_token.show(
+			(document.body.clientWidth - 370)/2,
+			window.pageYOffset+300,
+			{
+				onload: ()=>{
+					onload_suceess_Cb();
+					pubd.dialog.refresh_token.hide();
+				},
+				onerror: onerror_Cb,
+			}
+		);
+	}
+
 	GM_xmlhttpRequest({
 		url: url,
 		method: "get",
 		responseType: "text",
 		headers: headersObj,
 		onload: function(response) {
-			var jo;
+			let jo;
 			try {
 				jo = JSON.parse(response.responseText);
 			} catch (e) {
@@ -1187,10 +1262,19 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 					if (jo.error.message.includes("Error occurred at the OAuth process.")) {
 						if (auth.needlogin) {
 							console.warn(dlog("授权 Token 过期，或其他授权相关错误"),jo);
-							reLogin(()=>{
-									xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
-								},
-								onload_hasError_Cb
+							//自动重新登陆
+							pubd.dialog.refresh_token.show(
+								(document.body.clientWidth - 370)/2,
+								window.pageYOffset+300,
+								{
+									onload: ()=>{
+										pubd.dialog.refresh_token.hide();
+										xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb);
+									},
+									onload_hasError: onload_hasError_Cb,
+									onload_notJson: onload_notJson_Cb,
+									onerror: onerror_Cb,
+								}
 							);
 						} else {
 							console.info(dlog("非登录模式尝试获取信息失败"),jo);
@@ -1455,6 +1539,47 @@ function buildbtnMenu() {
 	return menu;
 }
 
+//构建Token剩余时间进度条
+function buildProgressToken()
+{
+	const progress = new Progress("pubd-token-expires", true);
+	progress.animateHook = null; //储存Token进度条动画句柄
+	progress.token_animate = function(){
+		const _this = progress;
+		if (!pubd.oAuth.auth_data)
+		{
+			_this.set(0, 2, "尚未登陆");
+			clearInterval(_this.animateHook);
+			return;
+		}
+		const nowdate = new Date();
+		const olddate = new Date(pubd.oAuth.login_time);
+		const expires_in = parseInt(pubd.oAuth.auth_data.expires_in);
+		const differ = expires_in - (nowdate - olddate) / 1000;
+		if (differ > 0) {
+			const scale = differ / expires_in;
+			_this.set(scale, 2, "Token有效剩余 " + parseInt(differ) + " 秒");
+		} else {
+			_this.set(0, 2, "Token已失效，请刷新");
+			clearInterval(_this.animateHook);
+		}
+		//console.log("Token有效剩余" + differ + "秒"); //检测动画后台是否停止
+	}
+	//开始动画
+	progress.start_token_animate = function(){
+		const _this = progress;
+		_this.stop_token_animate();
+		requestAnimationFrame(_this.token_animate);
+		_this.animateHook = setInterval(()=>requestAnimationFrame(_this.token_animate), 1000);
+	};
+	//停止动画
+	progress.stop_token_animate = function(){
+		const _this = progress;
+		clearInterval(_this.animateHook);
+	};
+	return progress;
+}
+
 //构建设置对话框
 function buildDlgConfig() {
 	const dlg = new Dialog("PUBD选项 v" + scriptVersion, "pubd-config", "pubd-config");
@@ -1518,39 +1643,19 @@ function buildDlgConfig() {
 	const tokenInfo = dlg.tokenInfo = dl_t.appendChild(document.createElement("dd"));
 	tokenInfo.className = "pubd-token-info";
 
-	const progress = dlg.tokenExpires = tokenInfo.appendChild(new Progress("pubd-token-expires", true));
+	const progress = dlg.tokenExpires = tokenInfo.appendChild(buildProgressToken());
 
-	//动画具体实现
-	function token_animate() {
-		if (!pubd.oAuth.login_time)
-		{
-			progress.set(0, 2, "尚未登陆");
-			clearInterval(dlg.token_ani);
-			return;
-		}
-		const nowdate = new Date();
-		const olddate = new Date(pubd.oAuth.login_time);
-		const expires_in = parseInt(pubd.oAuth.auth_data.expires_in);
-		const differ = expires_in - (nowdate - olddate) / 1000;
-		if (differ > 0) {
-			const scale = differ / expires_in;
-			progress.set(scale, 2, "Token有效剩余 " + parseInt(differ) + " 秒");
-		} else {
-			progress.set(0, 2, "Token已失效，请刷新");
-			clearInterval(dlg.token_ani);
-		}
-		//console.log("Token有效剩余" + differ + "秒"); //检测动画后台是否停止
-	}
-	//开始动画
-	function start_token_animate() {
-		stop_token_animate();
-		requestAnimationFrame(token_animate);
-		dlg.token_ani = setInterval(()=>requestAnimationFrame(token_animate), 1000);
+	const btnRefresh = tokenInfo.appendChild(document.createElement("button"));
+	btnRefresh.className = "pubd-open-refresh-token";
+	btnRefresh.appendChild(document.createTextNode("刷新许可"));
+	btnRefresh.onclick = function() {
+		//刷新许可
+		pubd.dialog.refresh_token.show(
+			(document.body.clientWidth - 370)/2,
+			window.pageYOffset+300
+		);
 	};
-	//停止动画
-	function stop_token_animate() {
-		clearInterval(dlg.token_ani);
-	};
+
 	dlg.refreshLoginState = function() {
 		if (!pubd.oAuth) return;
 		const auth_data = pubd.oAuth.auth_data;
@@ -1561,7 +1666,7 @@ function buildDlgConfig() {
 			userName.textContent = auth_data.user.name;
 			userAccount.textContent = auth_data.user.account;
 			btnLogin.textContent = "退出";
-			start_token_animate();
+			progress.start_token_animate();
 			btnRefresh.disabled = false;
 			dlg.frmLogin.classList.add("logged-in");
 		}else
@@ -1571,19 +1676,12 @@ function buildDlgConfig() {
 			userName.textContent = "未登录";
 			userAccount.textContent = "Not logged in";
 			btnLogin.textContent = "登陆";
-			token_animate();
-			stop_token_animate();
+			progress.token_animate();
+			progress.stop_token_animate();
 			btnRefresh.disabled = true;
 			dlg.frmLogin.classList.remove("logged-in");
 		}
 	}
-
-	const btnRefresh = tokenInfo.appendChild(document.createElement("button"));
-	btnRefresh.className = "pubd-refresh-token";
-	btnRefresh.appendChild(document.createTextNode("刷新许可"));
-	btnRefresh.onclick = function() {
-		//刷新token
-	};
 
 	//“通用分析选项”窗口选项
 	var dt = document.createElement("dt");
@@ -2046,8 +2144,6 @@ function buildDlgConfig() {
 
 	//保存设置函数
 	dlg.save = function() {
-		pubd.auth.needlogin = dlg.needlogin.checked;
-		pubd.auth.save();
 
 		//作品发送完成后，如何处理通知
 		var noticeType = 0;
@@ -2091,7 +2187,7 @@ function buildDlgConfig() {
 	};
 	//窗口关闭
 	dlg.close = function() {
-		stop_token_animate();
+		progress.stop_token_animate();
 	};
 	//关闭窗口按钮
 	dlg.cptBtns.close.addEventListener("click", dlg.close);
@@ -2107,56 +2203,14 @@ function buildDlgConfig() {
 		dlg.schemes = NewDownSchemeArrayFromJson(pubd.downSchemes);
 		dlg.reloadSchemes();
 		dlg.selectScheme(getValueDefault("pubd-defaultscheme", 0));
-		//ipt_token.value = pubd.auth.response.access_token;
 		dlg.refreshLoginState();
 	};
 	return dlg;
 }
 
-//重新登陆
-function reLogin(onload_suceess_Cb,onerror_Cb)
-{
-	var dlgLogin = pubd.dialog.login;
-	dlgLogin.show((document.body.clientWidth - 370)/2, window.pageYOffset+200);
-	var defaultError = {error:{message:"自动登录失败"}};
-	if (pubd.auth.save_account) {
-		dlgLogin.error.replace("正在自动登陆");
-
-		pubd.auth.login(
-			function(jore) { //onload_suceess_Cb
-				dlgLogin.error.replace("登录成功");
-				//pubd.dialog.config.start_token_animate();
-				dlgLogin.cptBtns.close.click();
-
-				//如果设置窗口运行着的话还启动动画
-				if (!pubd.dialog.config.classList.contains("display-none"))
-					pubd.dialog.config.refreshLoginState();
-				//调用成功后函数
-				onload_suceess_Cb(jore);
-			},
-			function(jore) { //onload_haserror_Cb //返回错误消息
-				dlgLogin.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
-				onerror_Cb(defaultError);
-			},
-			function(jore) { //onload_notjson_Cb //返回不是JSON
-				dlgLogin.error.replace("返回不是JSON，或本程序异常");
-				onerror_Cb(defaultError);
-			},
-			function(jore) { //onerror_Cb //网络请求发生错误
-				dlgLogin.error.replace("网络请求发生错误");
-				onerror_Cb(defaultError);
-			}
-		);
-	}else
-	{
-		dlgLogin.error.replace("请手动登陆后重新执行");
-		onerror_Cb(defaultError);
-	}
-}
-
 //构建登陆对话框
 function buildDlgLogin() {
-	var dlg = new Dialog("登陆账户", "pubd-login", "pubd-login");
+	const dlg = new Dialog("登陆账户", "pubd-login", "pubd-login");
 	dlg.newAuth = null;
 
 	var frm = dlg.content.appendChild(new Frame("1.做好获取 APP 登陆连接的准备", "pubd-auth-help"));
@@ -2196,12 +2250,9 @@ function buildDlgLogin() {
 				const options = {
 					onload:function(jore) { //onload_suceess_Cb
 						dlg.error.replace("登陆成功");
+						dlg.newOAuth.save(); //保存新的认证
 						pubd.oAuth = dlg.newOAuth; //使用新的认证替换原来的认证
-						pubd.oAuth.save();
 						pubd.dialog.config.refreshLoginState();
-
-						console.log(jore, dlg.newOAuth);
-						//pubd.dialog.config.start_token_animate();
 					},
 					onload_hasError:function(jore) { //onload_haserror_Cb //返回错误消息
 						dlg.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
@@ -2224,45 +2275,76 @@ function buildDlgLogin() {
 		}
 	};
 
-	var error_msg_list = dlg.error = dlg.content.appendChild(document.createElement("ul")); //登陆错误信息
-	error_msg_list.className = "error-msg-list";
-	//添加错误显示功能
-	error_msg_list.clear = function() {
-		this.innerHTML = ""; //清空当前信息
-	};
-	
-	error_msg_list.add = function(arg) {
-		function addLine(str)
-		{
-			const li = document.createElement("li");
-			li.className = "error-msg-list-item";
-			li.appendChild(document.createTextNode(str));
-			return li;
-		}
-		const fragment = document.createDocumentFragment();
-		if (Array.isArray(arg)) //数组
-		{
-			arg.forEach(str=>fragment.appendChild(addLine(str)));
-		}
-		else //单文本
-		{
-			fragment.appendChild(addLine(arg));
-		}
-		this.appendChild(fragment);
-	};
+	//错误信息
+	dlg.error = dlg.content.appendChild(new ErrorMsg());
 
-	error_msg_list.replace = function(arg) {
-		this.clear();
-		this.add(arg);
+	//窗口关闭
+	dlg.close = function() {
+		progress.stop_token_animate();
 	};
-
+	//关闭窗口按钮
+	dlg.cptBtns.close.addEventListener("click", dlg.close);
 	//窗口初始化
 	dlg.initialise = function() {
-		error_msg_list.clear();
+		this.error.clear();
 
 		//每次打开这个窗口，都创建一个新的认证
-		dlg.newOAuth = new oAuth2();
-		aLogin.href = dlg.newOAuth.get_login_url();
+		this.newOAuth = new oAuth2();
+		aLogin.href = this.newOAuth.get_login_url();
+	};
+	return dlg;
+}
+
+//构建token刷新对话框
+function buildDlgRefreshToken() {
+	const dlg = new Dialog("刷新许可", "pubd-refresh-token pubd-dialog-transparent", "pubd-refresh-token");
+
+	//Logo部分
+	const logo_box = dlg.content.appendChild(document.createElement("div"));
+	logo_box.className = "logo-box";
+	const logo = logo_box.appendChild(document.createElement("img"));
+	logo.className = "pixiv-logo";
+	logo.src = "https://s.pximg.net/accounts/assets/6bea8becc71d27cd20649ffbc047e456.svg";
+	logo.alt = "pixiv logo";
+
+	const progress = dlg.tokenExpires = dlg.content.appendChild(buildProgressToken());
+
+	//错误信息
+	dlg.error = dlg.content.appendChild(new ErrorMsg());
+
+	//窗口关闭
+	dlg.close = function() {
+		progress.stop_token_animate();
+	};
+	//关闭窗口按钮
+	dlg.cptBtns.close.addEventListener("click", dlg.close);
+
+	//窗口初始化
+	dlg.initialise = function(arg = {}) {
+		this.error.clear();
+		progress.start_token_animate();
+		dlg.error.replace("刷新许可中···");
+		const options = {
+			onload:function(jore) { //onload_suceess_Cb
+				dlg.error.replace("成功更新");
+				pubd.oAuth.save();
+				progress.start_token_animate();
+				if (arg.onload) arg.onload(jore);
+			},
+			onload_hasError:function(jore) { //onload_haserror_Cb //返回错误消息
+				dlg.error.replace(["错误代码：" + jore.errors.system.code, jore.errors.system.message]);
+				if (arg.onload_hasError) arg.onload_hasError(jore);
+			},
+			onload_notJson:function(re) { //onload_notjson_Cb //返回不是JSON
+				dlg.error.replace(["服务器返回不是 JSON 格式", re]);
+				if (arg.onload_notJson) arg.onload_notJson(re);
+			},
+			onerror:function(re) { //onerror_Cb //网络请求发生错误
+				dlg.error.replace("网络请求发生错误");
+				if (arg.onerror) arg.onerror(re);
+			},
+		}
+		pubd.oAuth.refresh_token(options);
 	};
 	return dlg;
 }
@@ -3794,9 +3876,6 @@ function Main(touch) {
 	if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
 
 	//载入设置
-	pubd.auth = new Auth()
-	pubd.auth.loadFromAuth(GM_getValue("pubd-auth"));
-
 	pubd.oAuth = new oAuth2(GM_getValue("pubd-oauth"));
 
 	pubd.downSchemes = NewDownSchemeArrayFromJson(getValueDefault("pubd-downschemes",[]));
@@ -3839,14 +3918,15 @@ function Main(touch) {
 	});
 
 	//登陆信息的监听修改
-	GM_addValueChangeListener("pubd-auth", function(name, old_value, new_value, remote) {
-		pubd.auth.loadFromAuth(new_value);
+	GM_addValueChangeListener("pubd-oauth", function(name, old_value, new_value, remote) {
+		pubd.oAuth = new oAuth2(new_value);
 	});
 
 	//预先添加所有视窗，即便没有操作按钮也能通过菜单打开
 	let fragment = document.createDocumentFragment();
 	pubd.dialog.config = fragment.appendChild(buildDlgConfig());
 	pubd.dialog.login = fragment.appendChild(buildDlgLogin());
+	pubd.dialog.refresh_token = fragment.appendChild(buildDlgRefreshToken());
 	pubd.dialog.downthis = fragment.appendChild(buildDlgDownThis(thisPageUserid));
 	pubd.dialog.downillust = fragment.appendChild(buildDlgDownIllust(thisPageIllustid));
 	pubd.dialog.importdata = fragment.appendChild(buildDlgImportData());

@@ -534,7 +534,7 @@ border: 1px solid #becad7;
 {/*选项对话框图标*/
 }
 .pubd-tologin,
-.pubd-refresh-token,
+.pubd-open-refresh-token,
 .pubd-downscheme-new,
 .pubd-downscheme-remove,
 .pubd-rpcchk,
@@ -598,10 +598,6 @@ border: 1px solid #becad7;
 {/*token进度条*/
 	top: 5px;
 	width: calc(100% - 85px);
-}
-.pubd-config .pubd-refresh-token
-{
-	height: 24px;
 }
 
 .pubd-config .pubd-frm-downthis label,
@@ -726,15 +722,17 @@ border: 1px solid #becad7;
 	background-size: 100%;
 	background-repeat: no-repeat;
 }
-.pubd-login .error-msg-list
+.error-msg-list
 {
+	box-sizing: border-box;
+	width: 100%;
 	list-style-type: none;
-	padding-left: 0;
-	margin: 8px auto;
+	padding: 0;
 }
-.pubd-login .error-msg-list-item
+ .error-msg-list-item
 {
-	width: 280px;
+	box-sizing: border-box;
+	width: 100%;
 	background-color: rgba(0,0,0,.3);
 	margin: 0 auto;
 	margin-bottom: 2px;
@@ -747,6 +745,18 @@ border: 1px solid #becad7;
 	border-radius: 4px;
 }
 /*▲登陆对话框内容*/
+/*▼刷新Token对话框内容*/
+.pubd-refresh-token
+{
+	width: 300px;
+	resize: none;
+}
+.pubd-refresh-token .logo-box
+{
+	text-align: center;
+	margin-bottom: 10px;
+}
+/*▲刷新Token对话框内容*/
 /*▼下载当前画师窗口内容*/
 .pubd-downthis
 {/*下载当前画师*/
