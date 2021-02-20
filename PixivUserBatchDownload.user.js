@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.123
+// @version		5.16.125
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -589,7 +589,7 @@ DownScheme.prototype.loadFromJson = function(json) {
 			json.masklist.forEach(function(mask){
 				_this.masklist.push(new Mask(mask.name, mask.logic, mask.content));
 			});
-		}else
+		}else if(json[key] != undefined)
 		{
 			_this[key] = json[key];
 		}
@@ -2121,7 +2121,7 @@ function buildDlgLogin() {
 	const aHelp = frm.content.appendChild(document.createElement("a"));
 	aHelp.appendChild(document.createTextNode("如何获取 APP 登陆连接？"));
 	aHelp.target = "_blank";
-	aHelp.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki";
+	aHelp.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E8%8E%B7%E5%8F%96APP%E7%99%BB%E9%99%86%E9%93%BE%E6%8E%A5";
 
 	var frm = dlg.content.appendChild(new Frame("2.进行官方 APP 登录", "pubd-auth-weblogin"));
 	const aLogin = frm.content.appendChild(document.createElement("a"));
