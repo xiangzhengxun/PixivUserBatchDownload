@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.125
+// @version		5.16.126
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -1123,6 +1123,7 @@ function getValueDefault(name, defaultValue) {
 //加入了Auth的网络请求函数
 function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb, dlog=str=>str) {
 	const headersObj = new HeadersObject();
+	console.log(pubd.oAuth);
 	const auth = pubd.oAuth.auth_data;
 	if (auth) {
 		const token_type = auth.token_type[0].toUpperCase() + auth.token_type.substring(1);
@@ -1169,8 +1170,8 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 				//jo.error.user_message 是单行文本的错误信息
 				if (jo.error) {
 					if (jo.error.message.includes("Error occurred at the OAuth process.")) {
-						if (auth.needlogin) {
-							console.warn(dlog("授权 Token 过期，或其他授权相关错误"),jo);
+						if (auth) {
+							console.warn(dlog("授权 Token 过期，开始自动更新。"),jo);
 							//自动重新登陆
 							pubd.dialog.refresh_token.show(
 								(document.body.clientWidth - 370)/2,
