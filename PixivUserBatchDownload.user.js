@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.15.121
+// @version		5.16.122
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -36,7 +36,7 @@
 // @exclude		*://www.pixiv.net/report*
 //-@exclude		*://www.pixiv.net/search.php*
 //-@exclude		*://www.pixiv.net/tags*
-// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=2021年2月20日
+// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.16.122
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/sha256.min.js
@@ -376,6 +376,7 @@ Math.randomInteger = function(max, min = 0)
 {
 	return this.floor(this.random()*(max-min+1)+min);
 }
+//认证方案
 class oAuth2
 {
 	constructor(existAuth){
@@ -544,99 +545,6 @@ class oAuth2
 		GM_setValue("pubd-oauth", this);
 	}
 }
-//一个认证方案
-var Auth = function (username, password, remember) {
-	this.response = null;
-	this.username = username || null;
-	this.password = password || null;
-	this.save_account = remember || false,
-	this.login_date = null; // jshint ignore:line
-};
-Auth.prototype.newAccount = function(username, password, remember) {
-	if (typeof(remember) == "boolean") this.save_account = remember;
-	this.username = username;
-	this.password = password;
-};
-Auth.prototype.loadFromAuth = function(auth) {
-	if (typeof(auth) == "string")
-	{
-		try
-		{
-			auth = JSON.parse(auth);
-		}catch(e)
-		{
-			console.error("读取的Auth数据是字符串，但非JSON。",e);
-			return;
-		}
-	}else if (auth == undefined)
-	{
-		return;
-	}
-	const _thisAuth = this;
-	Object.keys(_thisAuth).forEach(function(key){
-		if (typeof(auth[key]) != "undefined")
-			_thisAuth[key] = auth[key];
-	});
-};
-Auth.prototype.save = function() {
-	let saveObj = Object.assign({},this);
-	if (!saveObj.save_account) {
-		saveObj.username = "";
-		saveObj.password = "";
-	}
-	GM_setValue("pubd-auth", saveObj);
-};
-Auth.prototype.login = function(onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb) {
-	let _thisAuth = this;
-	let postObj = new URLSearchParams();
-	postObj.set("client_id",client_id);//安卓某个版本的数据
-	postObj.set("client_secret",client_secret);//安卓某个版本的数据
-	postObj.set("grant_type","password");
-	postObj.set("username",_thisAuth.username);
-	postObj.set("password",_thisAuth.password);
-	postObj.set("device_token",device_token);
-	postObj.set("get_secure_url","true");
-	postObj.set("include_policy","true");
-
-	//登陆的Auth API
-	GM_xmlhttpRequest({
-		url: authURL,
-		method: "post",
-		responseType: "text",
-		headers: new HeadersObject(),
-		data: postObj.toString(),
-		onload: function(response) {
-			var jo;
-			try {
-				jo = JSON.parse(response.responseText);
-			} catch (e) {
-				console.error("登录失败，返回可能不是JSON格式，或本程序异常。", e, response);
-				onload_notJson_Cb(response);
-				return;
-			}
-
-			if (jo)
-			{
-				if (jo.has_error || jo.errors) {
-					console.error("登录失败，返回错误消息", jo);
-					onload_hasError_Cb(jo);
-					return;
-				} else { //登陆成功
-					_thisAuth.response = jo.response;
-					_thisAuth.login_date = new Date().getTime();
-					console.info("登陆成功", jo);
-					onload_suceess_Cb(jo);
-					return;
-				}
-			}
-		},
-		onerror: function(response) {
-			console.error("登录失败，网络请求发生错误", response);
-			onerror_Cb(response);
-			return;
-		}
-	});
-};
 //一个掩码
 var Mask = function(name, logic, content){
 	this.name = name;
@@ -648,6 +556,7 @@ var DownScheme = function(name) {
 	//默认值
 	this.name = name ? name : "默认方案";
 	this.rpcurl = "http://localhost:6800/jsonrpc";
+	this.proxyurl = "";
 	this.https2http = false;
 	this.downfilter = "";
 	this.savedir = "D:/PixivDownload/";
@@ -1635,11 +1544,6 @@ function buildDlgConfig() {
 		}
 	}
 
-	dl_t.appendChild(document.createElement("hr"));
-
-	var dt = dl_t.appendChild(document.createElement("dt"));
-	dt.appendChild(document.createTextNode("许可剩余时间"));
-
 	const tokenInfo = dlg.tokenInfo = dl_t.appendChild(document.createElement("dd"));
 	tokenInfo.className = "pubd-token-info";
 
@@ -1749,6 +1653,7 @@ function buildDlgConfig() {
 	dlg.loadScheme = function(scheme) { //读取一个下载方案
 		if (scheme == undefined) {
 			dlg.rpcurl.value = "";
+			dlg.proxyurl.value = "";
 			dlg.https2http.checked = false;
 			dlg.downfilter.value = "";
 			dlg.savedir.value = "";
@@ -1757,6 +1662,7 @@ function buildDlgConfig() {
 			dlg.loadMasklistFromArray([]);
 		} else {
 			dlg.rpcurl.value = scheme.rpcurl;
+			dlg.proxyurl.value = scheme.proxyurl;
 			dlg.https2http.checked = scheme.https2http;
 			dlg.downfilter.value = scheme.downfilter;
 			dlg.savedir.value = scheme.savedir;
@@ -1802,18 +1708,15 @@ function buildDlgConfig() {
 	};
 
 	//配置方案选择
-	var dt = document.createElement("dt");
-	dt.innerHTML = "默认下载方案";
-	dl.appendChild(dt);
-	var dd = document.createElement("dd");
-	var slt = new Select("pubd-downscheme");
+	var dt = dl.appendChild(document.createElement("dt"));
+	dt.textContent = "默认下载方案";
+	var dd = dl.appendChild(document.createElement("dd"));
+	var slt = dlg.downSchemeDom = dd.appendChild(new Select("pubd-downscheme"));
 	slt.onchange = function() {
 		dlg.selectScheme(this.selectedIndex);
 	};
-	dlg.downSchemeDom = slt;
-	dd.appendChild(slt);
 
-	var ipt = document.createElement("input");
+	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-downscheme-new";
 	ipt.value = "新建";
@@ -1829,9 +1732,8 @@ function buildDlgConfig() {
 			//dlg.reloadSchemes();
 		}
 	};
-	dd.appendChild(ipt);
 
-	var ipt = document.createElement("input");
+	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-downscheme-remove";
 	ipt.value = "删除";
@@ -1850,35 +1752,27 @@ function buildDlgConfig() {
 			else dlg.loadScheme(dlg.schemes[index]);
 		}
 	};
-	dd.appendChild(ipt);
-	dl.appendChild(dd);
 
 	//配置方案详情设置
-	var dt = document.createElement("dt");
-	dl.appendChild(dt);
-	var dd = document.createElement("dd");
+	var dt = dl.appendChild(document.createElement("dt"));
+	var dd = dl.appendChild(document.createElement("dd"));
 	dd.className = "pubd-selectscheme-bar";
 
-	var frm = new Frame("当前方案设置", "pubd-selectscheme");
+	var frm = dd.appendChild(new Frame("当前方案设置", "pubd-selectscheme"));
 
-	var dl_ss = document.createElement("dl");
+	var dl_ss = frm.content.appendChild(document.createElement("dl"));
 
-	frm.content.appendChild(dl_ss);
-	dd.appendChild(frm);
-	dl.appendChild(dd);
 
 	//Aria2 URL
 
-	var dt = document.createElement("dt");
-	dl_ss.appendChild(dt);
-	dt.innerHTML = "Aria2 JSON-RPC 路径";
-	var rpcchk = document.createElement("span"); //显示检查状态用
+	var dt = dl_ss.appendChild(document.createElement("dt"));
+	dt.textContent = "Aria2 JSON-RPC 路径";
+	var rpcchk = dlg.rpcchk = dt.appendChild(document.createElement("span")); //显示检查状态用
 	rpcchk.className = "pubd-rpcchk-info";
-	dlg.rpcchk = rpcchk;
-	dlg.rpcchk.runing = false;
-	dt.appendChild(rpcchk);
-	var dd = document.createElement("dd");
-	var rpcurl = document.createElement("input");
+	rpcchk.runing = false;
+	
+	var dd = dl_ss.appendChild(document.createElement("dd"));
+	var rpcurl = dlg.rpcurl = dd.appendChild(document.createElement("input"));
 	rpcurl.type = "url";
 	rpcurl.className = "pubd-rpcurl";
 	rpcurl.name = "pubd-rpcurl";
@@ -1891,32 +1785,42 @@ function buildDlgConfig() {
 		var schemeIndex = dlg.downSchemeDom.selectedIndex;
 		dlg.schemes[schemeIndex].rpcurl = rpcurl.value;
 	};
-	dlg.rpcurl = rpcurl;
-	dd.appendChild(rpcurl);
 
-	var ipt = document.createElement("input");
+	var ipt = dd.appendChild(document.createElement("input"));
 	ipt.type = "button";
 	ipt.className = "pubd-rpcchk";
 	ipt.value = "检查路径";
 	ipt.onclick = function() {
-		if (dlg.rpcchk.runing) return;
-		if (dlg.rpcurl.value.length < 1) {
-			dlg.rpcchk.innerHTML = "路径为空";
+		if (rpcchk.runing) return;
+		if (rpcurl.value.length < 1) {
+			rpcchk.textContent = "路径为空";
 			return;
 		}
-		dlg.rpcchk.innerHTML = "正在连接...";
-		dlg.rpcchk.runing = true;
-		var aria2 = new Aria2(dlg.rpcurl.value);
+		rpcchk.textContent = "正在连接...";
+		rpcchk.runing = true;
+		var aria2 = new Aria2(rpcurl.value);
 		aria2.getVersion(function(rejo) {
 			if (rejo)
-				dlg.rpcchk.innerHTML = "发现Aria2 ver" + rejo.result.version;
+				rpcchk.textContent = "发现Aria2 ver" + rejo.result.version;
 			else
-				dlg.rpcchk.innerHTML = "Aria2连接失败";
-			dlg.rpcchk.runing = false;
+				rpcchk.textContent = "Aria2连接失败";
+			rpcchk.runing = false;
 		});
 	};
-	dd.appendChild(ipt);
-	dl_ss.appendChild(dd);
+	var dt = dl_ss.appendChild(document.createElement("dt"));
+	dt.textContent = "Aria2 代理服务器地址";
+	var dd = dl_ss.appendChild(document.createElement("dd"));
+	var proxyurl = dlg.proxyurl = dd.appendChild(document.createElement("input"));
+	proxyurl.type = "text";
+	proxyurl.className = "pubd-proxyurl";
+	proxyurl.name = "pubd-proxyurl";
+	proxyurl.id = proxyurl.name;
+	proxyurl.placeholder = "[http://][USER:PASSWORD@]HOST[:PORT]";
+	proxyurl.onchange = function() {
+		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
+		const schemeIndex = dlg.downSchemeDom.selectedIndex;
+		dlg.schemes[schemeIndex].proxyurl = this.value;
+	};
 
 	//额外设置，https转http
 	var dt = document.createElement("dt");
@@ -1934,10 +1838,10 @@ function buildDlgConfig() {
 
 	//下载过滤
 	var dt = dl_ss.appendChild(document.createElement("dt"));
-	dt.innerHTML = "下载过滤器";
+	dt.textContent = "下载过滤器";
 	var dta = dt.appendChild(document.createElement("a"));
 	dta.className = "pubd-help-link";
-	dta.innerHTML = "(?)";
+	dta.textContent = "(?)";
 	dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E4%B8%8B%E8%BD%BD%E8%BF%87%E6%BB%A4%E5%99%A8";
 	dta.target = "_blank";
 	var dd = document.createElement("dd");
@@ -1959,7 +1863,7 @@ function buildDlgConfig() {
 	//下载目录
 	var dt = document.createElement("dt");
 	dl_ss.appendChild(dt);
-	dt.innerHTML = "下载目录";
+	dt.textContent = "下载目录";
 	var dd = document.createElement("dd");
 	var savedir = document.createElement("input");
 	savedir.type = "text";
@@ -1978,10 +1882,10 @@ function buildDlgConfig() {
 
 	//保存路径
 	var dt = dl_ss.appendChild(document.createElement("dt"));
-	dt.innerHTML = "保存路径";
+	dt.textContent = "保存路径";
 	var dta = dt.appendChild(document.createElement("a"));
 	dta.className = "pubd-help-link";
-	dta.innerHTML = "(?)";
+	dta.textContent = "(?)";
 	dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E6%8E%A9%E7%A0%81";
 	dta.target = "_blank";
 	var dd = document.createElement("dd");
@@ -2002,10 +1906,10 @@ function buildDlgConfig() {
 
 	//输出文本
 	var dt = dl_ss.appendChild(document.createElement("dt"));
-	dt.innerHTML = "文本输出模式格式";
+	dt.textContent = "文本输出模式格式";
 	var dta = dt.appendChild(document.createElement("a"));
 	dta.className = "pubd-help-link";
-	dta.innerHTML = "(?)";
+	dta.textContent = "(?)";
 	dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%e9%80%89%e9%a1%b9%e7%aa%97%e5%8f%a3#%E6%96%87%E6%9C%AC%E8%BE%93%E5%87%BA%E6%A8%A1%E5%BC%8F%E6%A0%BC%E5%BC%8F";
 	dta.target = "_blank";
 	var dd = document.createElement("dd");
@@ -2028,10 +1932,10 @@ function buildDlgConfig() {
 
 	//自定义掩码
 	var dt = dl_ss.appendChild(document.createElement("dt"));
-	dt.innerHTML = "自定义掩码";
+	dt.textContent = "自定义掩码";
 	var dta = dt.appendChild(document.createElement("a"));
 	dta.className = "pubd-help-link";
-	dta.innerHTML = "(?)";
+	dta.textContent = "(?)";
 	dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A9%E7%A0%81";
 	dta.target = "_blank";
 	var dd = document.createElement("dd");
@@ -3642,6 +3546,9 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 				if (scheme.savedir.length > 0) {
 					options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
 				}
+				if (scheme.proxyurl.length > 0) {
+					options["all-proxy"] = scheme.proxyurl;
+				}
 				aria2_method.params.push(options);
 				aria2_params.push(aria2_method);
 			}
@@ -3695,6 +3602,9 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 					};
 					if (scheme.savedir.length > 0) {
 						options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+					}
+					if (scheme.proxyurl.length > 0) {
+						options["all-proxy"] = scheme.proxyurl;
 					}
 					aria2_method.params.push(options);
 					aria2_params.push(aria2_method);
@@ -3766,6 +3676,9 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 
 		if (scheme.savedir.length > 0) {
 			options.dir = replacePathSafe(showMask(scheme.savedir, scheme.masklist, userInfo, illust, page), 0);
+		}
+		if (scheme.proxyurl.length > 0) {
+			options["all-proxy"] = scheme.proxyurl;
 		}
 		aria2.addUri(url, options, function(res) {
 			if (res === false) {

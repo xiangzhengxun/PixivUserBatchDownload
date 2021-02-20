@@ -614,7 +614,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 430px);
+	height: calc(100% - 395px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/
@@ -634,7 +634,11 @@ border: 1px solid #becad7;
 {/*RPC地址检测信息*/
 	float: right;
 }
-.pubd-config .pubd-downfilter,.pubd-config .pubd-savedir,.pubd-config .pubd-savepath,.pubd-config .pubd-textout
+.pubd-config .pubd-downfilter,
+.pubd-config .pubd-savedir,
+.pubd-config .pubd-savepath,
+.pubd-config .pubd-textout,
+.pubd-config .pubd-proxyurl
 {/*下载目录与保存目录，文本输出格式*/
 	width: 100%;
 }
@@ -653,7 +657,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-textout-bar
 {/*文本输出模式格式-dd*/
-	height: calc(100% - 340px);
+	height: calc(100% - 380px);
 	min-height: 32px;
 }
 .pubd-config .pubd-mask-list-bar
