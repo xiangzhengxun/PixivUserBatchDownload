@@ -780,6 +780,11 @@ border: 1px solid #becad7;
 	text-align: center;
 	margin-bottom: 10px;
 }
+.pubd-refresh-token .refresh-token
+{
+	box-sizing: border-box;
+	width: 100%;
+}
 /*▲刷新Token对话框内容*/
 /*▼下载当前画师窗口内容*/
 .pubd-downthis

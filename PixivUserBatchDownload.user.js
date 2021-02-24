@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.126
+// @version		5.16.127
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -2214,6 +2214,13 @@ function buildDlgRefreshToken() {
 
 	const progress = dlg.tokenExpires = dlg.content.appendChild(buildProgressToken());
 
+	const lblRefreshToken = dlg.content.appendChild(document.createElement("label"));
+	lblRefreshToken.textContent = "刷新用许可证代码(refresh_token)";
+	const iptRefreshToken = lblRefreshToken.appendChild(document.createElement("input"));
+	iptRefreshToken.className = "refresh-token";
+	iptRefreshToken.type = "text";
+	iptRefreshToken.readOnly = true;
+
 	//错误信息
 	dlg.error = dlg.content.appendChild(new ErrorMsg());
 
@@ -2227,13 +2234,16 @@ function buildDlgRefreshToken() {
 	//窗口初始化
 	dlg.initialise = function(arg = {}) {
 		this.error.clear();
+		iptRefreshToken.value = pubd.oAuth.auth_data.refresh_token;
 		progress.start_token_animate();
 		dlg.error.replace("刷新许可中···");
 		const options = {
 			onload:function(jore) { //onload_suceess_Cb
-				dlg.error.replace("成功更新");
 				pubd.oAuth.save();
+				dlg.error.replace("成功更新");
+				iptRefreshToken.value = jore.refresh_token;
 				progress.start_token_animate();
+				pubd.dialog.config.tokenExpires.start_token_animate();
 				if (arg.onload) arg.onload(jore);
 			},
 			onload_hasError:function(jore) { //onload_haserror_Cb //返回错误消息
