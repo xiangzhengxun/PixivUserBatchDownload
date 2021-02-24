@@ -727,7 +727,8 @@ border: 1px solid #becad7;
 	text-decoration: underline;
 }
 
-.pubd-login .pubd-pixiv-app-link
+.pubd-login .pubd-pixiv-app-link,
+.pubd-login .pubd-refresh-token
 {
 	position: relative;
 	width: 350px;
@@ -745,6 +746,7 @@ border: 1px solid #becad7;
 .error-msg-list
 {
 	box-sizing: border-box;
+	margin-bottom: 0;
 	width: 100%;
 	list-style-type: none;
 	padding: 0;
@@ -780,7 +782,7 @@ border: 1px solid #becad7;
 	text-align: center;
 	margin-bottom: 10px;
 }
-.pubd-refresh-token .refresh-token
+.pubd-refresh-token .pubd-refresh-token
 {
 	box-sizing: border-box;
 	width: 100%;

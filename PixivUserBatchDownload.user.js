@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.127
+// @version		5.16.128
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2020+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -2183,6 +2183,34 @@ function buildDlgLogin() {
 	//错误信息
 	dlg.error = dlg.content.appendChild(new ErrorMsg());
 
+	dlg.content.appendChild(document.createElement("hr"));
+
+	var frm = dlg.content.appendChild(new Frame("使用现有刷新许可证登陆", "pubd-refresh_token-login"));
+	dlg.content.appendChild(frm);
+
+	var div = frm.content.appendChild(document.createElement("div"));
+	const iptRefreshToken = div.appendChild(document.createElement("input"));
+	iptRefreshToken.type = "text";
+	iptRefreshToken.className = "pubd-refresh-token";
+	iptRefreshToken.placeholder = "refresh_token";
+
+	const btnRefreshToken = div.appendChild(document.createElement("button"));
+	btnRefreshToken.className = "pubd-login-refresh_token";
+	btnRefreshToken.appendChild(document.createTextNode("登陆"));
+	//登陆按钮
+	btnRefreshToken.onclick = function() {
+		if (!pubd.oAuth.auth_data)
+		{
+			pubd.oAuth.auth_data = {};
+		}
+		pubd.oAuth.auth_data.refresh_token = iptRefreshToken.value;
+		//刷新许可
+		pubd.dialog.refresh_token.show(
+			(document.body.clientWidth - 370)/2,
+			window.pageYOffset+300
+		);
+	};
+
 	//窗口关闭
 	dlg.close = function() {
 		progress.stop_token_animate();
@@ -2217,7 +2245,7 @@ function buildDlgRefreshToken() {
 	const lblRefreshToken = dlg.content.appendChild(document.createElement("label"));
 	lblRefreshToken.textContent = "刷新用许可证代码(refresh_token)";
 	const iptRefreshToken = lblRefreshToken.appendChild(document.createElement("input"));
-	iptRefreshToken.className = "refresh-token";
+	iptRefreshToken.className = "pubd-refresh-token";
 	iptRefreshToken.type = "text";
 	iptRefreshToken.readOnly = true;
 
@@ -2243,7 +2271,7 @@ function buildDlgRefreshToken() {
 				dlg.error.replace("成功更新");
 				iptRefreshToken.value = jore.refresh_token;
 				progress.start_token_animate();
-				pubd.dialog.config.tokenExpires.start_token_animate();
+				pubd.dialog.config.refreshLoginState();
 				if (arg.onload) arg.onload(jore);
 			},
 			onload_hasError:function(jore) { //onload_haserror_Cb //返回错误消息
