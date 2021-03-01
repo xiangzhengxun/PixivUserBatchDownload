@@ -3,18 +3,18 @@
 // @name:zh-CN	P站画师个人作品批量下载工具
 // @name:zh-TW	P站畫師個人作品批量下載工具
 // @name:zh-HK	P站畫師個人作品批量下載工具
-// @description	Batch download pixiv user's images in one key.
+// @description	Batch download pixiv user's images in one key.(Based on Aria2)
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @version		5.16.130
 // @author		Mapaler <mapaler@163.com>
-// @copyright	2016~2020+, Mapaler <mapaler@163.com>
+// @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
 // @icon		https://www.pixiv.net/favicon.ico
 // @homepage	https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL	https://github.com/Mapaler/PixivUserBatchDownload/issues
-// @updateURL	https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.meta.js
+//-@updateURL	https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.meta.js
 //-@downloadURL https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
 // @include		*://www.pixiv.net/*
 // @exclude		*://www.pixiv.net/upload.php*
