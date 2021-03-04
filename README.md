@@ -55,12 +55,12 @@ PUBD 通过 Pixiv 官方手机 APP 的后台 API 获取作者的作品列表，�
 - [ ] 多语种支持（老旧代码太多，暂时无法搞）
 
 ## License|许可协议
-PixivUserBatchDownload © Mapaler 2020
+PixivUserBatchDownload © Mapaler 2021
 
 > 此程序是免费软件。你可以将它根据“GNU通用公共许可证第三版(GPLv3)”重新分发和/或修改。
 
 * Aria2 操作对象代码来自 [ThunderLixianExporter](//github.com/binux/ThunderLixianExporter)。
-* Pixiv APP-API 分析来自 [PixivPy](//github.com/upbit/pixivpy)。
+* Pixiv APP-API 分析灵感来自 [PixivPy](//github.com/upbit/pixivpy)。
 
 ## 友情链接
 **[![](https://raw.githubusercontent.com/xuejianxianzun/PixivBatchDownloader/master/static/icon/logo48.png)PixivBatchDownloader](//github.com/xuejianxianzun/PixivBatchDownloader)**  

@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.131
+// @version		5.16.132
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -1124,29 +1124,11 @@ function getValueDefault(name, defaultValue) {
 //加入了Auth的网络请求函数
 function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_Cb, onerror_Cb, dlog=str=>str) {
 	const headersObj = new HeadersObject();
-	console.log(pubd.oAuth);
 	const auth = pubd.oAuth.auth_data;
 	if (auth) {
-		const token_type = auth.token_type[0].toUpperCase() + auth.token_type.substring(1);
-		headersObj.Authorization = token_type + " " + auth.access_token;
+		headersObj.Authorization = auth.token_type[0].toUpperCase() + auth.token_type.substring(1) + " " + auth.access_token;
 	} else {
 		console.info(dlog("未登录账户，尝试以非登录状态获取信息"));
-	}
-
-	//重新登陆
-	function reLogin(onload_suceess_Cb,onerror_Cb)
-	{
-		pubd.dialog.refresh_token.show(
-			(document.body.clientWidth - 370)/2,
-			window.pageYOffset+300,
-			{
-				onload: ()=>{
-					onload_suceess_Cb();
-					pubd.dialog.refresh_token.hide();
-				},
-				onerror: onerror_Cb,
-			}
-		);
 	}
 
 	GM_xmlhttpRequest({
