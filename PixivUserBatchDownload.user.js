@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.130
+// @version		5.16.131
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -140,13 +140,14 @@ const artWorkStarCssPath = ":scope>div>div>main>section>div>div>figcaption>div>d
 const artWorkUserHeadCssPath = ":scope>div>div>aside>section>h2>div>a";
 
 //匹配P站内容的正则表达式
-const illustPattern = '(https?://([^/]+)/.+/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/(\\d+(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\\d+(?:_\\w+)?\\.([\\w\\d]+)'; //P站图片地址正则匹配式
-const limitingPattern = '(https?://([^/]+)/common/images/(limit_(mypixiv|unknown)))_\\d+\\.([\\w\\d]+)'; //P站上锁图片完整地址正则匹配式
+const illustPathRegExp = /(\/.+\/\d{4}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/((\d+)(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\d+(?:_\w+)?\.([\w\d]+)/i; //P站画作地址 path部分 正则匹配式
+const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\.([\w\d]+)/i; //P站无权访问作品地址 path部分 正则匹配式
+
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
 const PixivAppVersion = "5.0.235"; //Pixiv APP的版本
 const AndroidVersion = "12.0.0"; //安卓的版本
-const UA = "PixivAndroidApp/" + PixivAppVersion + " (Android " + AndroidVersion + "; Android SDK built for x64)"; //向P站请求数据时的UA
+const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${PixivAppVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat，目前是固定值
 const Referer = "https://app-api.pixiv.net/";
 const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
@@ -1266,16 +1267,56 @@ function getQueryString(name,url) {
 		}
 	}
 }
-//从图片URL获取图片ID
-function getArtworkIdFromImageUrl(url) {
-	var regSrc = new RegExp(illustPattern, "ig");
-	var regRes = regSrc.exec(url);
-	if (regRes) {
-		var idRes = /^(\d+)/.exec(regRes[3]);
-		return parseInt(idRes[1]);
-	}else
+//从图片URL获取图片属性
+function parseIllustUrl(url) {
+	let src
+	try {
+		src = new URL(url);
+	} catch (error) {
 		return null;
+	}
+	const obj = {
+		domain: src.host, //为了兼容老的
+		parsedURL: { //目前用到的不多，只保留这两个值
+			host: src.host, //域（即主机名）后跟端口
+			protocol: src.protocol, //URL 协议名
+		}
+	};
+	const parsedURL = obj.parsedURL;
+	let regRes = new RegExp(illustPathRegExp.source, illustPathRegExp.flags).exec(src.pathname);
+	if (regRes)
+	{
+		//为了兼容老的
+		obj.url_without_page = `${src.origin}${regRes[1]}`;
+		obj.filename = regRes[2];
+		//id直接在原始数据有
+		obj.token = regRes[4];
+		obj.extention = regRes[5];
+
+		parsedURL.path_before_page = regRes[1];
+		parsedURL.filename = regRes[2];
+		parsedURL.id = regRes[3];
+		parsedURL.token = regRes[4];
+		parsedURL.extention = regRes[5];
+	}else if (regRes = new RegExp(limitingPathRegExp.source, limitingPathRegExp.flags).exec(src.pathname)) //上锁图片
+	{
+		//为了兼容老的
+		obj.url_without_page = `${src.origin}${regRes[1]}`;
+		obj.filename = regRes[2];
+		//id直接在原始数据有
+		obj.extention = regRes[3];
+
+		parsedURL.path_before_page = regRes[1];
+		parsedURL.limited = true;
+		parsedURL.filename = regRes[2];
+		parsedURL.extention = regRes[3];
+	}else
+	{
+		parsedURL.unknown = true;
+	}
+	return obj;
 }
+
 //获取当前用户ID
 function getCurrentUserId()
 {
@@ -2627,7 +2668,7 @@ function buildDlgDownThis(userid) {
 				apiurl = "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=" + uInfo.user.id + "&restrict=public";
 			}
 			if (works.item.length > 0) { //断点续传
-				dlg.log(contentName + " 断点续传进度 " + works.item.length + "/" + total);
+				dlg.log(`${contentName} 断点续传进度 ${works.item.length}/${total}`);
 				dlg.progress.set(works.item.length / total); //设置当前下载进度
 			}
 			analyseWorks(user, contentType, apiurl); //开始获取第一页
@@ -2650,7 +2691,7 @@ function buildDlgDownThis(userid) {
 				var ugoiras = works.item.filter(function(item) {
 					return item.type == "ugoira";
 				});
-				dlg.log("共存在 " + ugoiras.length + " 件动图");
+				dlg.log(`共存在 共 ${ugoiras.length} 件动图`);
 				if (ugoiras.some(function(item) { //如果有没有帧数据的动图
 						return item.ugoira_metadata == undefined;
 					})) {
@@ -2677,7 +2718,7 @@ function buildDlgDownThis(userid) {
 					return pV+=page;
 				},0);
 
-				dlg.log(contentName + " 共 " + works.item.length + " 件（约 " + works.picCount + " 张图片）已获取完毕。");
+				dlg.log(`${contentName} 共 ${works.item.length} 件（约 ${works.picCount} 张图片）已获取完毕。`);
 				dlg.progress.set(1);
 				works.runing = false;
 				works.next_url = "";
@@ -2702,48 +2743,37 @@ function buildDlgDownThis(userid) {
 					function(jore) { //onload_suceess_Cb
 						works.runing = true;
 						var illusts = jore.illusts;
-							
-							illusts.forEach(function(work) {
-								const original = work.page_count > 1 ?
-									work.meta_pages[0].image_urls.original : //漫画多图
-									work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
+						
+						illusts.forEach(function(work) {
+							const original = work.page_count > 1 ?
+								work.meta_pages[0].image_urls.original : //漫画多图
+								work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
 
-								const regSrc = new RegExp(illustPattern, "ig");
-								const regRes = regSrc.exec(original);
-								if (regRes) {
-									//然后添加扩展名等
-									work.url_without_page = regRes[1];
-									work.domain = regRes[2];
-									work.filename = regRes[3];
-									work.token = regRes[4];
-									work.extention = regRes[5];
-								} else {
-									const regSrcL = new RegExp(limitingPattern, "ig");
-									const regResL = regSrcL.exec(original);
-									if (regResL) {
-										dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
-										work.url_without_page = regResL[1];
-										work.domain = regResL[2];
-										work.filename = regResL[3];
-										work.token = regResL[4];
-										work.extention = regResL[5];
-									} else {
-										dlg.log(contentName + " " + work.id + " 原图格式未知。");
-									}
-								}
-								works.item.push(work);
+							//取得解析后的网址
+							const parsedUrl = parseIllustUrl(original);
+							//合并到work里
+							Object.assign(work, parsedUrl);
+							if (parsedUrl.parsedURL.limited)
+							{
+								dlg.log(`${contentName} ${work.id} 非公开，无权获取下载地址。`);
+							}else if(parsedUrl.parsedURL.unknown)
+							{
+								dlg.log(`${contentName} ${work.id} 未知的原图网址格式。`);
+							}
 
-								if (mdev)
-								{
-									const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
-									const illustsStoreRequest = illustsStore.put(work);
-									illustsStoreRequest.onsuccess = function(event) {
-										//console.debug(`${work.title} 已添加到作品数据库`);
-									};
-								}
-							});
+							works.item.push(work);
 
-						dlg.log(contentName + " 获取进度 " + works.item.length + "/" + total);
+							if (mdev)
+							{
+								const illustsStore = db.transaction("illusts", "readwrite").objectStore("illusts");
+								const illustsStoreRequest = illustsStore.put(work);
+								illustsStoreRequest.onsuccess = function(event) {
+									//console.debug(`${work.title} 已添加到作品数据库`);
+								};
+							}
+						});
+
+						dlg.log(`${contentName} 获取进度 ${works.item.length}/${total}`);
 						if (works == dlg.works) dlg.progress.set(works.item.length / total); //如果没有中断则设置当前下载进度
 						if (jore.next_url) { //还有下一页
 							works.next_url = jore.next_url;
@@ -3048,28 +3078,16 @@ function buildDlgDownIllust(illustid) {
 						work.meta_pages[0].image_urls.original : //漫画多图
 						work.meta_single_page.original_image_url; //单张图片或动图，含漫画单图
 
-					const regSrc = new RegExp(illustPattern, "ig");
-					const regRes = regSrc.exec(original);
-					if (regRes) {
-						//然后添加扩展名等
-						work.url_without_page = regRes[1];
-						work.domain = regRes[2];
-						work.filename = regRes[3];
-						work.token = regRes[4];
-						work.extention = regRes[5];
-					} else {
-						const regSrcL = new RegExp(limitingPattern, "ig");
-						const regResL = regSrcL.exec(original);
-						if (regResL) {
-							dlg.log(contentName + " " + work.id + " 非公开，无权获取下载地址。");
-							work.url_without_page = regResL[1];
-							work.domain = regResL[2];
-							work.filename = regResL[3];
-							work.token = regResL[4];
-							work.extention = regResL[5];
-						} else {
-							dlg.log(contentName + " " + work.id + " 原图格式未知。");
-						}
+					//取得解析后的网址
+					const parsedUrl = parseIllustUrl(original);
+					//合并到work里
+					Object.assign(work, parsedUrl);
+					if (parsedUrl.parsedURL.limited)
+					{
+						dlg.log(`${contentName} ${work.id} 非公开，无权获取下载地址。`);
+					}else if(parsedUrl.parsedURL.unknown)
+					{
+						dlg.log(`${contentName} ${work.id} 未知的原图网址格式。`);
 					}
 					
 					if (mdev)
