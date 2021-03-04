@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.132
+// @version		5.16.133
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -130,7 +130,8 @@ const mainDivSearchCssSelectorArray = [
 	':scope>div>div:nth-of-type(2)>div>div', //关注页
 ];
 //搜索页，列表的ul位置（用来显示收藏状态）
-const searchListCssPath = ':scope>div>div:nth-of-type(5)>div>section:nth-of-type(2)>div:nth-of-type(2)>ul';
+const searchListCssPath = ':scope>div>div:nth-of-type(4)>div>section>div:nth-of-type(2)>ul';
+
 
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
 const userMainPageCssPath = ":scope>div>div:nth-of-type(2)>nav>a";
@@ -4027,8 +4028,8 @@ function Main(touch) {
 								let btnStartInsertPlace = node.querySelector(cssS);
 								if(btnStartInsertPlace != undefined)
 								{
-									if (mdev) console.log("开始按钮插入点CSS路径为",cssS);
 									mainDiv = node; //重新选择主div
+									if (mdev) console.log("开始按钮插入点CSS路径为",mainDiv,cssS);
 									reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
 
 									const userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
@@ -4048,13 +4049,22 @@ function Main(touch) {
 			const otherWorks = (touch || !mainDiv) ? null : mainDiv.querySelector(":scope>div>aside:nth-of-type(2)");
 			if (otherWorks)
 			{ //已发现推荐列表大部位
-				if (mutationsList.some(mutation=>otherWorks.contains(mutation.target) && //目标属于推荐部分
-					Array.from(mutation.addedNodes).some(node=>node.nodeName == "SECTION" || node.querySelector("section")) //新增node要么是section，要么包括section
-				)) //当改变目标为这个aside，并且新增的是section时
+				if (recommendList = otherWorks.querySelector("section>div:nth-of-type(2) ul"))
 				{
-					recommendList = otherWorks.querySelector("section>div:nth-of-type(2)>ul");
-					//console.log('储存推荐列表节点',recommendList);
+					if (mdev) console.log("发现推荐列表",recommendList);
 				}
+
+				//不知道为什么这个代码又不需要了
+				/*if (!recommendList &&
+					mutationsList.some(mutation=>
+						otherWorks.contains(mutation.target) && //目标属于推荐部分
+						Array.from(mutation.addedNodes).some(node=>node.nodeName == "SECTION" || node.querySelector("section")) //新增node要么是section，要么包括section
+					)
+				) //当改变目标为这个aside，并且新增的是section时
+				{
+					recommendList = otherWorks.querySelector("section>div:nth-of-type(2) ul");
+					if (mdev) console.log("发现推荐列表",recommendList);
+				}*/
 			}
 			if (recommendList)
 			{
