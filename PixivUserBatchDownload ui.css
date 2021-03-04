@@ -615,7 +615,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-selectscheme-bar
 {/*下载方案详细栏-dd*/
-	height: calc(100% - 395px);
+	height: calc(100% - 398px);
 }
 .pubd-config .pubd-selectscheme
 {/*下载方案详细栏-frame*/
@@ -658,7 +658,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-textout-bar
 {/*文本输出模式格式-dd*/
-	height: calc(100% - 380px);
+	height: calc(100% - 383px);
 	min-height: 32px;
 }
 .pubd-config .pubd-mask-list-bar
