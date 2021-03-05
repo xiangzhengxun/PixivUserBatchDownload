@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.135
+// @version		5.16.136
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -1300,7 +1300,7 @@ function parseIllustUrl(url) {
 	return obj;
 }
 //从一个作品数据得到原始图片的下载地址
-function getIllustDownUrl(illust, https2http = false)
+function getIllustDownUrl(illust, page, https2http = false)
 {
 	return `${https2http ? 'http:' : illust.parsedURL.protocol}//${illust.parsedURL.host}${illust.parsedURL.path_before_page}${page}.${illust.extention}`;
 }
@@ -3578,7 +3578,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 				continue;
 			} else {
 				var aria2_method = {'methodName':'aria2.addUri','params':[]};
-				var url = getIllustDownUrl(scheme.https2http, illust);
+				var url = getIllustDownUrl(illust, page, scheme.https2http);
 
 				aria2_method.params.push([url]); //添加下载链接
 				var options = {
@@ -3633,7 +3633,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 					continue;
 				} else {
 					var aria2_method = {'methodName':'aria2.addUri','params':[]};
-					var url = getIllustDownUrl(scheme.https2http, illust);
+					var url = getIllustDownUrl(illust, page, scheme.https2http);
 
 					aria2_method.params.push([url]); //添加下载链接
 					var options = {
@@ -3698,7 +3698,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 		callback();
 		return;
 	}
-	var url = getIllustDownUrl(scheme.https2http, illust);
+	var url = getIllustDownUrl(illust, page, scheme.https2http);
 
 	if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
 		//跳过此次下载
