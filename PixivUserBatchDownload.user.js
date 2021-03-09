@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.136
+// @version		5.16.137
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -93,8 +93,8 @@ const scriptName = (defaultName=>{ //本程序的名称
 })('PixivUserBatchDownload');
 
 const pubd = { //储存程序设置
-	configVersion: 1, //当前设置版本，用于提醒是否需要重置（未启用）
-	touch: false, //是手机版（未启用）
+	configVersion: 2, //当前设置版本，用于处理老版本设置的改变
+	touch: false, //是否为手机版
 	loggedIn: false, //登陆了（未启用）
 	start: null, //开始按钮指针
 	menu: null, //菜单指针
@@ -146,18 +146,17 @@ const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\
 
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
-const PixivAppVersion = "5.0.235"; //Pixiv APP的版本
+const PixivAppVersion = "6.0.0"; //Pixiv APP的版本
 const AndroidVersion = "12.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${PixivAppVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat，目前是固定值
 const Referer = "https://app-api.pixiv.net/";
 const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
 //登陆时的固定参数
-const authURL = "https://oauth.secure.pixiv.net/auth/token";
 const client_id = "MOBrBDS8blbauoSck0ZfDbtuzpyT"; //安卓版固定数据
 const client_secret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"; //安卓版固定数据
 
-var thisPageUserid = null, //当前页面的画师ID
+let thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
 	downIllustMenuId = null, //下载当前作品的菜单的ID（Tampermonker菜单内的指针）
 	recommendList = null; //推荐作品列表Dom位置
@@ -391,6 +390,11 @@ class oAuth2
 			this.login_time = null;
 			this.authorization_code = null;
 			this.auth_data = null;
+			this.idp_urls = { //默认的综合网址集
+				"account-edit": "https://accounts.pixiv.net/api/v2/account/edit",
+				"auth-token": "https://oauth.secure.pixiv.net/auth/token",
+				"auth-token-redirect-uri": "https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback",
+			};
 		}
 	}
 	random_code_verifier()
@@ -430,6 +434,43 @@ class oAuth2
 		base64url = base64url.replace(/\//g,'_');
 		return base64url;
 	}
+	refresh_idp_urls(options = {})
+	{
+		const thisAuth = this;
+		//登陆的Auth API
+		GM_xmlhttpRequest({
+			url: "https://app-api.pixiv.net/idp-urls",
+			method: "get",
+			responseType: "text",
+			headers: new HeadersObject(),
+			onload: function(response) {
+				let jo;
+				try {
+					jo = JSON.parse(response.responseText);
+				} catch (e) {
+					console.error("获取综合网址集失败，返回可能不是JSON格式。", e, response);
+					if(options.onload_notJson) options.onload_notJson(response.responseText);
+					return;
+				}
+	
+				if (jo.has_error || jo.errors) {
+					console.error("获取综合网址集失败，返回错误消息", jo);
+					if(options.onload_hasError) options.onload_hasError(jo);
+					return;
+				} else { //登陆成功
+					Object.assign(thisAuth.idp_urls, jo);
+					console.info("获取综合网址集成功", jo);
+					if(options.onload) options.onload(jo);
+					return;
+				}
+			},
+			onerror: function(response) {
+				console.error("获取登陆重定向网址失败，网络请求发生错误", response);
+				if(options.onerror) options.onerror(response);
+				return;
+			}
+		});
+	}
 	get_login_url()
 	{
 		const loginURL = new URL("https://app-api.pixiv.net/web/v1/login");
@@ -447,48 +488,49 @@ class oAuth2
 		postObj.set("code_verifier", thisAuth.code_verifier);
 		postObj.set("code", authorization_code);
 		postObj.set("grant_type","authorization_code");
-		postObj.set("redirect_uri","https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback");
+		postObj.set("redirect_uri",thisAuth.idp_urls["auth-token-redirect-uri"]);
 		postObj.set("client_id", client_id);
 		postObj.set("client_secret", client_secret);
 		postObj.set("include_policy","true");
 
-		//登陆的Auth API
-		GM_xmlhttpRequest({
-			url: authURL,
-			method: "post",
-			responseType: "text",
-			headers: new HeadersObject(),
-			data: postObj.toString(),
-			onload: function(response) {
-				let jo;
-				try {
-					jo = JSON.parse(response.responseText);
-				} catch (e) {
-					console.error("登录失败，返回可能不是JSON格式，或本程序异常。", e, response);
-					if(options.onload_notJson) options.onload_notJson(response.responseText);
-					return;
-				}
-	
-				if (jo)
-				{
-					if (jo.has_error || jo.errors) {
-						console.error("登录失败，返回错误消息", jo);
-						if(options.onload_hasError) options.onload_hasError(jo);
-						return;
-					} else { //登陆成功
-						thisAuth.auth_data = jo;
-						thisAuth.login_time = new Date().getTime();
-						console.info("登陆成功", jo);
-
-						if(options.onload) options.onload(jo);
+		this.refresh_idp_urls({
+			onload: function(){
+				//登陆的Auth API
+				GM_xmlhttpRequest({
+					url: thisAuth.idp_urls["auth-token"],
+					method: "post",
+					responseType: "text",
+					headers: new HeadersObject(),
+					data: postObj.toString(),
+					onload: function(response) {
+						let jo;
+						try {
+							jo = JSON.parse(response.responseText);
+						} catch (e) {
+							console.error("登录失败，返回可能不是JSON格式，或本程序异常。", e, response);
+							if(options.onload_notJson) options.onload_notJson(response.responseText);
+							return;
+						}
+			
+						if (jo.has_error || jo.errors) {
+							console.error("登录失败，返回错误消息", jo);
+							if(options.onload_hasError) options.onload_hasError(jo);
+							return;
+						} else { //登陆成功
+							thisAuth.auth_data = jo;
+							thisAuth.login_time = new Date().getTime();
+							console.info("登陆成功", jo);
+		
+							if(options.onload) options.onload(jo);
+							return;
+						}
+					},
+					onerror: function(response) {
+						console.error("登录失败，网络请求发生错误", response);
+						if(options.onerror) options.onerror(response);
 						return;
 					}
-				}
-			},
-			onerror: function(response) {
-				console.error("登录失败，网络请求发生错误", response);
-				if(options.onerror) options.onerror(response);
-				return;
+				});
 			}
 		});
 	}
@@ -504,7 +546,7 @@ class oAuth2
 
 		//登陆的Auth API
 		GM_xmlhttpRequest({
-			url: authURL,
+			url: thisAuth.idp_urls["auth-token"],
 			method: "post",
 			responseType: "text",
 			headers: new HeadersObject(),
@@ -519,20 +561,17 @@ class oAuth2
 					return;
 				}
 	
-				if (jo)
-				{
-					if (jo.has_error || jo.errors) {
-						console.error("刷新Token失败，返回错误消息", jo);
-						if(options.onload_hasError) options.onload_hasError(jo);
-						return;
-					} else { //登陆成功
-						thisAuth.auth_data = jo;
-						thisAuth.login_time = new Date().getTime();
-						console.info("刷新Token成功", jo);
+				if (jo.has_error || jo.errors) {
+					console.error("刷新Token失败，返回错误消息", jo);
+					if(options.onload_hasError) options.onload_hasError(jo);
+					return;
+				} else { //登陆成功
+					thisAuth.auth_data = jo;
+					thisAuth.login_time = new Date().getTime();
+					console.info("刷新Token成功", jo);
 
-						if(options.onload) options.onload(jo);
-						return;
-					}
+					if(options.onload) options.onload(jo);
+					return;
 				}
 			},
 			onerror: function(response) {
@@ -2240,12 +2279,6 @@ function buildDlgLogin() {
 		);
 	};
 
-	//窗口关闭
-	dlg.close = function() {
-		progress.stop_token_animate();
-	};
-	//关闭窗口按钮
-	dlg.cptBtns.close.addEventListener("click", dlg.close);
 	//窗口初始化
 	dlg.initialise = function() {
 		this.error.clear();
@@ -3825,6 +3858,13 @@ function replacePathSafe(str, type) //去除Windows下无法作为文件名的�
 //主引导程序
 function Main(touch) {
 	if (!mdev) GM_addStyle(GM_getResourceText("pubd-style")); //不是开发模式时加载CSS资源
+
+	//删除以前储存的账号密码
+	let cfgVer = GM_getValue("pubd-configversion");
+	if (cfgVer && cfgVer < pubd.configVersion)
+	{
+		GM_deleteValue("pubd-auth");
+	}
 
 	//载入设置
 	pubd.oAuth = new oAuth2(GM_getValue("pubd-oauth"));
