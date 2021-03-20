@@ -146,7 +146,7 @@ const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\
 
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
-const PixivAppVersion = "6.0.0"; //Pixiv APP的版本
+const PixivAppVersion = "6.2.1"; //Pixiv APP的版本
 const AndroidVersion = "12.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${PixivAppVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat，目前是固定值
