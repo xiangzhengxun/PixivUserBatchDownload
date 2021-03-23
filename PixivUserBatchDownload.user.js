@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.16.137
+// @version		5.17.138
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -36,7 +36,7 @@
 // @exclude		*://www.pixiv.net/report*
 //-@exclude		*://www.pixiv.net/search.php*
 //-@exclude		*://www.pixiv.net/tags*
-// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.16.129
+// @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.17.138
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
 // @require		https://cdn.staticfile.org/crypto-js/4.0.0/sha256.min.js
@@ -598,7 +598,7 @@ var DownScheme = function(name) {
 	this.name = name ? name : "默认方案";
 	this.rpcurl = "http://localhost:6800/jsonrpc";
 	this.proxyurl = "";
-	this.https2http = false;
+	this.downloadurl = "%{illust.parsedURL.protocol}//%{illust.parsedURL.host}%{illust.parsedURL.path_before_page}%{page}.%{illust.extention}";
 	this.downfilter = "";
 	this.savedir = "D:/PixivDownload/";
 	this.savepath = "%{illust.user.id}/%{illust.filename}%{page}.%{illust.extention}";
@@ -1339,9 +1339,10 @@ function parseIllustUrl(url) {
 	return obj;
 }
 //从一个作品数据得到原始图片的下载地址
-function getIllustDownUrl(illust, page, https2http = false)
+function getIllustDownUrl(scheme, userInfo, illust, page)
 {
-	return `${https2http ? 'http:' : illust.parsedURL.protocol}//${illust.parsedURL.host}${illust.parsedURL.path_before_page}${page}.${illust.extention}`;
+	return showMask(scheme.downloadurl, scheme.masklist, userInfo, illust, page);
+	//return `${illust.parsedURL.protocol}//${illust.parsedURL.host}${illust.parsedURL.path_before_page}${page}.${illust.extention}`;
 }
 
 //获取当前用户ID
@@ -1723,7 +1724,7 @@ function buildDlgConfig() {
 		if (scheme == undefined) {
 			dlg.rpcurl.value = "";
 			dlg.proxyurl.value = "";
-			dlg.https2http.checked = false;
+			dlg.downloadurl.value = "";
 			dlg.downfilter.value = "";
 			dlg.savedir.value = "";
 			dlg.savepath.value = "";
@@ -1732,7 +1733,7 @@ function buildDlgConfig() {
 		} else {
 			dlg.rpcurl.value = scheme.rpcurl;
 			dlg.proxyurl.value = scheme.proxyurl;
-			dlg.https2http.checked = scheme.https2http;
+			dlg.downloadurl.value = scheme.downloadurl;
 			dlg.downfilter.value = scheme.downfilter;
 			dlg.savedir.value = scheme.savedir;
 			dlg.savepath.value = scheme.savepath;
@@ -1878,6 +1879,11 @@ function buildDlgConfig() {
 	};
 	var dt = dl_ss.appendChild(document.createElement("dt"));
 	dt.textContent = "Aria2 代理服务器地址";
+	var dta = dt.appendChild(document.createElement("a"));
+	dta.className = "pubd-help-link";
+	dta.textContent = "(?)";
+	dta.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/Aria2%e9%80%9a%e8%bf%87%e4%bb%a3%e7%90%86%e4%b8%8b%e8%bd%bd";
+	dta.target = "_blank";
 	var dd = dl_ss.appendChild(document.createElement("dd"));
 	var proxyurl = dlg.proxyurl = dd.appendChild(document.createElement("input"));
 	proxyurl.type = "text";
@@ -1891,19 +1897,29 @@ function buildDlgConfig() {
 		dlg.schemes[schemeIndex].proxyurl = this.value;
 	};
 
-	//额外设置，https转http
-	var dt = document.createElement("dt");
-	dl_ss.appendChild(dt);
-	var dd = document.createElement("dd");
-	var chk_https2http = new LabelInput("图片网址https转http", "pubd-https2http", "pubd-https2http", "checkbox", "1", true, "某些Linux没有正确安装新版OpenSSL，https的图片链接会下载失败。");
-	dlg.https2http = chk_https2http.input;
-	dlg.https2http.onchange = function() {
-		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
-		var schemeIndex = dlg.downSchemeDom.selectedIndex;
-		dlg.schemes[schemeIndex].https2http = this.checked;
+	var dt = dl_ss.appendChild(document.createElement("dt"));
+	dt.textContent = "作品下载地址";
+	var dd = dl_ss.appendChild(document.createElement("dd"));
+	var downloadurl = dlg.downloadurl = dd.appendChild(document.createElement("input"));
+	downloadurl.type = "text";
+	downloadurl.className = "pubd-downloadurl";
+	downloadurl.name = "pubd-downloadurl";
+	downloadurl.readOnly = true;
+	downloadurl.id = downloadurl.name;
+	downloadurl.onclick = function() {
+		if (this.readOnly)
+		{
+			if (confirm("警告！\n修改下载地址可能导致无法下载图片，您确定要修改吗？\n\n若确需修改，建议先在文本输出模式测试。"))
+			{
+				this.readOnly = false;
+			}
+		}
 	};
-	dd.appendChild(chk_https2http);
-	dl_ss.appendChild(dd);
+	downloadurl.onchange = function() {
+		if (dlg.downSchemeDom.selectedOptions.length < 1) { return; }
+		const schemeIndex = dlg.downSchemeDom.selectedIndex;
+		dlg.schemes[schemeIndex].downloadurl = this.value;
+	};
 
 	//下载过滤
 	var dt = dl_ss.appendChild(document.createElement("dt"));
@@ -3611,7 +3627,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 				continue;
 			} else {
 				var aria2_method = {'methodName':'aria2.addUri','params':[]};
-				var url = getIllustDownUrl(illust, page, scheme.https2http);
+				var url = getIllustDownUrl(scheme, userInfo, illust, page);
 
 				aria2_method.params.push([url]); //添加下载链接
 				var options = {
@@ -3666,7 +3682,7 @@ function sendToAria2_illust(aria2, termwiseType, illusts, userInfo, scheme, down
 					continue;
 				} else {
 					var aria2_method = {'methodName':'aria2.addUri','params':[]};
-					var url = getIllustDownUrl(illust, page, scheme.https2http);
+					var url = getIllustDownUrl(scheme, userInfo, illust, page);
 
 					aria2_method.params.push([url]); //添加下载链接
 					var options = {
@@ -3731,7 +3747,7 @@ function sendToAria2_Page(aria2, illust, page, userInfo, scheme, downP, callback
 		callback();
 		return;
 	}
-	var url = getIllustDownUrl(illust, page, scheme.https2http);
+	var url = getIllustDownUrl(scheme, userInfo, illust, page);
 
 	if (returnLogicValue(scheme.downfilter, userInfo, illust, page)) {
 		//跳过此次下载

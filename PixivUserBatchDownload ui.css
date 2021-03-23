@@ -639,7 +639,8 @@ border: 1px solid #becad7;
 .pubd-config .pubd-savedir,
 .pubd-config .pubd-savepath,
 .pubd-config .pubd-textout,
-.pubd-config .pubd-proxyurl
+.pubd-config .pubd-proxyurl,
+.pubd-config .pubd-downloadurl
 {/*下载目录与保存目录，文本输出格式*/
 	width: 100%;
 }
@@ -658,7 +659,7 @@ border: 1px solid #becad7;
 }
 .pubd-config .pubd-textout-bar
 {/*文本输出模式格式-dd*/
-	height: calc(100% - 383px);
+	height: calc(100% - 403px);
 	min-height: 32px;
 }
 .pubd-config .pubd-mask-list-bar
