@@ -14,25 +14,29 @@ using System.Runtime.InteropServices;
 
 namespace Pixiv_Login_Redirect_Capture
 {
-    public partial class Register : Form
+    public partial class Form_Register : Form
     {
         private const string protocolName = "pixiv";
+        private const string regArg = "--register";
+        private const string unregArg = "--unregister";
 
-        public Register(string[] args)
+        [DllImport("user32.dll", EntryPoint = "SendMessage")]
+        public static extern int SendMessage(IntPtr hwnd, int wMsg, IntPtr wParam, IntPtr lParam);
+
+        internal const int BCM_FIRST = 0x1600; //Normal button
+        internal const int BCM_SETSHIELD = (BCM_FIRST + 0x000C); //Elevated button
+
+        public Form_Register(string[] args)
         {
             InitializeComponent();
-            foreach (string arg in args)
+            if (args.Contains(regArg)) //注册
+                button_register_Click(this, null);
+            if (args.Contains(unregArg)) //注销
+                button_unregister_Click(this, null);
+            if (!IsAdministrator())
             {
-                if (arg == "--register") //注册
-                {
-                    button_register_Click(this, null);
-                    break;
-                }
-                else if(arg == "--uregister") //注销
-                {
-                    button_unregister_Click(this, null);
-                    break;
-                }
+                AddShieldToButton(button_register); //Important
+                AddShieldToButton(button_unregister); //Important
             }
         }
 
@@ -45,7 +49,7 @@ namespace Pixiv_Login_Redirect_Capture
         {
             if (!IsAdministrator())
             {
-                RestartElevated("--register");
+                RestartElevated(regArg);
                 return;
             }
             Reg();
@@ -61,7 +65,7 @@ namespace Pixiv_Login_Redirect_Capture
         {
             if (!IsAdministrator())
             {
-                RestartElevated("--uregister");
+                RestartElevated(unregArg);
                 return;
             }
             UnReg();
@@ -76,14 +80,15 @@ namespace Pixiv_Login_Redirect_Capture
             //注册协议名
             RegistryKey surekamKey = Registry.ClassesRoot.CreateSubKey(protocolName);
             //设置其为URL协议
-            surekamKey.SetValue("URL Protocol", "");
+            surekamKey.SetValue("URL Protocol", string.Empty);
             //创建打开命令
             RegistryKey shellKey = surekamKey.CreateSubKey("shell");
             RegistryKey openKey = shellKey.CreateSubKey("open");
             RegistryKey commandKey = openKey.CreateSubKey("command");
             //获取当前程序路径
             string exePath = Process.GetCurrentProcess().MainModule.FileName;
-            commandKey.SetValue("", "\"" + exePath + "\"" + " \"%1\"");
+            commandKey.SetValue(string.Empty, $"\"{exePath}\" \"%1\"");
+            surekamKey.Close();
         }
 
         /// <summary>
@@ -113,7 +118,10 @@ namespace Pixiv_Login_Redirect_Capture
         public bool IsRegistered()
         {
             RegistryKey surekamKey = Registry.ClassesRoot.OpenSubKey(protocolName);
-            return surekamKey != null;
+            bool registered = surekamKey != null;
+            if (registered)
+                surekamKey.Close();
+            return registered;
         }
 
         /// <summary>
@@ -123,11 +131,6 @@ namespace Pixiv_Login_Redirect_Capture
         /// <param name="e"></param>
         private void Register_Load(object sender, EventArgs e)
         {
-            if (!IsAdministrator())
-            {
-                AddShieldToButton(this.button_register); //Important
-                AddShieldToButton(this.button_unregister); //Important
-            }
             refreshButtonEnable();
         }
 
@@ -137,23 +140,18 @@ namespace Pixiv_Login_Redirect_Capture
         private void refreshButtonEnable()
         {
             bool reg = IsRegistered();
-            this.button_register.Enabled = !reg;
-            this.button_unregister.Enabled = reg;
+            button_register.Enabled = !reg;
+            button_unregister.Enabled = reg;
         }
-
-        [DllImport("user32")]
-        public static extern UInt32 SendMessage (IntPtr hWnd, UInt32 msg, UInt32 wParam, UInt32 lParam);
-        internal const int BCM_FIRST = 0x1600; //Normal button
-        internal const int BCM_SETSHIELD = (BCM_FIRST + 0x000C); //Elevated button
 
         /// <summary>
         /// 增加盾牌图标
         /// </summary>
         /// <param name="b"></param>
-        static internal void AddShieldToButton(Button b)
+        static internal void AddShieldToButton(Button btn)
         {
-            b.FlatStyle = FlatStyle.System;
-            SendMessage(b.Handle, BCM_SETSHIELD, 0, 0xFFFFFFFF);
+            btn.FlatStyle = FlatStyle.System;
+            SendMessage(btn.Handle, BCM_SETSHIELD, IntPtr.Zero, new IntPtr(0xFFFFFFFF));
         }
 
         /// <summary>
@@ -161,18 +159,21 @@ namespace Pixiv_Login_Redirect_Capture
         /// </summary>
         internal static void RestartElevated(string exearg = "")
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.UseShellExecute = true;
-            startInfo.WorkingDirectory = Environment.CurrentDirectory;
-            startInfo.FileName = Application.ExecutablePath;
-            startInfo.Verb = "runas";
-            startInfo.Arguments = exearg;
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                WorkingDirectory = Environment.CurrentDirectory,
+                FileName = Application.ExecutablePath,
+                Verb = "runas",
+                Arguments = exearg
+            };
             try
             {
                 Process p = Process.Start(startInfo);
             }
-            catch (System.ComponentModel.Win32Exception ex)
+            catch (Win32Exception ex)
             {
+                Debug.Write(ex);
                 return;
             }
 

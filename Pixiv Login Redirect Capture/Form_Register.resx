@@ -117,79 +117,96 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="&gt;&gt;label_pixivlink.Name" xml:space="preserve">
-    <value>label_pixivlink</value>
-  </data>
-  <assembly alias="mscorlib" name="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="label_pixivlink.TabIndex" type="System.Int32, mscorlib">
-    <value>4</value>
-  </data>
-  <data name="textBox_pixivlink.TabIndex" type="System.Int32, mscorlib">
-    <value>3</value>
-  </data>
-  <data name="&gt;&gt;textBox_pixivlink.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;label_pixivlink.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="label_pixivlink.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="&gt;&gt;label_pixivlink.Parent" xml:space="preserve">
-    <value>$this</value>
+  <data name="&gt;&gt;group_protocol.Name" xml:space="preserve">
+    <value>group_protocol</value>
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="label_pixivlink.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 9</value>
+  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
+    <value>6, 12</value>
   </data>
-  <data name="&gt;&gt;textBox_pixivlink.Parent" xml:space="preserve">
-    <value>$this</value>
+  <data name="&gt;&gt;button_register.Name" xml:space="preserve">
+    <value>button_register</value>
+  </data>
+  <data name="&gt;&gt;group_protocol.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;button_register.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="button_unregister.Text" xml:space="preserve">
+    <value>Unregister</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
     <value>System.Windows.Forms.Form, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
-    <value>435, 56</value>
-  </data>
-  <data name="textBox_pixivlink.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 24</value>
-  </data>
-  <data name="&gt;&gt;textBox_pixivlink.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;label_pixivlink.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="&gt;&gt;textBox_pixivlink.Name" xml:space="preserve">
-    <value>textBox_pixivlink</value>
+    <value>373, 81</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
-    <value>PixivLink</value>
+    <value>Form_Register</value>
   </data>
-  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
-    <value>6, 12</value>
+  <data name="&gt;&gt;group_protocol.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="label_pixivlink.Text" xml:space="preserve">
-    <value>Pixiv APP Link</value>
+  <data name="button_register.Size" type="System.Drawing.Size, System.Drawing">
+    <value>163, 23</value>
+  </data>
+  <data name="&gt;&gt;button_unregister.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <assembly alias="mscorlib" name="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="button_register.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="button_unregister.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;button_unregister.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="button_unregister.Size" type="System.Drawing.Size, System.Drawing">
+    <value>163, 23</value>
+  </data>
+  <data name="&gt;&gt;group_protocol.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="button_register.Text" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="group_protocol.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;button_unregister.Parent" xml:space="preserve">
+    <value>group_protocol</value>
+  </data>
+  <data name="group_protocol.Location" type="System.Drawing.Point, System.Drawing">
+    <value>12, 12</value>
+  </data>
+  <data name="&gt;&gt;button_register.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="group_protocol.Text" xml:space="preserve">
+    <value>Pixiv Protocol</value>
+  </data>
+  <data name="button_register.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 24</value>
+  </data>
+  <data name="group_protocol.Size" type="System.Drawing.Size, System.Drawing">
+    <value>348, 58</value>
+  </data>
+  <data name="&gt;&gt;button_register.Parent" xml:space="preserve">
+    <value>group_protocol</value>
+  </data>
+  <data name="&gt;&gt;button_unregister.Name" xml:space="preserve">
+    <value>button_unregister</value>
   </data>
   <data name="$this.Text" xml:space="preserve">
-    <value>PUBD - Pixiv APP Link</value>
+    <value>PUBD - Register Protocol</value>
   </data>
-  <data name="label_pixivlink.Size" type="System.Drawing.Size, System.Drawing">
-    <value>89, 12</value>
-  </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="label_pixivlink.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="textBox_pixivlink.Size" type="System.Drawing.Size, System.Drawing">
-    <value>413, 21</value>
+  <data name="button_unregister.Location" type="System.Drawing.Point, System.Drawing">
+    <value>175, 24</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
-  </metadata>
-  <metadata name="$this.Language" type="System.Globalization.CultureInfo, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>zh-CN</value>
   </metadata>
 </root>

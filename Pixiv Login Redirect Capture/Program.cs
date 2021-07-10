@@ -19,19 +19,18 @@ namespace Pixiv_Login_Redirect_Capture
             Application.SetCompatibleTextRenderingDefault(false);
             if (args.Length > 0)
             {
-                Regex regex = new Regex(@"^pixiv://");
-                if (regex.IsMatch(args[0]))
+                if (Regex.IsMatch(args[0], @"^pixiv:[\\/]{2}.+", RegexOptions.IgnoreCase))
                 {
-                    Application.Run(new PixivLink(args));
+                    Application.Run(new Form_PixivLink(args));
                 }
                 else
                 {
-                    Application.Run(new Register(args));
+                    Application.Run(new Form_Register(args));
                 }
             }
             else
             {
-                Application.Run(new Register(args));
+                Application.Run(new Form_Register(args));
             }
         }
     }

@@ -1,7 +1,7 @@
 ﻿
 namespace Pixiv_Login_Redirect_Capture
 {
-    partial class Register
+    partial class Form_Register
     {
         /// <summary>
         /// 必需的设计器变量。
@@ -29,7 +29,7 @@ namespace Pixiv_Login_Redirect_Capture
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Register));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form_Register));
             this.group_protocol = new System.Windows.Forms.GroupBox();
             this.button_unregister = new System.Windows.Forms.Button();
             this.button_register = new System.Windows.Forms.Button();
@@ -38,9 +38,9 @@ namespace Pixiv_Login_Redirect_Capture
             // 
             // group_protocol
             // 
+            resources.ApplyResources(this.group_protocol, "group_protocol");
             this.group_protocol.Controls.Add(this.button_unregister);
             this.group_protocol.Controls.Add(this.button_register);
-            resources.ApplyResources(this.group_protocol, "group_protocol");
             this.group_protocol.Name = "group_protocol";
             this.group_protocol.TabStop = false;
             // 
@@ -58,7 +58,7 @@ namespace Pixiv_Login_Redirect_Capture
             this.button_register.UseVisualStyleBackColor = true;
             this.button_register.Click += new System.EventHandler(this.button_register_Click);
             // 
-            // Register
+            // Form_Register
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -66,7 +66,7 @@ namespace Pixiv_Login_Redirect_Capture
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "Register";
+            this.Name = "Form_Register";
             this.Load += new System.EventHandler(this.Register_Load);
             this.group_protocol.ResumeLayout(false);
             this.ResumeLayout(false);

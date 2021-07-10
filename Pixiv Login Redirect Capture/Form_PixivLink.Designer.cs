@@ -1,7 +1,7 @@
 ﻿
 namespace Pixiv_Login_Redirect_Capture
 {
-    partial class PixivLink
+    partial class Form_PixivLink
     {
         /// <summary>
         /// Required designer variable.
@@ -29,9 +29,10 @@ namespace Pixiv_Login_Redirect_Capture
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PixivLink));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form_PixivLink));
             this.label_pixivlink = new System.Windows.Forms.Label();
             this.textBox_pixivlink = new System.Windows.Forms.TextBox();
+            this.btn_CopyToClipboard = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // label_pixivlink
@@ -44,16 +45,24 @@ namespace Pixiv_Login_Redirect_Capture
             resources.ApplyResources(this.textBox_pixivlink, "textBox_pixivlink");
             this.textBox_pixivlink.Name = "textBox_pixivlink";
             // 
-            // PixivLink
+            // btn_CopyToClipboard
+            // 
+            resources.ApplyResources(this.btn_CopyToClipboard, "btn_CopyToClipboard");
+            this.btn_CopyToClipboard.Name = "btn_CopyToClipboard";
+            this.btn_CopyToClipboard.UseVisualStyleBackColor = true;
+            this.btn_CopyToClipboard.Click += new System.EventHandler(this.btn_CopyToClipboard_Click);
+            // 
+            // Form_PixivLink
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.btn_CopyToClipboard);
             this.Controls.Add(this.label_pixivlink);
             this.Controls.Add(this.textBox_pixivlink);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "PixivLink";
+            this.Name = "Form_PixivLink";
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -63,5 +72,6 @@ namespace Pixiv_Login_Redirect_Capture
 
         private System.Windows.Forms.Label label_pixivlink;
         private System.Windows.Forms.TextBox textBox_pixivlink;
+        private System.Windows.Forms.Button btn_CopyToClipboard;
     }
 }
