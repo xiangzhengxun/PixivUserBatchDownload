@@ -697,16 +697,16 @@ border: 1px solid #becad7;
     font-weight:bold;
 }
 /*▲选项对话框相关*/
-/*▼登陆对话框相关*/
+/*▼登录对话框相关*/
 .pubd-login
-{/*登陆对话框*/
+{/*登录对话框*/
 	left: calc(50vw - 180px);
 	top: 150px;
 	resize: none;
 }
 .pubd-login .pubd-icon,
 .pubd-config .pubd-tologin::before
-{/*登陆对话框图标*/
+{/*登录对话框图标*/
 	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAQAAABLCVATAAAAiUlEQVRIx2NgGAXUAfU4YDqDOGkG/ccJ3zGYUMeg/wxHqOE1kEE/qBF2EDfR2yAH6hgECod6yg0Khyqtp9QgFoa1eI0iwWv4jSIpsPEZhcWgejywheELDqOwGPSfSFhPN4Oo5jWqBTaNo59qCZJqWYRqmZaKxchgLCGpWvhTrTqiWgVJtSp7ZAMAVUD54xft5gkAAAAASUVORK5CYII=);
 }
 .pubd-config .pubd-tologin::before
@@ -767,7 +767,7 @@ border: 1px solid #becad7;
 	border: none;
 	border-radius: 4px;
 }
-/*▲登陆对话框内容*/
+/*▲登录对话框内容*/
 /*▼刷新Token对话框内容*/
 .pubd-refresh-token
 {
@@ -775,7 +775,7 @@ border: 1px solid #becad7;
 	resize: none;
 }
 .pubd-refresh-token .pubd-icon
-{/*登陆对话框图标*/
+{/*登录对话框图标*/
 	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAQAAABLCVATAAABKUlEQVRIx2NgGAXDC8gyZDFsYbjN8BkIbzFsZshkkEaRryfGECmG2Qy/Gf6jwd8MMxjE4cb8J2yMH8MnDENg8CODB9QYggblMfyFatrDkMKgysADhKoMqQwHoaJ/gN78T9ggP6gxtxjsMeRcGR6guA5v2EA8dZBBEKu8GMNj4gyaDXWNIA75euJcJAONKXuijMFjUDZYejeRxuAxaCtYOpVIY/AYdAMsrU55poDEGO8gMohqXsMX2MggGaxuLbnRjwB7wOqyyE+QEGALVvOdQYKSLMLAwAcs6kBqZhEq0PBnWj6Gw2D51/jdQ6gYsQaKguT+MgQQE3eYBRsnMEkkQYMYZEwKsckAX1H7liGQlBSFvfD/yTAXGLMUVEdfGe4DWXnkGDIKBjMAAL+l1wS3lXpIAAAAAElFTkSuQmCC);
 }
 .pubd-refresh-token .logo-box
