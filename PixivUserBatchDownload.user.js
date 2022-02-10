@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.17.139
+// @version		5.17.140
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2021+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -146,10 +146,10 @@ const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\
 
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
-const PixivAppVersion = "6.4.0"; //Pixiv APP的版本
+const PixivAppVersion = "6.36.0"; //Pixiv APP的版本
 const AndroidVersion = "12.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${PixivAppVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
-const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的slat，目前是固定值
+const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的salt，目前是固定值
 const Referer = "https://app-api.pixiv.net/";
 const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
 //登陆时的固定参数
@@ -1258,13 +1258,9 @@ function NewDownSchemeArrayFromJson(jsonarr) {
 			return false;
 		}
 	}
-	var sarr = [];
-	if (jsonarr instanceof Array) {
-		jsonarr.forEach(json=>{
-			var scheme = new DownScheme();
-			scheme.loadFromJson(json);
-			sarr.push(scheme);
-		});
+	let sarr = [];
+	if (Array.isArray(jsonarr)) {
+		sarr = jsonarr.map(json=>(new DownScheme()).loadFromJson(json));
 	}
 	return sarr;
 }
@@ -1277,7 +1273,7 @@ function getQueryString(name,url) {
 	}else
 	{
 		const reg = new RegExp(`(?:^|&)${name}=([^&]*)(?:&|$)`, "i");
-		const searchStr = url || location.search.substr(1);
+		const searchStr = url || location.search.substring(1);
 		const r = searchStr.match(reg);
 		if (r != null)
 		{
