@@ -95,12 +95,12 @@ const scriptName = (defaultName=>{ //本程序的名称
 const pubd = { //储存程序设置
 	configVersion: 2, //当前设置版本，用于处理老版本设置的改变
 	touch: false, //是否为手机版
-	loggedIn: false, //登陆了（未启用）
+	loggedIn: false, //登录了（未启用）
 	start: null, //开始按钮指针
 	menu: null, //菜单指针
 	dialog: { //窗口们的指针
 		config: null, //设置窗口
-		login: null, //登陆窗口
+		login: null, //登录窗口
 		refresh_token: null, //刷新token窗口
 		downthis: null, //下载当前窗口
 		downillust: null, //下载当前作品窗口
@@ -152,7 +152,7 @@ const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${PixivAppVersion}; Andr
 const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的salt，目前是固定值
 const Referer = "https://app-api.pixiv.net/";
 const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
-//登陆时的固定参数
+//登录时的固定参数
 const client_id = "MOBrBDS8blbauoSck0ZfDbtuzpyT"; //安卓版固定数据
 const client_secret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"; //安卓版固定数据
 
@@ -436,7 +436,7 @@ class oAuth2
 	refresh_idp_urls(options = {})
 	{
 		const thisAuth = this;
-		//登陆的Auth API
+		//登录的Auth API
 		GM_xmlhttpRequest({
 			url: "https://app-api.pixiv.net/idp-urls",
 			method: "get",
@@ -456,7 +456,7 @@ class oAuth2
 					console.error("获取综合网址集失败，返回错误消息", jo);
 					if(options.onload_hasError) options.onload_hasError(jo);
 					return;
-				} else { //登陆成功
+				} else { //登录成功
 					Object.assign(thisAuth.idp_urls, jo);
 					console.info("获取综合网址集成功", jo);
 					if(options.onload) options.onload(jo);
@@ -464,7 +464,7 @@ class oAuth2
 				}
 			},
 			onerror: function(response) {
-				console.error("获取登陆重定向网址失败，网络请求发生错误", response);
+				console.error("获取登录重定向网址失败，网络请求发生错误", response);
 				if(options.onerror) options.onerror(response);
 				return;
 			}
@@ -494,7 +494,7 @@ class oAuth2
 
 		this.refresh_idp_urls({
 			onload: function(){
-				//登陆的Auth API
+				//登录的Auth API
 				GM_xmlhttpRequest({
 					url: thisAuth.idp_urls["auth-token"],
 					method: "post",
@@ -515,10 +515,10 @@ class oAuth2
 							console.error("登录失败，返回错误消息", jo);
 							if(options.onload_hasError) options.onload_hasError(jo);
 							return;
-						} else { //登陆成功
+						} else { //登录成功
 							thisAuth.auth_data = jo;
 							thisAuth.login_time = new Date().getTime();
-							console.info("登陆成功", jo);
+							console.info("登录成功", jo);
 		
 							if(options.onload) options.onload(jo);
 							return;
@@ -543,7 +543,7 @@ class oAuth2
 		postObj.set("refresh_token",thisAuth.auth_data.refresh_token);
 		postObj.set("include_policy","true");
 
-		//登陆的Auth API
+		//登录的Auth API
 		GM_xmlhttpRequest({
 			url: thisAuth.idp_urls["auth-token"],
 			method: "post",
@@ -564,7 +564,7 @@ class oAuth2
 					console.error("刷新Token失败，返回错误消息", jo);
 					if(options.onload_hasError) options.onload_hasError(jo);
 					return;
-				} else { //登陆成功
+				} else { //登录成功
 					thisAuth.auth_data = jo;
 					thisAuth.login_time = new Date().getTime();
 					console.info("刷新Token成功", jo);
@@ -1194,7 +1194,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 					if (jo.error.message.includes("Error occurred at the OAuth process.")) {
 						if (auth) {
 							console.warn(dlog("授权 Token 过期，开始自动更新。"),jo);
-							//自动重新登陆
+							//自动重新登录
 							pubd.dialog.refresh_token.show(
 								(document.body.clientWidth - 370)/2,
 								window.pageYOffset+300,
@@ -1224,7 +1224,7 @@ function xhrGenneral(url, onload_suceess_Cb, onload_hasError_Cb, onload_notJson_
 						onload_hasError_Cb(jo);
 						return;
 					}
-				} else { //登陆成功
+				} else { //登录成功
 					//console.info("JSON返回成功",jo);
 					onload_suceess_Cb(jo);
 					return;
@@ -1522,7 +1522,7 @@ function buildProgressToken()
 		const _this = progress;
 		if (!pubd.oAuth.auth_data)
 		{
-			_this.set(0, 2, "尚未登陆");
+			_this.set(0, 2, "尚未登录");
 			clearInterval(_this.animateHook);
 			return;
 		}
@@ -1588,7 +1588,7 @@ function buildDlgConfig() {
 	userAccount.className = "user-account";
 
 	var li_t = ul_t.appendChild(document.createElement("li"));
-	//登陆/退出
+	//登录/退出
 	const btnLogin = li_t.appendChild(document.createElement("button"));
 	btnLogin.className = "pubd-tologin";
 	btnLogin.onclick = function(){
@@ -1601,7 +1601,7 @@ function buildDlgConfig() {
 			dlg.refreshLoginState();
 		}else
 		{
-			//登陆
+			//登录
 			pubd.dialog.login.show(
 				(document.body.clientWidth - 370)/2,
 				window.pageYOffset+200
@@ -1644,7 +1644,7 @@ function buildDlgConfig() {
 			userAvatar.img.alt = userAvatar.title = "";
 			userName.textContent = "未登录";
 			userAccount.textContent = "Not logged in";
-			btnLogin.textContent = "登陆";
+			btnLogin.textContent = "登录";
 			progress.token_animate();
 			progress.stop_token_animate();
 			btnRefresh.disabled = true;
@@ -2158,7 +2158,7 @@ function buildDlgConfig() {
 	};
 	//重置设置函数
 	dlg.reset = function() {
-		GM_deleteValue("pubd-auth"); //登陆相关信息
+		GM_deleteValue("pubd-auth"); //登录相关信息
 		GM_deleteValue("pubd-getugoiraframe"); //获取动图帧数
 		GM_deleteValue("pubd-autoanalyse"); //自动分析
 		GM_deleteValue("pubd-autodownload"); //自动下载
@@ -2192,24 +2192,24 @@ function buildDlgConfig() {
 	return dlg;
 }
 
-//构建登陆对话框
+//构建登录对话框
 function buildDlgLogin() {
-	const dlg = new Dialog("登陆账户", "pubd-login", "pubd-login");
+	const dlg = new Dialog("登录账户", "pubd-login", "pubd-login");
 	dlg.newAuth = null;
 
-	var frm = dlg.content.appendChild(new Frame("1.做好获取 APP 登陆连接的准备", "pubd-auth-help"));
+	var frm = dlg.content.appendChild(new Frame("1.做好获取 APP 登录连接的准备", "pubd-auth-help"));
 	const aHelp = frm.content.appendChild(document.createElement("a"));
-	aHelp.appendChild(document.createTextNode("如何获取 APP 登陆连接？"));
+	aHelp.appendChild(document.createTextNode("如何获取 APP 登录连接？"));
 	aHelp.target = "_blank";
 	aHelp.href = "https://github.com/Mapaler/PixivUserBatchDownload/wiki/%E8%8E%B7%E5%8F%96APP%E7%99%BB%E9%99%86%E9%93%BE%E6%8E%A5";
 
 	var frm = dlg.content.appendChild(new Frame("2.进行官方 APP 登录", "pubd-auth-weblogin"));
 	const aLogin = frm.content.appendChild(document.createElement("a"));
-	aLogin.appendChild(document.createTextNode("访问官方登陆页面"));
+	aLogin.appendChild(document.createTextNode("访问官方登录页面"));
 	aLogin.className = "pubd-login-official-link";
 	aLogin.target = "_blank";
 
-	var frm = dlg.content.appendChild(new Frame("3.填写 APP 登陆连接", "pubd-auth-applogin"));
+	var frm = dlg.content.appendChild(new Frame("3.填写 APP 登录连接", "pubd-auth-applogin"));
 	dlg.content.appendChild(frm);
 
 	var div = frm.content.appendChild(document.createElement("div"));
@@ -2220,8 +2220,8 @@ function buildDlgLogin() {
 
 	const btnLogin = div.appendChild(document.createElement("button"));
 	btnLogin.className = "pubd-login-auth";
-	btnLogin.appendChild(document.createTextNode("登陆"));
-	//登陆按钮
+	btnLogin.appendChild(document.createTextNode("登录"));
+	//登录按钮
 	btnLogin.onclick = function() {
 		if (/^pixiv:\/\//i.test(pixivLink.value))
 		{
@@ -2229,11 +2229,11 @@ function buildDlgLogin() {
 			const authorization_code = loginLink.searchParams.get("code");
 			if (authorization_code)
 			{
-				//使用token登陆
-				dlg.error.replace("登陆中···");
+				//使用token登录
+				dlg.error.replace("登录中···");
 				const options = {
 					onload:function(jore) { //onload_suceess_Cb
-						dlg.error.replace("登陆成功");
+						dlg.error.replace("登录成功");
 						dlg.newOAuth.save(); //保存新的认证
 						pubd.oAuth = dlg.newOAuth; //使用新的认证替换原来的认证
 						pubd.dialog.config.refreshLoginState();
@@ -2251,7 +2251,7 @@ function buildDlgLogin() {
 				dlg.newOAuth.login(authorization_code, options);
 			}else
 			{
-				alert("PUBD：登陆链接中未找到 code");
+				alert("PUBD：登录链接中未找到 code");
 			}
 		}else
 		{
@@ -2264,7 +2264,7 @@ function buildDlgLogin() {
 
 	dlg.content.appendChild(document.createElement("hr"));
 
-	var frm = dlg.content.appendChild(new Frame("使用现有刷新许可证登陆", "pubd-refresh_token-login"));
+	var frm = dlg.content.appendChild(new Frame("使用现有刷新许可证登录", "pubd-refresh_token-login"));
 	dlg.content.appendChild(frm);
 
 	var div = frm.content.appendChild(document.createElement("div"));
@@ -2275,8 +2275,8 @@ function buildDlgLogin() {
 
 	const btnRefreshToken = div.appendChild(document.createElement("button"));
 	btnRefreshToken.className = "pubd-login-refresh_token";
-	btnRefreshToken.appendChild(document.createTextNode("登陆"));
-	//登陆按钮
+	btnRefreshToken.appendChild(document.createTextNode("登录"));
+	//登录按钮
 	btnRefreshToken.onclick = function() {
 		if (!pubd.oAuth.auth_data)
 		{
@@ -3919,7 +3919,7 @@ function Main(touch) {
 		//put my code
 	});
 
-	//登陆信息的监听修改
+	//登录信息的监听修改
 	GM_addValueChangeListener("pubd-oauth", function(name, old_value, new_value, remote) {
 		pubd.oAuth = new oAuth2(new_value);
 	});
