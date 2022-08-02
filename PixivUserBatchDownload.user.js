@@ -7,16 +7,14 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.17.141
+// @version		5.18.142
 // @author		Mapaler <mapaler@163.com>
-// @copyright	2016~2021+, Mapaler <mapaler@163.com>
+// @copyright	2016~2022+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
 // @icon		https://www.pixiv.net/favicon.ico
 // @homepage	https://github.com/Mapaler/PixivUserBatchDownload
 // @supportURL	https://github.com/Mapaler/PixivUserBatchDownload/issues
-//-@updateURL	https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.meta.js
-//-@downloadURL https://greasyfork.org/scripts/17879/code/PixivUserBatchDownload.user.js
-// @include		*://www.pixiv.net/*
+// @match		*://www.pixiv.net/*
 // @exclude		*://www.pixiv.net/upload.php*
 // @exclude		*://www.pixiv.net/messages.php*
 // @exclude		*://www.pixiv.net/ranking.php*
@@ -34,26 +32,20 @@
 // @exclude		*://www.pixiv.net/cate_r18*
 // @exclude		*://www.pixiv.net/manage*
 // @exclude		*://www.pixiv.net/report*
-//-@exclude		*://www.pixiv.net/search.php*
-//-@exclude		*://www.pixiv.net/tags*
 // @resource	pubd-style https://github.com/Mapaler/PixivUserBatchDownload/raw/master/PixivUserBatchDownload%20ui.css?v=5.17.138
-// @require		https://cdn.staticfile.org/crypto-js/4.0.0/core.min.js
-// @require		https://cdn.staticfile.org/crypto-js/4.0.0/md5.min.js
-// @require		https://cdn.staticfile.org/crypto-js/4.0.0/sha256.min.js
-// @require		https://cdn.staticfile.org/crypto-js/4.0.0/enc-base64.min.js
-//-@grant		unsafeWindow
+// @require		https://unpkg.com/crypto-js@4.1.1/core.js
+// @require		https://unpkg.com/crypto-js@4.1.1/md5.js
+// @require		https://unpkg.com/crypto-js@4.1.1/sha256.js
+// @require		https://unpkg.com/crypto-js@4.1.1/enc-base64.js
 // @grant		window.close
 // @grant		window.focus
 // @grant		GM_xmlhttpRequest
 // @grant		GM_getValue
 // @grant		GM_setValue
 // @grant		GM_deleteValue
-//-@grant		GM_listValues
 // @grant		GM_addStyle
 // @grant		GM_getResourceText
-//-@grant		GM_getResourceURL
 // @grant		GM_addValueChangeListener
-//-@grant		GM_notification
 // @grant		GM_registerMenuCommand
 // @grant		GM_unregisterMenuCommand
 // @connect		pixiv.net
@@ -69,11 +61,11 @@
 
 //获取当前是否是本地开发状态
 const mdev = Boolean(localStorage.getItem("pubd-dev"));
+if (mdev) console.log("GM_info信息：",GM_info); //开发模式时显示meta数据
 
 /*
  * 公共变量区
  */
-if (mdev) console.log("GM_info信息：",GM_info); //开发模式时显示meta数据
 
 const scriptVersion = GM_info.script.version.trim(); //本程序的版本
 const scriptIcon = GM_info.script.icon64 || GM_info.script.icon; //本程序的图标
@@ -82,7 +74,7 @@ const scriptName = (defaultName=>{ //本程序的名称
 	{
 		if (GM_info.script.name_i18n)
 		{
-			return GM_info.script.name_i18n[navigator.language.replace("-","_")]; //支持Tampermonkey
+			return GM_info.script.name_i18n[navigator.language.replaceAll("-","_")]; //支持Tampermonkey
 		} else
 		{
 			return GM_info.script.localizedName || //支持Greasemonkey 油猴子 3.x
@@ -117,28 +109,27 @@ const pubd = { //储存程序设置
 
 //储存vue框架下P站页面主要内容的DIV位置，现在由程序自行搜索判断，搜索依据为 mainDivSearchCssSelectorArray。
 //后面的 :scope 基本都是指的 mainDiv
-var mainDiv = null;
-//#root下能够独占区分不同页面的路径
+let mainDiv = null;
+//#root>div:nth-of-type(2) 子root
+//#root>div:nth-of-type(2)>div mainDiv 下能够独占区分不同页面的路径
 //本来开始按钮插入点可以另外设置，但是刚好可以用，于是就用了同一个了
 const mainDivSearchCssSelectorArray = [
 	'#spa-contents .user-stats', //手机版用户页
 	'#spa-contents .user-details-card', //手机版作品页
-	':scope>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页，版本3
-	':scope>div>div>div>div:nth-of-type(2)>div:nth-of-type(2)', //用户资料首页，版本2
-	':scope>div>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页
-	':scope>div>div>aside>section', //作品页
-	':scope>div>div:nth-of-type(2)>div>div', //关注页
+	':scope>div:nth-of-type(2)>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页
+	':scope>div:nth-of-type(2)>div>div>aside>section', //作品页
+	':scope>div:nth-of-type(2)>div>div', //关注页
 ];
 //搜索页，列表的ul位置（用来显示收藏状态）
-const searchListCssPath = ':scope>div>div:nth-of-type(4)>div>section>div:nth-of-type(2)>ul';
+const searchListCssPath = ':scope>div>div:nth-of-type(2)>div>div:nth-of-type(6)>div>section>div:nth-of-type(2)>ul';
 
 
 //作者页面“主页”按钮的CSS位置（用来获取作者ID）
-const userMainPageCssPath = ":scope>div>div:nth-of-type(2)>nav>a";
+const userMainPageCssPath = ":scope>div:nth-of-type(2) nav>a";
 //作品页，收藏按钮的CSS位置（用来获取当前作品ID）
-const artWorkStarCssPath = ":scope>div>div>main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
+const artWorkStarCssPath = ":scope>div:nth-of-type(2) main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
 //作品页，作者头像链接的CSS位置（用来获取作者ID）
-const artWorkUserHeadCssPath = ":scope>div>div>aside>section>h2>div>a";
+const artWorkUserHeadCssPath = ":scope>div:nth-of-type(2) aside>section>h2>div>a";
 
 //匹配P站内容的正则表达式
 const illustPathRegExp = /(\/.+\/\d{4}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/((\d+)(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\d+(?:_\w+)?\.([\w\d]+)/i; //P站画作地址 path部分 正则匹配式
@@ -149,12 +140,24 @@ const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文
 const PixivAppVersion = "6.36.0"; //Pixiv APP的版本
 const AndroidVersion = "12.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${PixivAppVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
-const X_Client_Hash_Salt = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"; //X_Client加密的salt，目前是固定值
+
+const X_Client_Hash_Salt = [ //X_Client加密的salt，目前是固定值
+	0x28,0xC1,0xFD,0xD1,
+	0x70,0xA5,0x20,0x43,
+	0x86,0xCB,0x13,0x13,
+	0xC7,0x07,0x7B,0x34,
+	0xF8,0x3E,0x4A,0xAF,
+	0x4A,0xA8,0x29,0xCE,
+	0x78,0xC2,0x31,0xE0,
+	0x5B,0x0B,0xAE,0x2C
+].map(n=>n.toString(16).toLowerCase()).join('');
+
 const Referer = "https://app-api.pixiv.net/";
 const ContentType = "application/x-www-form-urlencoded; charset=UTF-8"; //重要
 //登录时的固定参数
 const client_id = "MOBrBDS8blbauoSck0ZfDbtuzpyT"; //安卓版固定数据
 const client_secret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"; //安卓版固定数据
+
 
 let thisPageUserid = null, //当前页面的画师ID
 	thisPageIllustid = null, //当前页面的作品ID
@@ -246,37 +249,14 @@ if (location.host.includes("touch")) //typeof(pixiv.AutoView)!="undefined"
 /*
  * 自定义对象区
  */
-
+const PixivTimezoneOffset = (date=>{ //国内为 +08:00
+	const o = date.getTimezoneOffset(); //本地时区差值
+	return `${o<=0?'+':'-'}${[o/60,o%60, //时区 +差时:差分
+	].map(n=>Math.floor(Math.abs(n)).toString().padStart(2,'0')).join(':')}`;
+})(new Date());
 //生成P站需要的时间格式，如 "2019-09-03T18:51:40+08:00"
 Date.prototype.toPixivString = function() {
-	function pad(num, length=2)
-	{ //填充截取法补前导0 
-		let ns = num.toString();
-		if (ns.length >= length)
-			return ns;
-		else
-		{ //这里用slice和substr均可
-			return (Array(length).join('0') + num.toString()).slice(-length);
-		}
-	}
-	const timezoneOffset = this.getTimezoneOffset(); //时区差值
-	const str = 
-	[
-		this.getFullYear(), //年
-		this.getMonth()+1, //月
-		this.getDate()  //日
-	].map(n=>pad(n)).join('-') +
-	'T' +
-	[
-		this.getHours(), //时
-		this.getMinutes(), //秒
-		this.getSeconds() //分
-	].map(n=>pad(n)).join(':') +
-	(timezoneOffset<=0?"+":"-") + //时区正负
-	[
-		timezoneOffset/60, //时区差时
-		timezoneOffset%60, //时区差分
-	].map(n=>pad(Math.floor(Math.abs(n)))).join(':');
+	const str = this.toJSON().split('.')[0] + PixivTimezoneOffset;
 	return str;
 };
 /*
@@ -1269,24 +1249,9 @@ function NewDownSchemeArrayFromJson(jsonarr) {
 	return sarr;
 }
 //获取URL参数
-function getQueryString(name,url) {
-	if (Boolean(window.URL && window.URLSearchParams))
-	{ //浏览器原生支持的API
-		const urlObj = new URL(url || document.location);
-		return urlObj.searchParams.get(name);
-	}else
-	{
-		const reg = new RegExp(`(?:^|&)${name}=([^&]*)(?:&|$)`, "i");
-		const searchStr = url || location.search.substring(1);
-		const r = searchStr.match(reg);
-		if (r != null)
-		{
-			return decodeURIComponent(r[1]);
-		}else
-		{
-			return null;
-		}
-	}
+function getQueryString(name, url = document.location) {
+	const urlObj = new URL(url);
+	return urlObj.searchParams.get(name);
 }
 //从图片URL获取图片属性
 function parseIllustUrl(url) {
@@ -1420,7 +1385,28 @@ function checkStar()
 		return false;
 	}
 }
-
+//更改推荐列表里的收藏显示状态
+function refreshRecommendListState() { 
+	if (!recommendList) return;
+	
+	const liNodes = recommendList.querySelectorAll(":scope>li");
+	for (const liNode of liNodes) {
+		const userLink = liNode.querySelector("div>div:last-of-type>div>a");
+		let uidRes;
+		if (uidRes = /\d+/.exec(userLink.pathname))
+		{
+			const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
+			if (pubd.fastStarList.has(uid))
+			{
+				liNode.classList.add("pubd-stared"); //添加隐藏用的css
+			}
+			else
+			{
+				liNode.classList.remove("pubd-stared"); //添加隐藏用的css
+			}
+		}
+	}
+}
 //构建开始按钮
 function buildbtnStart() {
 	const btnStart = document.createElement("div");
@@ -3899,26 +3885,7 @@ function Main(touch) {
 		checkStar();
 
 		//更改推荐列表里的收藏显示状态
-		if (recommendList)
-		{
-			const liNodes = recommendList.querySelectorAll(":scope>li");
-			liNodes.forEach(linode=>{ //这个node是每个新增列表里的li
-				const userLink = linode.querySelector("div>div:last-of-type>div>a");
-				const uidRes = /\d+/.exec(userLink.pathname);
-				if (uidRes.length)
-				{
-					const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
-					if (pubd.fastStarList.has(uid))
-					{
-						linode.classList.add("pubd-stared"); //添加隐藏用的css
-					}
-					else
-					{
-						linode.classList.remove("pubd-stared"); //添加隐藏用的css
-					}
-				}
-			})
-		}
+		refreshRecommendListState();
 		//将来还需要在更改收藏时，就自动刷新所有的其他推荐列表
 		//put my code
 	});
@@ -4048,15 +4015,16 @@ function Main(touch) {
 			checkStar();
 		});
 		let observerLoop = new MutationObserver(function(mutationsList, observer) {
+			const removedNodes = mutationsList.flatMap(mutation=>[...mutation.removedNodes]);
 			//当在P站首页的时候，不需要生效
-			if (location.pathname.substr(1).length == 0)
-			{
+			if (location.pathname.substring(1).length == 0) {
 				console.log("PUBD：本页面不需要执行。");
 				return;
 			}
 
 			//如果被删除的节点里有我们的开始按钮，就重新插入；或者搜索列表被删除
-			if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>(node.contains(btnStartBox) || node.contains(recommendList)))))
+			
+			if (removedNodes.some(node=>(node.contains(btnStartBox) || node.contains(recommendList))))
 			{
 				console.log('已经添加的开始按钮因为页面改动被删除了');
 				mainDiv = null;
@@ -4099,48 +4067,21 @@ function Main(touch) {
 			}
 
 			//作品页面显示推荐的部分
-			const otherWorks = (touch || !mainDiv) ? null : mainDiv.querySelector(":scope>div>aside:nth-of-type(2)");
-			if (otherWorks)
+			const otherWorks = (touch || !mainDiv) ? null : mainDiv.querySelector(":scope>div:nth-of-type(2)>div>aside:nth-of-type(2)");
+			if (!recommendList && otherWorks)
 			{ //已发现推荐列表大部位
 				if (recommendList = otherWorks.querySelector("section>div:nth-of-type(2) ul"))
 				{
 					if (mdev) console.log("发现推荐列表",recommendList);
 				}
-
-				//不知道为什么这个代码又不需要了
-				/*if (!recommendList &&
-					mutationsList.some(mutation=>
-						otherWorks.contains(mutation.target) && //目标属于推荐部分
-						Array.from(mutation.addedNodes).some(node=>node.nodeName == "SECTION" || node.querySelector("section")) //新增node要么是section，要么包括section
-					)
-				) //当改变目标为这个aside，并且新增的是section时
-				{
-					recommendList = otherWorks.querySelector("section>div:nth-of-type(2) ul");
-					if (mdev) console.log("发现推荐列表",recommendList);
-				}*/
 			}
 			if (recommendList)
 			{
-				let mutationsList_target = mutationsList.filter(mutation=>mutation.target==recommendList);
-				if (mutationsList_target.length)
-				{ //当改变目标为推荐列表时，并且新增的是section时
-					mutationsList_target.forEach(mutation=>
-						mutation.addedNodes.forEach(linode=>{ //这个node是每个新增列表里的li
-							const userLink = linode.querySelector("div>div:last-of-type>div>a");
-							if (!userLink) return;
-							const uidRes = /\d+/.exec(userLink.pathname);
-							if (uidRes.length)
-							{
-								const uid = parseInt(uidRes[0],10); //得到这个作品的作者ID
-								if (pubd.fastStarList.has(uid))
-								{
-									linode.classList.add("pubd-stared"); //添加隐藏用的css
-								}
-							}
-						})
-					);
-				}
-				if (mutationsList.some(mutation=>Array.from(mutation.removedNodes).some(node=>node.contains(recommendList))))
+				//如果有新增，就重新刷新已收藏选中状态
+				if (mutationsList.some(mutation=>mutation.target==recommendList && mutation.addedNodes.length))
+					refreshRecommendListState();
+				
+				if (removedNodes.some(node=>node.contains(recommendList)))
 				{ //如果被删除的节点里有推荐列表，重新标空
 					recommendList = null;
 				}
@@ -4148,24 +4089,21 @@ function Main(touch) {
 		});
 		//只执行一次的，插找P站新的根节点的位置
 		let observerFindSubRoot = new MutationObserver(function(mutationsList, observer) {
-			mutationsList.some(mutation=>Array.from(mutation.addedNodes).some(node=>{
-				if(!node.id.length){
-					subRoot = node;
-					observer.disconnect();
-					if (mdev) console.log("子root为",subRoot);
-					observerLoop.observe(subRoot, {childList:true, subtree:true});
-					return true;
-				}else
-				{
-					return false;
+			for (const mutation of mutationsList) {
+				for (const node of mutation.addedNodes) {
+					if(!node.id){
+						subRoot = node;
+						if (mdev) console.log("子root为", node);
+						observer.disconnect();
+						observerLoop.observe(node, {childList:true, subtree:true});
+						return;
+					}else continue;
 				}
-			}));
+			}
 		});
-		if (vueRoot)
-		{
+		if (vueRoot) {
 			observerFindSubRoot.observe(vueRoot, {childList:true, subtree:false});
-		}else
-		{
+		} else {
 			observerLoop.observe(touchRoot, {childList:true, subtree:true});
 		}
 	}else if(vueRoot == undefined)
