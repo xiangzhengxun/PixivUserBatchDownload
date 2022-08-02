@@ -7,7 +7,7 @@
 // @description:zh-CN	配合Aria2，一键批量下载P站画师的全部作品
 // @description:zh-TW	配合Aria2，一鍵批量下載P站畫師的全部作品
 // @description:zh-HK	配合Aria2，一鍵批量下載P站畫師的全部作品
-// @version		5.18.142
+// @version		5.18.143
 // @author		Mapaler <mapaler@163.com>
 // @copyright	2016~2022+, Mapaler <mapaler@163.com>
 // @namespace	http://www.mapaler.com/
@@ -67,6 +67,31 @@ if (mdev) console.log("GM_info信息：",GM_info); //开发模式时显示meta�
  * 公共变量区
  */
 
+//储存vue框架下P站页面主要内容的DIV位置，现在由程序自行搜索判断，搜索依据为 mainDivSearchCssSelectorArray。
+//#root vue的root，源代码中固定存在
+//#root>div:nth-of-type(2) 真正存储页面内容的动态 div，搜索条件为root下新增的没有 id 的 node（P站目前是这样）。
+//#root>div:nth-of-type(2)>div 再往下由于只有一个单独div，因此再往继续找到有 2 个以上的 node 的时候，记为子 root，其实后面的代码基本不会用到。
+let subRoot = null;
+//子 root 下面能找到按钮插入点的 node，暨主要内容的 div 而不是顶栏，记为 mainDiv
+let mainDiv = null;
+//不同页面开始按钮的插入位点
+//哪天P站位置改版了，可能就需要手动调整这些路径
+//下面的 :scope 指的是 mainDiv，2022年8月2日 当前路径为 #root>div:nth-of-type(2)>div>div:nth-of-type(2)
+const mainDivSearchCssSelectorArray = [
+	'#spa-contents .user-stats', //手机版用户页
+	'#spa-contents .user-details-card', //手机版作品页
+	':scope>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页
+	':scope>div>div>aside>section', //单个作品页
+];
+//搜索页，列表的ul位置（用来显示收藏状态）
+const searchListCssPath = ':scope>div>div:nth-of-type(6)>div>section>div:nth-of-type(2)>ul';
+//作者页面“主页”按钮的CSS位置（用来获取作者ID）
+const userMainPageCssPath = ":scope nav>a";
+//作品页，收藏按钮的CSS位置（用来获取当前作品ID）
+const artWorkStarCssPath = ":scope main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
+//作品页，作者头像链接的CSS位置（用来获取作者ID）
+const artWorkUserHeadCssPath = ":scope aside>section>h2>div>a";
+
 const scriptVersion = GM_info.script.version.trim(); //本程序的版本
 const scriptIcon = GM_info.script.icon64 || GM_info.script.icon; //本程序的图标
 const scriptName = (defaultName=>{ //本程序的名称
@@ -107,41 +132,17 @@ const pubd = { //储存程序设置
 	starUserlists: [], //储存完整的下载列表
 };
 
-//储存vue框架下P站页面主要内容的DIV位置，现在由程序自行搜索判断，搜索依据为 mainDivSearchCssSelectorArray。
-//后面的 :scope 基本都是指的 mainDiv
-let mainDiv = null;
-//#root>div:nth-of-type(2) 子root
-//#root>div:nth-of-type(2)>div mainDiv 下能够独占区分不同页面的路径
-//本来开始按钮插入点可以另外设置，但是刚好可以用，于是就用了同一个了
-const mainDivSearchCssSelectorArray = [
-	'#spa-contents .user-stats', //手机版用户页
-	'#spa-contents .user-details-card', //手机版作品页
-	':scope>div:nth-of-type(2)>div>div>div:nth-of-type(2)>div>div:nth-of-type(2)', //用户资料首页
-	':scope>div:nth-of-type(2)>div>div>aside>section', //作品页
-	':scope>div:nth-of-type(2)>div>div', //关注页
-];
-//搜索页，列表的ul位置（用来显示收藏状态）
-const searchListCssPath = ':scope>div>div:nth-of-type(2)>div>div:nth-of-type(6)>div>section>div:nth-of-type(2)>ul';
-
-
-//作者页面“主页”按钮的CSS位置（用来获取作者ID）
-const userMainPageCssPath = ":scope>div:nth-of-type(2) nav>a";
-//作品页，收藏按钮的CSS位置（用来获取当前作品ID）
-const artWorkStarCssPath = ":scope>div:nth-of-type(2) main>section>div>div>figcaption>div>div>ul>li:nth-of-type(2)>a";
-//作品页，作者头像链接的CSS位置（用来获取作者ID）
-const artWorkUserHeadCssPath = ":scope>div:nth-of-type(2) aside>section>h2>div>a";
-
 //匹配P站内容的正则表达式
 const illustPathRegExp = /(\/.+\/\d{4}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/\d{2}\/((\d+)(?:-([0-9a-zA-Z]+))?(?:_p|_ugoira)))\d+(?:_\w+)?\.([\w\d]+)/i; //P站画作地址 path部分 正则匹配式
 const limitingPathRegExp = /(\/common\/images\/(limit_(?:mypixiv|unknown)_\d+))\.([\w\d]+)/i; //P站无权访问作品地址 path部分 正则匹配式
 
 const limitingFilenamePattern = 'limit_(mypixiv|unknown)'; //P站上锁图片文件名正则匹配式
 //Header使用
-const PixivAppVersion = "6.36.0"; //Pixiv APP的版本
+const PixivAppVersion = "6.55.1"; //Pixiv APP的版本
 const AndroidVersion = "12.0.0"; //安卓的版本
 const UA = `PixivAndroidApp/${PixivAppVersion} (Android ${PixivAppVersion}; Android SDK built for x64)`; //向P站请求数据时的UA
 
-const X_Client_Hash_Salt = [ //X_Client加密的salt，目前是固定值
+const X_Client_Hash_Salt = [ //X_Client加密的salt，目前是固定值 "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
 	0x28,0xC1,0xFD,0xD1,
 	0x70,0xA5,0x20,0x43,
 	0x86,0xCB,0x13,0x13,
@@ -3959,7 +3960,7 @@ function Main(touch) {
 
 
 	//建立开始按钮
-	let btnStartBox = document.createElement("div");
+	const btnStartBox = document.createElement("div");
 	btnStartBox.className = "pubd-btnStartInsertPlace";
 	pubd.start = btnStartBox.appendChild(buildbtnStart());
 	pubd.menu = btnStartBox.appendChild(buildbtnMenu());
@@ -4009,22 +4010,21 @@ function Main(touch) {
 	if (window.MutationObserver && (vueRoot || touch)) //如果支持MutationObserver，且是vue框架
 	{
 		let reInsertStart = true; //是否需要重新插入开始按钮
-		let subRoot = null; //P站改版，在root下面多了一层
 		let changeIllustUser = new MutationObserver(function(mutationsList, observer) {
 			if (mdev) console.log("作者链接 href 改变了",mutationsList);
 			checkStar();
 		});
 		let observerLoop = new MutationObserver(function(mutationsList, observer) {
 			const removedNodes = mutationsList.flatMap(mutation=>[...mutation.removedNodes]);
+			//const addNodes = mutationsList.flatMap(mutation=>[...mutation.addNodes]);
 			//当在P站首页的时候，不需要生效
 			if (location.pathname.substring(1).length == 0) {
-				console.log("PUBD：本页面不需要执行。");
+				console.log("PUBD：P站首页不需要执行。");
 				return;
 			}
 
 			//如果被删除的节点里有我们的开始按钮，就重新插入；或者搜索列表被删除
-			
-			if (removedNodes.some(node=>(node.contains(btnStartBox) || node.contains(recommendList))))
+			if (removedNodes.some(node=>node.contains(btnStartBox)))
 			{
 				console.log('已经添加的开始按钮因为页面改动被删除了');
 				mainDiv = null;
@@ -4034,45 +4034,40 @@ function Main(touch) {
 			//搜索新的主div并插入开始按钮
 			if (reInsertStart)
 			{
-				Array.from((touch ? touchRoot : subRoot).children).some(node=>
-					{
-						recommendList = node.querySelector(searchListCssPath);
-						if (recommendList) //如果是搜索界面
-						{
-							if (mdev) console.log("发现搜索列表",recommendList);
-							mainDiv = node; //重新选择主div
-							reInsertStart = false;
-							return true;
-						}else //添加开始菜单
-						{
-							return mainDivSearchCssSelectorArray.some(cssS=>{
-								let btnStartInsertPlace = node.querySelector(cssS);
-								if(btnStartInsertPlace != undefined)
+				for (const node of (touch ? touchRoot : subRoot).children) {
+					if (recommendList = node.querySelector(searchListCssPath)) {//如果是搜索结果界面而非用户/作品界面
+						mainDiv = node; //重新选择主div
+						if (mdev) console.log("mainDiv 为 %o，搜索列表为 %o，", mainDiv, recommendList);
+						reInsertStart = false;
+						break;
+					} else {
+						const foundStartBtn = mainDivSearchCssSelectorArray.some(cssS=>{
+							const btnStartInsertPlace = node.querySelector(cssS);
+							if(btnStartInsertPlace) {
+								mainDiv = node; //重新选择主div
+								if (mdev) console.log("mainDiv 为 %o ，始按钮插入点 CSS 路径为 %s",mainDiv,cssS);
+								reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
+	
+								const userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
+								if (userHeadLink) //如果是作品页面
 								{
-									mainDiv = node; //重新选择主div
-									if (mdev) console.log("开始按钮插入点CSS路径为",mainDiv,cssS);
-									reInsertStart = !insertStartBtn(btnStartInsertPlace); //插入开始按钮
-
-									const userHeadLink = mainDiv.querySelector(artWorkUserHeadCssPath);
-									if (userHeadLink) //如果是作品页面
-									{
-										changeIllustUser.observe(userHeadLink, {attributeFilter:["href"]});
-									}
-									return true;
-								}else return false;
-							});
-						}
+									changeIllustUser.observe(userHeadLink, {attributeFilter:["href"]});
+								}
+								return true;
+							}else return false;
+						});
+						if (foundStartBtn) break; //如果插入了开始按钮，就退出循环
 					}
-				);
+				}
 			}
 
 			//作品页面显示推荐的部分
-			const otherWorks = (touch || !mainDiv) ? null : mainDiv.querySelector(":scope>div:nth-of-type(2)>div>aside:nth-of-type(2)");
-			if (!recommendList && otherWorks)
+			let otherWorks
+			if (!recommendList && (otherWorks = (touch || !mainDiv) ? null : mainDiv.querySelector(":scope>div:nth-of-type(2)>div>aside:nth-of-type(2)")))
 			{ //已发现推荐列表大部位
 				if (recommendList = otherWorks.querySelector("section>div:nth-of-type(2) ul"))
 				{
-					if (mdev) console.log("发现推荐列表",recommendList);
+					if (mdev) console.log("发现推荐列表 %o",recommendList);
 				}
 			}
 			if (recommendList)
@@ -4083,6 +4078,7 @@ function Main(touch) {
 				
 				if (removedNodes.some(node=>node.contains(recommendList)))
 				{ //如果被删除的节点里有推荐列表，重新标空
+					if (mdev) console.log('推荐列表被删除了');
 					recommendList = null;
 				}
 			}
@@ -4091,11 +4087,15 @@ function Main(touch) {
 		let observerFindSubRoot = new MutationObserver(function(mutationsList, observer) {
 			for (const mutation of mutationsList) {
 				for (const node of mutation.addedNodes) {
-					if(!node.id){
+					if(!node.id){ //如果 root 下新增没有 id 的 node，就开始处理
+						//一直循环到下面有多个 node 时，当作子root，否则继续往下。
 						subRoot = node;
-						if (mdev) console.log("子root为", node);
+						while (subRoot.childNodes.length == 1) {
+							subRoot = subRoot.childNodes[0];
+						}
+						if (mdev) console.log("subRoot 为 %o", subRoot);
 						observer.disconnect();
-						observerLoop.observe(node, {childList:true, subtree:true});
+						observerLoop.observe(subRoot, {childList:true, subtree:true});
 						return;
 					}else continue;
 				}
